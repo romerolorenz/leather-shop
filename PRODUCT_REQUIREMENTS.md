@@ -53,8 +53,12 @@ finalized and swapped in later without a structural rebuild.
   - **Stock quantity is a numeric, admin-only field — never shown to
     customers** (storefront only ever shows the status label: in stock /
     made-to-order / sold out).
-    - For **in-stock** items: an actual count, decremented per order;
-      reaching 0 auto-flips status to sold out.
+    - For **in-stock** items: an actual count, **decremented at order
+      placement** (not at payment confirmation) — since v1 payment is
+      manual/offline and an order can sit "pending payment" indefinitely,
+      decrementing early prevents overselling the last unit. If an order
+      goes unpaid/is cancelled, admin manually restores the stock count.
+      Reaching 0 auto-flips status to sold out.
     - For **made-to-order** items: a threshold/capacity limit (e.g. max
       concurrent made-to-order queue), not physical stock; reaching it
       auto-flips status to sold out (in addition to the manual
@@ -73,6 +77,18 @@ finalized and swapped in later without a structural rebuild.
 ### Storefront
 - Home page: brand story, featured products, categories.
 - Category / catalog listing pages with filtering (category, price, in-stock).
+- **FAQ page**: shipping (Metro Manila only, ₱150 flat), payment (manual v1 —
+  bank transfer/GCash/Maya), made-to-order lead times, materials/care, and
+  return/exchange policy (policy itself still TBD — see Open Questions).
+- **Contact Us page**: Instagram and email as the inquiry channels — the
+  single place customers outside Metro Manila (or with other questions) are
+  directed to, consolidating the "Outside Metro Manila? Contact us" prompt
+  referenced under Checkout below.
+- **Privacy Policy page**: covers what customer data is collected (name,
+  email, phone, address) and how it's used/stored (Supabase). Required for
+  Google OAuth consent screen verification (§6 Account/Admin both use Google
+  login) and for Philippine Data Privacy Act (RA 10173) compliance —
+  not just a nice-to-have.
 - Product detail page (PDP): photos, description, variant selection
   (including a thread color dropdown, where applicable), price, add to cart,
   lead time, materials/care info.
@@ -107,6 +123,9 @@ finalized and swapped in later without a structural rebuild.
   (e.g. to pause a product when wait time is too long).
 - View and manage incoming orders (mark shipped, fulfilled, etc.).
 - Basic sales overview (orders, revenue) — not a full analytics suite.
+- **Edit FAQ content** — the FAQ page (§6, Storefront) is admin-editable,
+  not hardcoded, so answers (shipping, payment, lead times, policy) can be
+  updated without a code change.
 - **Order notification email**: shop owner receives an email alert
   immediately whenever a new order is placed (order details + customer
   contact info), so orders can be actioned without checking the admin
@@ -141,6 +160,8 @@ finalized and swapped in later without a structural rebuild.
 - Order/checkout logic should go through an internal API layer (Next.js API
   routes) from the start, even while payment is manual — this is what keeps
   the PayMongo upgrade in §6 low-effort.
+- **Email**: Resend, for both the customer order-confirmation email and the
+  admin order-notification email (§6).
 
 ## 8. Non-Functional Requirements
 
@@ -165,3 +186,8 @@ finalized and swapped in later without a structural rebuild.
 - Cart abandonment rate.
 - Average order value.
 - Repeat purchase rate (if accounts/order history are in scope).
+
+## 10. Open Questions
+
+- Return/exchange policy: what's actually offered (if anything) for
+  made-to-order vs. in-stock items? Needed for the FAQ page in §6.
