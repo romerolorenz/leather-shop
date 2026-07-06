@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { CartProvider } from "@/lib/cart-context";
+import CartLink from "@/components/CartLink";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,18 +31,20 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header className="border-b border-black/[.08] dark:border-white/[.145]">
-          <nav className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-            <Link href="/" className="font-semibold tracking-tight">
-              Leather Shop
-            </Link>
-            <div className="flex gap-6 text-sm">
-              <Link href="/products">Shop</Link>
-              <Link href="/cart">Cart</Link>
-            </div>
-          </nav>
-        </header>
-        <div className="flex flex-1 flex-col">{children}</div>
+        <CartProvider>
+          <header className="border-b border-black/[.08] dark:border-white/[.145]">
+            <nav className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
+              <Link href="/" className="font-semibold tracking-tight">
+                Leather Shop
+              </Link>
+              <div className="flex gap-6 text-sm">
+                <Link href="/products">Shop</Link>
+                <CartLink />
+              </div>
+            </nav>
+          </header>
+          <div className="flex flex-1 flex-col">{children}</div>
+        </CartProvider>
       </body>
     </html>
   );

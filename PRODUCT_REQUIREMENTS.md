@@ -46,6 +46,9 @@ finalized and swapped in later without a structural rebuild.
   - Multiple photos (incl. detail/texture shots — important for leather).
   - A **fixed, small set of variants** (e.g. color: 3–5 options, size: S/M/L),
     each with its own price/stock if needed.
+  - **Thread color** is a selectable fixed-option variant (e.g. natural,
+    black, contrast stitch), presented as a **dropdown** on the product
+    page — not a free-text/custom input.
   - Price, stock/availability status (in stock, made-to-order, sold out).
   - **Lead time is set per product** (each product has its own estimated
     production/shipping lead time; not a global setting).
@@ -60,8 +63,9 @@ finalized and swapped in later without a structural rebuild.
 ### Storefront
 - Home page: brand story, featured products, categories.
 - Category / catalog listing pages with filtering (category, price, in-stock).
-- Product detail page (PDP): photos, description, variant selection, price,
-  add to cart, lead time, materials/care info.
+- Product detail page (PDP): photos, description, variant selection
+  (including a thread color dropdown, where applicable), price, add to cart,
+  lead time, materials/care info.
 - Cart: view items, adjust quantity/variant, remove items.
 - Checkout: shipping address, shipping method, payment, order review.
   - **Metro Manila delivery only.** Site does not accept orders with a
@@ -87,6 +91,10 @@ finalized and swapped in later without a structural rebuild.
   (e.g. to pause a product when wait time is too long).
 - View and manage incoming orders (mark shipped, fulfilled, etc.).
 - Basic sales overview (orders, revenue) — not a full analytics suite.
+- **Order notification email**: shop owner receives an email alert
+  immediately whenever a new order is placed (order details + customer
+  contact info), so orders can be actioned without checking the admin
+  portal constantly.
 
 ### Payments & Fulfillment
 - **v1**: manual/offline payment. Customer places the order on-site; payment
