@@ -50,15 +50,26 @@ finalized and swapped in later without a structural rebuild.
     black, contrast stitch), presented as a **dropdown** on the product
     page — not a free-text/custom input.
   - Price, stock/availability status (in stock, made-to-order, sold out).
+    - **In-stock** = ready-made, fixed items — already produced as-is, no
+      variant customization at order time.
+    - **Made-to-order** = the customer chooses variant options (color,
+      thread color, etc.) at order time, and the item is produced
+      afterward per that choice.
   - **Stock quantity is a numeric, admin-only field — never shown to
     customers** (storefront only ever shows the status label: in stock /
     made-to-order / sold out).
     - For **in-stock** items: an actual count, **decremented at order
       placement** (not at payment confirmation) — since v1 payment is
-      manual/offline and an order can sit "pending payment" indefinitely,
-      decrementing early prevents overselling the last unit. If an order
-      goes unpaid/is cancelled, admin manually restores the stock count.
-      Reaching 0 auto-flips status to sold out.
+      manual/offline, decrementing early prevents overselling the last
+      unit while the order awaits payment. Reaching 0 auto-flips status
+      to sold out.
+      - **Payment hold (default 48 hours, admin-configurable — see "Edit
+        shop configuration" below)**: an order not confirmed paid within
+        the hold window is automatically cancelled (status →
+        cancelled/expired) and its stock is automatically restored — not
+        a manual admin step. Admin can still cancel and restore stock
+        manually before the hold expires (e.g. a customer asks to cancel
+        via Contact Us).
     - For **made-to-order** items: a threshold/capacity limit (e.g. max
       concurrent made-to-order queue), not physical stock; reaching it
       auto-flips status to sold out (in addition to the manual
@@ -79,7 +90,9 @@ finalized and swapped in later without a structural rebuild.
 - Category / catalog listing pages with filtering (category, price, in-stock).
 - **FAQ page**: shipping (Metro Manila only, ₱150 flat), payment (manual v1 —
   bank transfer/GCash/Maya), made-to-order lead times, materials/care, and
-  return/exchange policy (policy itself still TBD — see Open Questions).
+  return/exchange policy (**returns/exchanges accepted only for defective
+  items** — no change-of-mind returns, no returns for made-to-order items
+  produced correctly to the customer's chosen options).
 - **Contact Us page**: Instagram and email as the inquiry channels — the
   single place customers outside Metro Manila (or with other questions) are
   directed to, consolidating the "Outside Metro Manila? Contact us" prompt
@@ -109,7 +122,7 @@ finalized and swapped in later without a structural rebuild.
   Admin/Back Office.
 - Guest checkout (account optional, not required).
 
-### Account (optional for v1, confirm scope)
+### Account
 - Login/Creation should only be via social login (google/facebook)
 - Order history / order status lookup.
 - Saved addresses.
@@ -126,6 +139,17 @@ finalized and swapped in later without a structural rebuild.
 - **Edit FAQ content** — the FAQ page (§6, Storefront) is admin-editable,
   not hardcoded, so answers (shipping, payment, lead times, policy) can be
   updated without a code change.
+- **Edit shop configuration** — no business value/amount is hardcoded in
+  code; all of the following are admin-editable, not code constants:
+  - Shipping fee (currently ₱150 flat).
+  - Delivery area (currently the fixed Metro Manila city list).
+  - Admin order-notification recipient email.
+  - **Order payment-hold duration** (currently defaults to 48 hours —
+    see Payments & Fulfillment below).
+  - Any other business-configurable value introduced later (e.g. if a
+    second delivery tier or a different flat rate is added).
+  - (Deployment secrets like API keys are the one exception — those stay
+    in environment variables, not the admin UI. See §7.)
 - **Order notification email**: shop owner receives an email alert
   immediately whenever a new order is placed (order details + customer
   contact info), so orders can be actioned without checking the admin
@@ -135,6 +159,12 @@ finalized and swapped in later without a structural rebuild.
 - **v1**: manual/offline payment. Customer places the order on-site; payment
   is settled off-platform (e.g. bank transfer, GCash/Maya send) and confirmed
   manually; admin marks the order as paid in the back office.
+- **Order payment hold (default 48 hours, admin-configurable)**: if payment
+  isn't confirmed within the hold window, the order auto-cancels and its
+  stock is auto-restored (§5) — bounds how long a non-paying customer can
+  hold inventory hostage under manual payment. The duration itself is a
+  shop-configuration value (see Admin/Back Office above), not a hardcoded
+  constant, so it can be tightened or loosened without a code change.
 - **v2 (quick upgrade)**: online payment via a standard provider aggregating
   GCash/Maya (e.g. PayMongo). The order/checkout flow in v1 must be built so
   swapping in real payment processing (payment intent creation + webhook
@@ -162,6 +192,15 @@ finalized and swapped in later without a structural rebuild.
   the PayMongo upgrade in §6 low-effort.
 - **Email**: Resend, for both the customer order-confirmation email and the
   admin order-notification email (§6).
+- **No hardcoded business configuration**: shipping fee, delivery area
+  list, notification email, and order payment-hold duration (§6) live in a
+  Supabase settings table/record, not as code constants — so the admin UI
+  in §6 can change them without a redeploy. Only deployment-level secrets
+  (API keys, connection strings) belong in environment variables instead.
+- **Scheduled job**: the order-expiry check (§5, §6) needs something to
+  run periodically (e.g. a Vercel Cron Job hitting an API route, or
+  Supabase's `pg_cron`) — there's no long-running server process
+  to just leave a timer on.
 
 ## 8. Non-Functional Requirements
 
@@ -186,8 +225,3 @@ finalized and swapped in later without a structural rebuild.
 - Cart abandonment rate.
 - Average order value.
 - Repeat purchase rate (if accounts/order history are in scope).
-
-## 10. Open Questions
-
-- Return/exchange policy: what's actually offered (if anything) for
-  made-to-order vs. in-stock items? Needed for the FAQ page in §6.

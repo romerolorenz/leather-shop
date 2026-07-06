@@ -70,7 +70,7 @@ purchase under the v1 manual-payment flow. [§6]
 placed (order details + customer contact info), so that I can act on it
 without constantly checking the admin portal. [§6]
 
-## Accounts (optional, v1 scope tentative)
+## Accounts
 
 **US-16**: As a Shopper, I want to log in with Google or Facebook, so that
 I don't need to create and remember a new password. [§6]
@@ -111,9 +111,21 @@ every time. [§5]
 order is placed (not when payment clears), so that I don't oversell the
 last unit during the manual-payment window. [§5]
 
-**US-25**: As an Admin, I want to manually restore stock when an order
-goes unpaid or is cancelled, so that the count stays accurate despite v1
-having no automatic cancellation flow. [§5]
+**US-25**: As an Admin, I want to manually cancel an order and restore its
+stock before the payment hold expires (e.g. a customer asks to cancel via
+Contact Us), so that I'm not stuck waiting on the automatic expiry for a
+cancellation I already know about. [§5]
+
+**US-25b**: As an Admin, I want an order that isn't confirmed paid within
+the payment-hold window (default 48 hours) to auto-cancel and have its
+stock automatically restored, so that a non-paying customer can't hold the
+last unit of an item hostage indefinitely under the manual-payment flow.
+[§5, §6]
+
+**US-25c**: As an Admin, I want to change the payment-hold duration myself
+(shorter if I need inventory to free up faster, longer if customers need
+more time to pay), so that I'm not stuck with a hardcoded 48 hours that
+doesn't fit how the shop actually runs. [§6, §7]
 
 ## Admin — Order Management
 

@@ -15,12 +15,14 @@ vs. still pending.
                          └────────────┬─────────────┘
                                       │ HTTPS
                                       ▼
-                    ┌───────────────────────────────────┐
-                    │      Next.js (Vercel)              │
-                    │  ┌───────────────┐ ┌─────────────┐ │
-                    │  │ Pages / UI    │ │ API routes  │ │
-                    │  │ (App Router)  │ │ /api/orders │ │
-                    │  │               │ │ /api/admin/*│ │
+                    ┌───────────────────────────────────┐         ┌───────────────────┐
+                    │      Next.js (Vercel)              │◄────────┤   Vercel Cron      │
+                    │  ┌───────────────┐ ┌─────────────┐ │         │  (every N minutes) │
+                    │  │ Pages / UI    │ │ API routes  │ │         │  hits               │
+                    │  │ (App Router)  │ │ /api/orders │ │         │  /api/orders/expire │
+                    │  │               │ │ /api/admin/*│ │         └───────────────────┘
+                    │  │               │ │ /api/orders/│ │
+                    │  │               │ │   expire    │ │
                     │  └───────────────┘ └──────┬──────┘ │
                     └────────────────────────────┼────────┘
                                                   │
@@ -57,6 +59,23 @@ Single codebase, both roles:
     triggers both emails.
   - `/api/admin/*` — product CRUD, order status updates, FAQ content edits.
     All gated on the admin allow-list (see Auth below).
+  - `POST /api/orders/expire` — the order-hold check (PRD §5, §6):
+    reads the configured hold duration from the `settings` table (default
+    48 hours — admin-editable, not a code constant), finds orders still
+    `pending_payment` past that many hours since `created_at`, flips them
+    to `cancelled`, and restores their `order_items`' stock quantities.
+    Not user-facing — only ever called by the scheduler below.
+
+### Scheduler (Vercel Cron)
+There's no long-running server process to just leave a timer on, so the
+expiry check needs something external triggering it periodically —
+a Vercel Cron Job (defined in `vercel.json`) calling
+`POST /api/orders/expire` on a fixed schedule (e.g. hourly). That
+schedule interval is a deploy-time config (`vercel.json`), separate from
+the admin-configurable hold *duration* the route checks against — changing
+how often the check runs still needs a deploy, changing how long the hold
+lasts does not. Supabase's `pg_cron` is the alternative if the check
+should live in the database instead of the app.
 
 ### Supabase
 One integration covering three concerns, chosen specifically to avoid
@@ -101,7 +120,7 @@ product_variants
   in_stock (derived: stock_quantity > 0)
 
 orders
-  id, status ("pending_payment" | "paid" | "shipped" | ...),
+  id, status ("pending_payment" | "paid" | "shipped" | "cancelled" | ...),
   customer_name, customer_email, customer_phone,
   shipping_street, shipping_city, subtotal_centavos,
   shipping_centavos, total_centavos, created_at
@@ -109,10 +128,19 @@ orders
 order_items
   id, order_id (fk), product_id (fk), variant_id (fk),
   quantity, unit_price_centavos (snapshot at order time)
+
+settings
+  key, value — single-row or key/value table holding admin-editable shop
+  config: shipping_fee_centavos, delivery_cities, admin_notification_email,
+  order_payment_hold_hours (default 48). Read by /api/orders,
+  /api/orders/expire, and the checkout UI; written only via /api/admin/*.
 ```
 
 `unit_price_centavos` is snapshotted onto the order item at order time so a
 later price change on the product doesn't rewrite historical order totals.
+`settings` is what makes §6/§7's "no hardcoded business configuration"
+requirement real — every value in it is what a config constant would
+otherwise have held.
 
 ## Request flow: placing an order
 
@@ -128,6 +156,19 @@ later price change on the product doesn't rewrite historical order totals.
 5. Browser: shows order confirmation with the order id; cart is cleared.
 6. Shop owner: gets the email, later confirms payment and updates order
    status in `/admin`.
+
+## Request flow: order expiry (payment hold)
+
+1. Vercel Cron fires on schedule → `POST /api/orders/expire`.
+2. Route reads `order_payment_hold_hours` from `settings` (default 48),
+   then queries Supabase for orders where `status = 'pending_payment'`
+   and `created_at` is older than that many hours.
+3. For each match: sets `status = 'cancelled'`, and for each of its
+   `order_items`, adds the quantity back onto the corresponding
+   `product_variants.stock_quantity`.
+4. No email/notification implied by this flow in the PRD — just the status
+   change and stock restore. (Admin sees the cancelled status next time
+   they check `/admin`.)
 
 ## Deployment
 
@@ -146,6 +187,8 @@ later price change on the product doesn't rewrite historical order totals.
 | Products | Supabase table, admin-editable | Hardcoded array in `src/lib/products.ts` |
 | Orders | Supabase table | In-memory array, wiped on restart |
 | Stock | Real quantity, decremented at order placement | Static `inStock: boolean` per variant, no decrement |
+| Order expiry | Configurable-duration (default 48h) auto-cancel + stock restore via Vercel Cron | Not built — orders sit `pending_payment` indefinitely |
+| Shop config (shipping fee, delivery cities, hold duration, etc.) | Admin-editable `settings` table | Hardcoded constants scattered in code (`SHIPPING_CENTAVOS`, `METRO_MANILA_CITIES`) |
 | Auth | Google OAuth (customers + admin allow-list) | None — `/admin` is a public, unauthenticated placeholder |
 | Product photos | Supabase Storage | None — PDP renders an empty placeholder box |
 | Cart | localStorage (unchanged) | ✅ already matches target |
