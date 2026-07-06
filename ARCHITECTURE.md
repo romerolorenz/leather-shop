@@ -7,42 +7,33 @@ vs. still pending.
 
 ## Diagram
 
-```
-                         ┌─────────────────────────┐
-                         │        Browser          │
-                         │  (Next.js client code)  │
-                         │  cart state: localStorage│
-                         └────────────┬─────────────┘
-                                      │ HTTPS
-                                      ▼
-                    ┌───────────────────────────────────┐         ┌───────────────────┐
-                    │      Next.js (Vercel)              │◄────────┤   Vercel Cron      │
-                    │  ┌───────────────┐ ┌─────────────┐ │         │  (every N minutes) │
-                    │  │ Pages / UI    │ │ API routes  │ │         │  hits               │
-                    │  │ (App Router)  │ │ /api/orders │ │         │  /api/orders/expire │
-                    │  │               │ │ /api/admin/*│ │         └───────────────────┘
-                    │  │               │ │ /api/orders/│ │
-                    │  │               │ │   expire    │ │
-                    │  └───────────────┘ └──────┬──────┘ │
-                    └────────────────────────────┼────────┘
-                                                  │
-                ┌─────────────────────────────────┼───────────────────────┐
-                ▼                                 ▼                       ▼
-       ┌────────────────┐              ┌────────────────────┐   ┌────────────────┐
-       │   Supabase      │              │      Resend         │   │   PayMongo     │
-       │ ─────────────── │              │ ─────────────────── │   │  (v2, not v1)  │
-       │ Postgres:       │              │ order confirmation   │   │ payment intent │
-       │  products       │              │ (customer)           │   │ + webhook      │
-       │  variants       │              │ order notification    │   │                │
-       │  orders         │              │ (admin)               │   └────────────────┘
-       │  order_items    │              └─────────────────────┘
-       │ Auth:           │
-       │  Google OAuth    │
-       │  (customers +    │
-       │   admin allowlist)│
-       │ Storage:         │
-       │  product photos  │
-       └─────────────────┘
+```mermaid
+flowchart TD
+    Browser["Browser \n (Next.js client code) \n cart state: localStorage"]
+    Cron["Vercel Cron \n (scheduled, e.g. hourly)"]
+
+    subgraph NextJS["Next.js (Vercel)"]
+        UI["Pages / UI \n (App Router)"]
+        API["API routes \n POST /api/orders \n /api/admin/* \n POST /api/orders/expire"]
+    end
+
+    subgraph SB["Supabase"]
+        DB[("Postgres \n products, product_variants, \n orders, order_items, settings")]
+        Auth["Auth \n Google OAuth \n (customers + admin allow-list)"]
+        Storage["Storage \n product photos"]
+    end
+
+    Resend["Resend \n order confirmation (customer) \n order notification (admin)"]
+    PayMongo["PayMongo (v2, not v1) \n payment intent + webhook"]
+
+    Browser -->|HTTPS| UI
+    UI --> API
+    Cron -->|triggers| API
+    API --> DB
+    API --> Auth
+    API --> Storage
+    API --> Resend
+    API -.->|v2 upgrade| PayMongo
 ```
 
 ## Components
