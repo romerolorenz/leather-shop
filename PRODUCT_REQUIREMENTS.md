@@ -50,6 +50,16 @@ finalized and swapped in later without a structural rebuild.
     black, contrast stitch), presented as a **dropdown** on the product
     page — not a free-text/custom input.
   - Price, stock/availability status (in stock, made-to-order, sold out).
+  - **Stock quantity is a numeric, admin-only field — never shown to
+    customers** (storefront only ever shows the status label: in stock /
+    made-to-order / sold out).
+    - For **in-stock** items: an actual count, decremented per order;
+      reaching 0 auto-flips status to sold out.
+    - For **made-to-order** items: a threshold/capacity limit (e.g. max
+      concurrent made-to-order queue), not physical stock; reaching it
+      auto-flips status to sold out (in addition to the manual
+      ordering-disable toggle below, which admin can still use anytime,
+      e.g. to pause a product regardless of threshold).
   - **Lead time is set per product** (each product has its own estimated
     production/shipping lead time; not a global setting).
   - Admin can **disable ordering on a product** when its wait time is too
@@ -77,7 +87,10 @@ finalized and swapped in later without a structural rebuild.
     to an inquiry channel instead (Instagram DM / email) — e.g. a note on
     the shipping step or a dedicated "Outside Metro Manila? Contact us"
     prompt.
-- Order confirmation page + confirmation email.
+- Order confirmation page + **confirmation email sent to the customer's
+  provided email address** (order summary, total, and next steps for
+  payment) — distinct from the admin order-notification email in
+  Admin/Back Office.
 - Guest checkout (account optional, not required).
 
 ### Account (optional for v1, confirm scope)
@@ -86,6 +99,9 @@ finalized and swapped in later without a structural rebuild.
 - Saved addresses.
 
 ### Admin / Back Office
+- **Access**: Google login (via Supabase Auth — same mechanism as customer
+  social login), restricted to the shop owner's email via an allow-list.
+  Not open to any Google account; not a separate credential system.
 - Add/edit products, variants, photos, prices, stock status.
 - Set/edit per-product lead time, and toggle ordering on/off per product
   (e.g. to pause a product when wait time is too long).
@@ -113,6 +129,15 @@ finalized and swapped in later without a structural rebuild.
   API routes so payment/gateway logic can live server-side without a
   separate backend service.
 - Hosting: Vercel (or equivalent) as the path of least friction for Next.js.
+- **Database**: Supabase (Postgres). Chosen over a bare Postgres connection
+  because it also bundles the Google/Facebook social login already required
+  in §6 (Account) and file storage for product photos in §5 — one
+  integration covers persistence, auth, and image hosting instead of three
+  separate services. Relational fits the data model (products → variants →
+  orders → order items) and supports the aggregation queries behind the
+  Success Metrics in §9.
+  - Replaces the current in-memory order store and hardcoded product list
+    (both placeholders, reset on every server restart/redeploy).
 - Order/checkout logic should go through an internal API layer (Next.js API
   routes) from the start, even while payment is manual — this is what keeps
   the PayMongo upgrade in §6 low-effort.
@@ -128,6 +153,11 @@ finalized and swapped in later without a structural rebuild.
   touches our servers), basic protection against common web vulnerabilities.
 - **Low operational cost** — hosting/infra should suit low-to-moderate
   traffic, not enterprise scale.
+- **Event logging**: key funnel events (e.g. add to cart, checkout started,
+  order placed) should be logged, since the Success Metrics in §9
+  (conversion rate, cart abandonment rate, etc.) depend on this data
+  existing somewhere queryable — even a simple structured log is enough
+  for v1, not a full analytics platform.
 
 ## 9. Success Metrics (draft)
 
