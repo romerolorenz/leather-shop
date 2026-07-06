@@ -8,6 +8,10 @@ customization options (e.g. color, size, hardware finish) — not a full
 build-your-own configurator. The site should feel crafted and personal,
 matching the quality of the goods.
 
+No brand assets exist yet (no logo, photography, or color palette) — v1
+design should use temporary placeholders, with the visual identity to be
+finalized and swapped in later without a structural rebuild.
+
 ## 2. Goals
 
 - Let customers browse and buy leather products online with minimal friction.
@@ -43,7 +47,11 @@ matching the quality of the goods.
   - A **fixed, small set of variants** (e.g. color: 3–5 options, size: S/M/L),
     each with its own price/stock if needed.
   - Price, stock/availability status (in stock, made-to-order, sold out).
-  - Estimated production/shipping lead time (relevant for handmade goods).
+  - **Lead time is set per product** (each product has its own estimated
+    production/shipping lead time; not a global setting).
+  - Admin can **disable ordering on a product** when its wait time is too
+    long (e.g. taking a break from made-to-order items) — shown as
+    unavailable/sold-out rather than orderable.
 - Inventory is small enough to manage manually or with lightweight tooling —
   no need for complex multi-warehouse inventory systems.
 
@@ -56,6 +64,15 @@ matching the quality of the goods.
   add to cart, lead time, materials/care info.
 - Cart: view items, adjust quantity/variant, remove items.
 - Checkout: shipping address, shipping method, payment, order review.
+  - **Metro Manila delivery only.** Site does not accept orders with a
+    shipping address outside Metro Manila (this supersedes "domestic
+    Philippines" as the checkout boundary).
+  - Single delivery option, flat rate: **₱150** for Metro Manila delivery
+    (no method choice at checkout — one shipping fee for all orders).
+  - Customers outside Metro Manila (including international) are directed
+    to an inquiry channel instead (Instagram DM / email) — e.g. a note on
+    the shipping step or a dedicated "Outside Metro Manila? Contact us"
+    prompt.
 - Order confirmation page + confirmation email.
 - Guest checkout (account optional, not required).
 
@@ -66,13 +83,33 @@ matching the quality of the goods.
 
 ### Admin / Back Office
 - Add/edit products, variants, photos, prices, stock status.
+- Set/edit per-product lead time, and toggle ordering on/off per product
+  (e.g. to pause a product when wait time is too long).
 - View and manage incoming orders (mark shipped, fulfilled, etc.).
 - Basic sales overview (orders, revenue) — not a full analytics suite.
 
-### Payments & Fulfillment (v2/nice-to-have)
-- Payment processing via a standard provider (gcash or maya) 
+### Payments & Fulfillment
+- **v1**: manual/offline payment. Customer places the order on-site; payment
+  is settled off-platform (e.g. bank transfer, GCash/Maya send) and confirmed
+  manually; admin marks the order as paid in the back office.
+- **v2 (quick upgrade)**: online payment via a standard provider aggregating
+  GCash/Maya (e.g. PayMongo). The order/checkout flow in v1 must be built so
+  swapping in real payment processing (payment intent creation + webhook
+  confirmation) is a drop-in change, not a rework — i.e. keep order status
+  ("pending payment" / "paid") as first-class data from day one.
 
-## 7. Non-Functional Requirements
+## 7. Technical Approach
+
+- **Framework**: Next.js (React). Chosen for built-in SSR/SSG (SEO),
+  built-in image optimization (important for product photography), and
+  API routes so payment/gateway logic can live server-side without a
+  separate backend service.
+- Hosting: Vercel (or equivalent) as the path of least friction for Next.js.
+- Order/checkout logic should go through an internal API layer (Next.js API
+  routes) from the start, even while payment is manual — this is what keeps
+  the PayMongo upgrade in §6 low-effort.
+
+## 8. Non-Functional Requirements
 
 - **Mobile-first, responsive** design — large portion of traffic likely mobile.
 - **Fast image loading** — product photography is central to conversion;
@@ -83,22 +120,6 @@ matching the quality of the goods.
   touches our servers), basic protection against common web vulnerabilities.
 - **Low operational cost** — hosting/infra should suit low-to-moderate
   traffic, not enterprise scale.
-
-## 8. Open Questions
-
-- **Project stage**: is this a brand-new idea (lean MVP) or are business
-  details (branding, suppliers, pricing) already settled and ready for a full
-  v1 build?
-- **Tech stack**: fully custom build vs. headless commerce platform
-  (e.g. Shopify, Medusa) with a custom storefront vs. undecided?
-- Do we need customer accounts in v1, or is guest checkout sufficient?
-- Shipping: flat rate, or calculated by weight/destination? Domestic only or
-  international?
-- Made-to-order vs. in-stock: does lead time vary per product, and should
-  the PRD account for backorder/waitlist behavior?
-- Any specific payment provider preference (Stripe, PayPal, etc.)?
-- Any existing brand assets (logo, photography, color palette) to build the
-  visual design around?
 
 ## 9. Success Metrics (draft)
 
