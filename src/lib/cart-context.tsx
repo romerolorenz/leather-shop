@@ -14,6 +14,9 @@ export type CartItem = {
   priceCentavos: number;
   variant: string;
   quantity: number;
+  // Optional: items already in a shopper's localStorage cart from before
+  // this field existed won't have it — render must fall back gracefully.
+  photoUrl?: string | null;
 };
 
 type CartContextValue = {

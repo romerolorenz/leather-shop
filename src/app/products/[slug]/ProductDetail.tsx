@@ -24,6 +24,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       name: product.name,
       priceCentavos: product.priceCentavos,
       variant: selectedVariant,
+      photoUrl: product.photos[0] ?? null,
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);

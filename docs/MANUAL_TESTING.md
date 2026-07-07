@@ -14,6 +14,11 @@ fixed).
 
 ## Done
 
+- [x] **IMPROVEMENTS.md follow-through.** Verified across two rounds:
+  admin variant/photo Delete are trash icons (photo delete overlaid
+  top-right), variant list batch-saves in one submit, cart line items show
+  a photo thumbnail with a trash-icon Remove, header nav uses icons for
+  Shop/Cart in FAQ / Contact Us / Shop / Account / Cart order.
 - [x] **Phase 5 — Admin catalog + order management UI.** Verified across
   three rounds of fixes: separate pending/paid/shipped counts, multi-photo
   upload with a clickable thumbnail gallery on the PDP, orders grouped by

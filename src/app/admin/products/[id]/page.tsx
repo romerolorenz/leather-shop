@@ -4,13 +4,34 @@ import { getProductForAdmin } from "@/lib/admin/catalog";
 import {
   updateProductAction,
   addVariantAction,
-  updateVariantAction,
+  updateAllVariantsAction,
   deleteVariantAction,
   uploadPhotoAction,
   deletePhotoAction,
 } from "../../actions";
 import { ProductFormFields } from "../ProductFormFields";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+
+function TrashIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
 
 export default async function EditProductPage(
   props: PageProps<"/admin/products/[id]">
@@ -25,6 +46,12 @@ export default async function EditProductPage(
   const updateAction = updateProductAction.bind(null, product.id);
   const uploadPhoto = uploadPhotoAction.bind(null, product.id);
   const addVariant = addVariantAction.bind(null, product.id);
+  const variantIds = product.variants.map((variant) => variant.id);
+  const updateAllVariants = updateAllVariantsAction.bind(
+    null,
+    product.id,
+    variantIds
+  );
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
@@ -59,12 +86,13 @@ export default async function EditProductPage(
                     height={200}
                     className="aspect-square w-full rounded-lg object-cover"
                   />
-                  <form action={removePhoto} className="mt-1">
+                  <form action={removePhoto} className="absolute top-1.5 right-1.5">
                     <button
                       type="submit"
-                      className="text-xs text-red-600 underline"
+                      aria-label="Delete photo"
+                      className="rounded-md bg-background/80 p-1.5 text-red-600 backdrop-blur-sm transition-transform hover:bg-red-600/10 active:scale-95"
                     >
-                      Delete
+                      <TrashIcon />
                     </button>
                   </form>
                 </div>
@@ -117,57 +145,54 @@ export default async function EditProductPage(
 
       <section>
         <h2 className="mb-4 text-sm font-medium">Variants</h2>
-        <ul className="mb-6 flex flex-col gap-3">
-          {product.variants.map((variant) => {
-            const updateVariant = updateVariantAction.bind(
-              null,
-              variant.id,
-              product.id
-            );
-            const removeVariant = deleteVariantAction.bind(
-              null,
-              variant.id,
-              product.id
-            );
-            return (
-              <li key={variant.id} className="flex items-center gap-2">
-                <form
-                  action={updateVariant}
-                  className="flex flex-1 items-center gap-2"
-                >
-                  <input
-                    name="label"
-                    defaultValue={variant.label}
-                    required
-                    className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-                  />
-                  <input
-                    name="stockQuantity"
-                    type="number"
-                    min="0"
-                    defaultValue={variant.stockQuantity}
-                    required
-                    className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-                  />
-                  <button type="submit" className="text-sm underline">
-                    Save
-                  </button>
-                </form>
-                <form action={removeVariant}>
-                  <button
-                    type="submit"
-                    className="text-sm text-red-600 underline"
-                  >
-                    Delete
-                  </button>
-                </form>
-              </li>
-            );
-          })}
-          {product.variants.length === 0 && (
-            <li className="text-sm text-zinc-500">No variants yet.</li>
-          )}
-        </ul>
+        {product.variants.length > 0 && (
+          <form action={updateAllVariants} className="mb-6">
+            <ul className="mb-4 flex flex-col gap-3">
+              {product.variants.map((variant) => {
+                const removeVariant = deleteVariantAction.bind(
+                  null,
+                  variant.id,
+                  product.id
+                );
+                return (
+                  <li key={variant.id} className="flex items-center gap-2">
+                    <input
+                      name={`label:${variant.id}`}
+                      defaultValue={variant.label}
+                      required
+                      className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
+                    />
+                    <input
+                      name={`stock:${variant.id}`}
+                      type="number"
+                      min="0"
+                      defaultValue={variant.stockQuantity}
+                      required
+                      className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
+                    />
+                    <button
+                      type="submit"
+                      formAction={removeVariant}
+                      aria-label="Delete variant"
+                      className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <button
+              type="submit"
+              className="rounded-full border border-black/[.15] px-4 py-2 text-sm dark:border-white/[.2]"
+            >
+              Save all variants
+            </button>
+          </form>
+        )}
+        {product.variants.length === 0 && (
+          <p className="mb-6 text-sm text-zinc-500">No variants yet.</p>
+        )}
 
         <form action={addVariant} className="flex items-center gap-2">
           <input

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -44,12 +45,25 @@ export default function CartView({
             key={`${item.slug}-${item.variant}`}
             className="flex items-center justify-between gap-4 py-4"
           >
-            <div>
-              <p className="font-medium">{item.name}</p>
-              <p className="text-sm text-zinc-500">{item.variant}</p>
-              <p className="text-sm text-zinc-500">
-                {formatPrice(item.priceCentavos)}
-              </p>
+            <div className="flex items-center gap-3">
+              {item.photoUrl ? (
+                <Image
+                  src={item.photoUrl}
+                  alt={item.name}
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 flex-none rounded-md object-cover"
+                />
+              ) : (
+                <div className="h-14 w-14 flex-none rounded-md bg-zinc-100 dark:bg-zinc-900" />
+              )}
+              <div>
+                <p className="font-medium">{item.name}</p>
+                <p className="text-sm text-zinc-500">{item.variant}</p>
+                <p className="text-sm text-zinc-500">
+                  {formatPrice(item.priceCentavos)}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center rounded-full border border-black/[.15] dark:border-white/[.2]">
@@ -80,9 +94,25 @@ export default function CartView({
               <button
                 type="button"
                 onClick={() => removeItem(item.slug, item.variant)}
-                className="text-sm text-zinc-500 underline"
+                aria-label="Remove item"
+                className="rounded-md p-1.5 text-zinc-500 transition-transform hover:bg-red-600/10 hover:text-red-600 active:scale-95"
               >
-                Remove
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                </svg>
               </button>
             </div>
           </li>

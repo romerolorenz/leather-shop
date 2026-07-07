@@ -69,27 +69,32 @@ export async function addVariantAction(productId: string, formData: FormData) {
   revalidateStorefront();
 }
 
-export async function updateVariantAction(
-  variantId: string,
-  productId: string,
-  formData: FormData
-) {
-  await assertAdmin();
-  const label = String(formData.get("label") ?? "").trim();
-  const stockQuantity = Number(formData.get("stockQuantity"));
-  if (!label) throw new Error("Variant label is required.");
-
-  await updateVariant(variantId, label, stockQuantity);
-  revalidatePath(`/admin/products/${productId}`);
-  revalidateStorefront();
-}
-
 export async function deleteVariantAction(
   variantId: string,
   productId: string
 ) {
   await assertAdmin();
   await deleteVariant(variantId);
+  revalidatePath(`/admin/products/${productId}`);
+  revalidateStorefront();
+}
+
+// Saves every variant's label/stock in one submit instead of one form per
+// row — variantIds is bound at render time from the variant list the page
+// already fetched, so this only ever touches variants that belong to
+// productId.
+export async function updateAllVariantsAction(
+  productId: string,
+  variantIds: string[],
+  formData: FormData
+) {
+  await assertAdmin();
+  for (const variantId of variantIds) {
+    const label = String(formData.get(`label:${variantId}`) ?? "").trim();
+    const stockQuantity = Number(formData.get(`stock:${variantId}`));
+    if (!label) throw new Error("Variant label is required.");
+    await updateVariant(variantId, label, stockQuantity);
+  }
   revalidatePath(`/admin/products/${productId}`);
   revalidateStorefront();
 }

@@ -40,10 +40,25 @@ export default async function RootLayout({
               <Link href="/" className="font-semibold tracking-tight">
                 Leather Shop
               </Link>
-              <div className="flex gap-6 text-sm">
-                <Link href="/products">Shop</Link>
+              <div className="flex items-center gap-6 text-sm">
                 <Link href="/faq">FAQ</Link>
                 <Link href="/contact">Contact Us</Link>
+                <Link href="/products" aria-label="Shop">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                  >
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                  </svg>
+                </Link>
                 {customerEmail ? (
                   <Link href="/account" aria-label="My Account">
                     <svg
