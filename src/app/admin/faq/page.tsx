@@ -6,6 +6,7 @@ import {
   moveFaqItemAction,
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { ActionButton } from "@/components/admin/ActionButton";
 
 export default async function AdminFaqPage() {
   const items = await listFaqItemsForAdmin();
@@ -52,30 +53,29 @@ export default async function AdminFaqPage() {
                     </button>
                   </form>
                 </div>
-                <form action={removeItem}>
-                  <button
-                    type="submit"
-                    aria-label="Delete FAQ item"
-                    className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95"
+                <ActionButton
+                  action={removeItem}
+                  confirmMessage="Delete this FAQ item?"
+                  ariaLabel="Delete FAQ item"
+                  className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
-                    </svg>
-                  </button>
-                </form>
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                  </svg>
+                </ActionButton>
               </div>
               <form action={updateItem} className="flex flex-col gap-2">
                 <input

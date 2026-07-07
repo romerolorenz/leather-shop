@@ -6,6 +6,7 @@ import {
   cancelOrderAction,
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { ActionButton } from "@/components/admin/ActionButton";
 
 const STATUS_ORDER: OrderStatus[] = [
   "pending_payment",
@@ -51,27 +52,22 @@ function OrderCard({ order }: { order: Order }) {
       <div className="mt-3 flex gap-3">
         {order.status === "pending_payment" && (
           <>
-            <form action={markPaid}>
-              <button type="submit" className="text-sm underline">
-                Mark paid
-              </button>
-            </form>
-            <form action={cancelOrder}>
-              <button
-                type="submit"
-                className="text-sm text-red-600 underline"
-              >
-                Cancel order
-              </button>
-            </form>
+            <ActionButton action={markPaid} className="text-sm underline">
+              Mark paid
+            </ActionButton>
+            <ActionButton
+              action={cancelOrder}
+              confirmMessage="Cancel this order and restore its stock?"
+              className="text-sm text-red-600 underline disabled:opacity-50"
+            >
+              Cancel order
+            </ActionButton>
           </>
         )}
         {order.status === "paid" && (
-          <form action={markShipped}>
-            <button type="submit" className="text-sm underline">
-              Mark shipped
-            </button>
-          </form>
+          <ActionButton action={markShipped} className="text-sm underline">
+            Mark shipped
+          </ActionButton>
         )}
       </div>
     </li>

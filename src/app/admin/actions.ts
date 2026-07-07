@@ -26,6 +26,25 @@ import {
   moveFaqItem,
 } from "@/lib/admin/faq";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { ActionResult } from "@/lib/action-result";
+
+// Used by actions wired up to <ActionButton> (src/components/admin/ActionButton.tsx)
+// instead of a <form> — catches thrown errors into a result the client can
+// toast, instead of letting them bubble into a bare Next.js error page.
+async function runAction(
+  fn: () => Promise<void>,
+  successMessage: string
+): Promise<ActionResult> {
+  try {
+    await fn();
+    return { success: true, message: successMessage };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Something went wrong.",
+    };
+  }
+}
 
 function parseProductInput(formData: FormData): ProductInput {
   return {
@@ -72,11 +91,13 @@ export async function addVariantAction(productId: string, formData: FormData) {
 export async function deleteVariantAction(
   variantId: string,
   productId: string
-) {
-  await assertAdmin();
-  await deleteVariant(variantId);
-  revalidatePath(`/admin/products/${productId}`);
-  revalidateStorefront();
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteVariant(variantId);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Variant deleted.");
 }
 
 // Saves every variant's label/stock in one submit instead of one form per
@@ -142,42 +163,68 @@ export async function deletePhotoAction(
   photoId: string,
   productId: string,
   photoUrl: string
-) {
-  await assertAdmin();
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
 
-  const supabase = getSupabaseServerClient();
-  const marker = "/product-photos/";
-  const markerIndex = photoUrl.indexOf(marker);
-  if (markerIndex !== -1) {
-    const storagePath = photoUrl.slice(markerIndex + marker.length);
-    await supabase.storage.from("product-photos").remove([storagePath]);
+    const supabase = getSupabaseServerClient();
+    const marker = "/product-photos/";
+    const markerIndex = photoUrl.indexOf(marker);
+    if (markerIndex !== -1) {
+      const storagePath = photoUrl.slice(markerIndex + marker.length);
+      await supabase.storage.from("product-photos").remove([storagePath]);
+    }
+
+    await deleteProductPhoto(photoId);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Photo deleted.");
+}
+
+export async function markOrderPaidAction(
+  orderId: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await markOrderPaid(orderId);
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+  }, "Order marked as paid.");
+}
+
+export async function markOrderShippedAction(
+  orderId: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await markOrderShipped(orderId);
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+  }, "Order marked as shipped.");
+}
+
+export async function cancelOrderAction(
+  orderId: string
+): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const cancelled = await cancelOrderAndRestoreStock(orderId);
+    if (!cancelled) {
+      return {
+        success: false,
+        error: "Order is no longer pending payment — nothing to cancel.",
+      };
+    }
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    revalidateStorefront();
+    return { success: true, message: "Order cancelled and stock restored." };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Something went wrong.",
+    };
   }
-
-  await deleteProductPhoto(photoId);
-  revalidatePath(`/admin/products/${productId}`);
-  revalidateStorefront();
-}
-
-export async function markOrderPaidAction(orderId: string) {
-  await assertAdmin();
-  await markOrderPaid(orderId);
-  revalidatePath("/admin/orders");
-  revalidatePath("/admin");
-}
-
-export async function markOrderShippedAction(orderId: string) {
-  await assertAdmin();
-  await markOrderShipped(orderId);
-  revalidatePath("/admin/orders");
-  revalidatePath("/admin");
-}
-
-export async function cancelOrderAction(orderId: string) {
-  await assertAdmin();
-  await cancelOrderAndRestoreStock(orderId);
-  revalidatePath("/admin/orders");
-  revalidatePath("/admin");
-  revalidateStorefront();
 }
 
 export async function updateSettingsAction(formData: FormData) {
@@ -235,11 +282,13 @@ export async function updateFaqItemAction(id: string, formData: FormData) {
   revalidatePath("/faq");
 }
 
-export async function deleteFaqItemAction(id: string) {
-  await assertAdmin();
-  await deleteFaqItem(id);
-  revalidatePath("/admin/faq");
-  revalidatePath("/faq");
+export async function deleteFaqItemAction(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteFaqItem(id);
+    revalidatePath("/admin/faq");
+    revalidatePath("/faq");
+  }, "FAQ item deleted.");
 }
 
 export async function moveFaqItemAction(id: string, direction: "up" | "down") {

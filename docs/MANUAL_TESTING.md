@@ -37,6 +37,33 @@ browser window:
   `/account/addresses`.
   Findings:
 
+## IMPROVEMENTS.md follow-through (round 2)
+
+Verified via curl: header nav's Log In link now renders as an icon
+(`aria-label="Log In"`, no visible text), admin pages still gate correctly.
+The rest needs a real admin session:
+
+- [ ] `/admin/products/<id>` — deleting a variant or a photo now shows a
+  native browser confirm dialog first; cancelling it leaves the
+  variant/photo untouched. Confirming shows a toast in the bottom-right
+  ("Variant deleted." / "Photo deleted.").
+  Findings:
+
+- [x] `/admin/faq` — deleting a FAQ item shows a confirm dialog, then a
+  toast on success.
+  Findings: working
+
+- [ ] `/admin/orders` — **Mark paid** and **Mark shipped** show a success
+  toast (no confirm dialog — not destructive). **Cancel order** shows a
+  confirm dialog first, then a toast confirming the order was cancelled
+  and stock restored.
+  Findings:
+
+- [ ] Trigger an error path (e.g. click Cancel order on an order that's
+  already paid/shipped, if you can find one, or two rapid double-clicks)
+  — confirm it shows a red error toast instead of a Next.js error page.
+  Findings:
+
 ## Done
 
 - [x] **IMPROVEMENTS.md follow-through.** Verified across two rounds:

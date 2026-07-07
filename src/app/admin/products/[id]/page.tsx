@@ -11,6 +11,7 @@ import {
 } from "../../actions";
 import { ProductFormFields } from "../ProductFormFields";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { ActionButton } from "@/components/admin/ActionButton";
 
 function TrashIcon() {
   return (
@@ -86,15 +87,16 @@ export default async function EditProductPage(
                     height={200}
                     className="aspect-square w-full rounded-lg object-cover"
                   />
-                  <form action={removePhoto} className="absolute top-1.5 right-1.5">
-                    <button
-                      type="submit"
-                      aria-label="Delete photo"
-                      className="rounded-md bg-background/80 p-1.5 text-red-600 backdrop-blur-sm transition-transform hover:bg-red-600/10 active:scale-95"
+                  <div className="absolute top-1.5 right-1.5">
+                    <ActionButton
+                      action={removePhoto}
+                      confirmMessage="Delete this photo?"
+                      ariaLabel="Delete photo"
+                      className="rounded-md bg-background/80 p-1.5 text-red-600 backdrop-blur-sm transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
                     >
                       <TrashIcon />
-                    </button>
-                  </form>
+                    </ActionButton>
+                  </div>
                 </div>
               );
             })}
@@ -172,14 +174,14 @@ export default async function EditProductPage(
                       required
                       className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
                     />
-                    <button
-                      type="submit"
-                      formAction={removeVariant}
-                      aria-label="Delete variant"
-                      className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95"
+                    <ActionButton
+                      action={removeVariant}
+                      confirmMessage="Delete this variant?"
+                      ariaLabel="Delete variant"
+                      className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
                     >
                       <TrashIcon />
-                    </button>
+                    </ActionButton>
                   </li>
                 );
               })}

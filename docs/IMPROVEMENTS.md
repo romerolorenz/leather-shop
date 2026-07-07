@@ -5,29 +5,7 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Admin: confirmation/feedback modals on destructive and
-  state-changing actions.** Every admin mutation today is a bare
-  `<form action={...}>` that submits and revalidates with no confirmation
-  step and no success/error feedback — a stray click deletes or changes
-  state immediately. Relevant actions: delete variant, delete product
-  photo (`src/app/admin/products/[id]/page.tsx`), delete FAQ item
-  (`src/app/admin/faq/page.tsx`), mark order paid/shipped, cancel order +
-  restore stock (`src/app/admin/orders/page.tsx`). At minimum add a
-  confirm step before the destructive ones (delete variant/photo/FAQ,
-  cancel order); a success/error toast or modal after any of them would
-  also cover thrown errors (e.g. `addVariantAction`'s "Variant label is
-  required") that currently just surface as a Next.js error page instead
-  of inline feedback. No modal/toast primitive exists in the codebase yet
-  — pick one (native `<dialog>`, a small custom component, or a library)
-  before wiring it up everywhere.
-- [ ] **Header nav: "Log In" is still a text link, inconsistent with the
-  rest of the nav.** `src/app/layout.tsx:68-86` shows a person icon linking
-  to `/account` when `customerEmail` is set, but falls back to a plain
-  `Log In` text link (line 85) when logged out — every other nav item
-  (Shop, Account, Cart) is icon-only. Give the logged-out state an icon
-  too (e.g. a login/person-outline icon) so the nav is visually consistent
-  regardless of auth state, keeping an `aria-label="Log In"` since the
-  visible text goes away.
+Nothing outstanding right now — see Done below.
 
 ## Done
 
@@ -45,3 +23,13 @@ later work. Not started until explicitly requested — see items below.
   localStorage carts won't have `photoUrl`), and "Remove" is a trash icon.
 - [x] Header nav: Shop and Cart are icons instead of text (Cart keeps its
   item-count badge); footer nav stays text-only.
+- [x] Header nav: Log In is now an icon too (login/arrow glyph), matching
+  the rest of the nav regardless of auth state.
+- [x] Admin: delete variant/photo/FAQ item and cancel order now show a
+  native `window.confirm()` prompt first; all six named mutations (those
+  three deletes, mark paid, mark shipped, cancel order) show a toast on
+  success or on a thrown error, instead of a bare Next.js error page. New
+  `ActionButton` client component (`src/components/admin/ActionButton.tsx`)
+  invokes the bound Server Action directly (no `<form>`) so it works
+  uniformly even for the variant-delete button, which sits inside the
+  batch-save form.
