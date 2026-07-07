@@ -1,4 +1,4 @@
--- Initial schema — see ARCHITECTURE.md § Data Model.
+-- Initial schema — see docs/ARCHITECTURE.md § Data Model.
 -- Run this in the Supabase SQL editor, or via `supabase db push` if you're
 -- using the Supabase CLI with this project linked.
 

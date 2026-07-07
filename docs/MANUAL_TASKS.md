@@ -3,7 +3,7 @@
 Things that need a human to actually do them (external accounts, dashboard
 clicks, pasted credentials, real assets) — things I can't do directly.
 Check items off as they're done; add new ones as they come up per the
-project rule in CLAUDE.md.
+project rule in [CLAUDE.md](../CLAUDE.md).
 
 ## Outstanding
 

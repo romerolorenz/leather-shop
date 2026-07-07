@@ -1,4 +1,4 @@
--- Atomic stock adjustment functions — see ARCHITECTURE.md § Data Model
+-- Atomic stock adjustment functions — see docs/ARCHITECTURE.md § Data Model
 -- and PRD §5 (stock decrements at order placement, prevent overselling).
 --
 -- Doing this as a single UPDATE inside a function (rather than a

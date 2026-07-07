@@ -9,7 +9,7 @@ export type Settings = {
 
 // Admin-editable shop configuration (CLAUDE.md: settings are configurable,
 // not hardcoded, unless stated otherwise). Backed by the `settings` table —
-// see ARCHITECTURE.md § Data Model.
+// see docs/ARCHITECTURE.md § Data Model.
 export async function getSettings(): Promise<Settings> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase.from("settings").select("key, value");

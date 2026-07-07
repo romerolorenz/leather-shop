@@ -7,7 +7,7 @@ import {
 
 // Triggered by Vercel Cron (see vercel.json) as a GET request. Not
 // user-facing — protected by CRON_SECRET so only the scheduler can call it.
-// See PRD §5/§6 (order payment hold) and ARCHITECTURE.md § Request flow:
+// See PRD §5/§6 (order payment hold) and docs/ARCHITECTURE.md § Request flow:
 // order expiry.
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");

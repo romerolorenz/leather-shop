@@ -2,11 +2,14 @@
 
 # Project Rules
 
+Project docs (PRD, architecture, dev plan, user stories, manual
+tasks/testing) live in [docs/](./docs/), not the repo root.
+
 - **Settings are configurable, not hardcoded, unless stated otherwise.**
   Any business value/amount that behaves like a "setting" (shipping fee,
   delivery area, notification email, hold durations, thresholds, etc.)
   must live in admin-editable storage (the `settings` table — see
-  ARCHITECTURE.md § Data Model), not as a code constant. Only deployment
+  docs/ARCHITECTURE.md § Data Model), not as a code constant. Only deployment
   secrets (API keys, connection strings) belong in environment variables
   instead. Default assumption: configurable. Hardcoding requires an
   explicit exception called out at the point of use.
@@ -18,7 +21,7 @@
   chat.** Whenever a step can't be done directly (creating external
   accounts, pasting API keys, clicking through a dashboard, rotating a
   credential, uploading real assets, etc.), add it to
-  [MANUAL_TASKS.md](./MANUAL_TASKS.md) as a checklist item instead of only
+  [docs/MANUAL_TASKS.md](./docs/MANUAL_TASKS.md) as a checklist item instead of only
   saying it in conversation — so outstanding manual work doesn't get lost
   once the chat scrolls past it. Check items off there once done.
   **The file edit comes first** — update MANUAL_TASKS.md in the same turn
@@ -55,7 +58,7 @@
   Whenever verification needs a human to click through something I can't
   drive myself (forms, file uploads, real OAuth logins, anything needing
   a real browser session), write the steps into
-  [MANUAL_TESTING.md](./MANUAL_TESTING.md) as checkboxes grouped by
+  [docs/MANUAL_TESTING.md](./docs/MANUAL_TESTING.md) as checkboxes grouped by
   phase/feature, each with a spot for the user to record findings —
   instead of only listing steps in chat. Same discipline as
   MANUAL_TASKS.md: update the file in the same turn the checklist is

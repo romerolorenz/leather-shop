@@ -4,7 +4,7 @@ let client: SupabaseClient | null = null;
 
 // Service-role client for server-only code (API routes, server components).
 // Bypasses RLS — never import this from client components. See
-// ARCHITECTURE.md: "The browser never holds a Supabase service-role key."
+// docs/ARCHITECTURE.md: "The browser never holds a Supabase service-role key."
 export function getSupabaseServerClient(): SupabaseClient {
   if (client) return client;
 
