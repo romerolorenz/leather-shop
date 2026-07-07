@@ -51,3 +51,14 @@
 - **Keep git commit messages concise.** A short summary line plus 2-4
   bullet points covering what changed and why is enough — don't restate
   the full reasoning already visible in the diff or in chat.
+- **Manual testing checklists go in MANUAL_TESTING.md, not just chat.**
+  Whenever verification needs a human to click through something I can't
+  drive myself (forms, file uploads, real OAuth logins, anything needing
+  a real browser session), write the steps into
+  [MANUAL_TESTING.md](./MANUAL_TESTING.md) as checkboxes grouped by
+  phase/feature, each with a spot for the user to record findings —
+  instead of only listing steps in chat. Same discipline as
+  MANUAL_TASKS.md: update the file in the same turn the checklist is
+  identified. Distinct from MANUAL_TASKS.md — that file is for one-off
+  external setup (accounts, credentials); this one is for repeatable
+  verification steps and their results.
