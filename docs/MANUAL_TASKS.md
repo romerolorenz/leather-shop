@@ -10,12 +10,13 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [ ] **Blocks Phase 5 (Admin catalog UI, in progress) verification: run
-  `supabase/migrations/0004_product_photos.sql`** against the Supabase
-  project (same SQL Editor flow as the earlier migrations) — adds the
-  `photo_url` column and the `product-photos` Storage bucket. Without it,
-  the admin product list/edit pages error (they select `photo_url`, which
-  doesn't exist yet) and photo upload has nowhere to write to.
+- [x] **Blocks the multi-photo gallery follow-up (in progress): run
+  `supabase/migrations/0005_product_photo_gallery.sql`** against the
+  Supabase project (same SQL Editor flow as the earlier migrations) —
+  replaces the single `photo_url` column with a `product_photos` table
+  (migrates any existing photo automatically) and drops `photo_url`.
+  Without it, admin/public product pages error (they now query
+  `product_photos`, which doesn't exist yet).
 - [ ] **Blocks Phase 6 (email loop) verification: set `RESEND_API_KEY` in
   `.env.local`.** Without it, order emails silently no-op with a console
   warning instead of actually sending. Get a key from
@@ -49,3 +50,4 @@ blockers, then items that don't block any phase.
 - [x] Run `supabase/migrations/0003_admin_users.sql` against it.
 - [x] Verify the live login flow: allow-listed email reaches `/admin`,
   a different Google account gets denied.
+- [x] Run `supabase/migrations/0004_product_photos.sql` against it.

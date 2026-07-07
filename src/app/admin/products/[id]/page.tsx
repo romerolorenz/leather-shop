@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { getProductForAdmin } from "@/lib/admin/catalog";
 import {
   updateProductAction,
@@ -6,6 +7,7 @@ import {
   updateVariantAction,
   deleteVariantAction,
   uploadPhotoAction,
+  deletePhotoAction,
 } from "../../actions";
 import { ProductFormFields } from "../ProductFormFields";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -38,24 +40,49 @@ export default async function EditProductPage(
       </h1>
 
       <section className="mb-10">
-        <h2 className="mb-4 text-sm font-medium">Product photo</h2>
-        {product.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.photoUrl}
-            alt={product.name}
-            className="mb-4 h-48 w-48 rounded-lg object-cover"
-          />
-        ) : (
+        <h2 className="mb-4 text-sm font-medium">Product photos</h2>
+        {product.photos.length > 0 && (
+          <div className="mb-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {product.photos.map((photo) => {
+              const removePhoto = deletePhotoAction.bind(
+                null,
+                photo.id,
+                product.id,
+                photo.url
+              );
+              return (
+                <div key={photo.id} className="relative">
+                  <Image
+                    src={photo.url}
+                    alt={product.name}
+                    width={200}
+                    height={200}
+                    className="aspect-square w-full rounded-lg object-cover"
+                  />
+                  <form action={removePhoto} className="mt-1">
+                    <button
+                      type="submit"
+                      className="text-xs text-red-600 underline"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {product.photos.length === 0 && (
           <div className="mb-4 h-48 w-48 rounded-lg bg-zinc-100 dark:bg-zinc-900" />
         )}
         <form action={uploadPhoto} className="flex items-center gap-3">
           <input
             type="file"
-            name="photo"
+            name="photos"
             accept="image/*"
+            multiple
             required
-            className="text-sm"
+            className="text-sm file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-medium file:text-background hover:file:bg-[#383838] active:file:opacity-70 dark:hover:file:bg-[#ccc]"
           />
           <button
             type="submit"

@@ -6,6 +6,12 @@ export type AdminProductVariant = {
   stockQuantity: number;
 };
 
+export type AdminProductPhoto = {
+  id: string;
+  url: string;
+  position: number;
+};
+
 export type AdminProduct = {
   id: string;
   slug: string;
@@ -15,12 +21,12 @@ export type AdminProduct = {
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
-  photoUrl: string | null;
+  photos: AdminProductPhoto[];
   variants: AdminProductVariant[];
 };
 
 const ADMIN_PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, photo_url, product_variants(id, label, stock_quantity)";
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, product_photos(id, url, position), product_variants(id, label, stock_quantity)";
 
 type AdminProductRow = {
   id: string;
@@ -31,7 +37,7 @@ type AdminProductRow = {
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
-  photo_url: string | null;
+  product_photos: { id: string; url: string; position: number }[];
   product_variants: { id: string; label: string; stock_quantity: number }[];
 };
 
@@ -45,7 +51,7 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
-    photoUrl: row.photo_url,
+    photos: [...row.product_photos].sort((a, b) => a.position - b.position),
     variants: row.product_variants.map((v) => ({
       id: v.id,
       label: v.label,
@@ -139,15 +145,40 @@ export async function updateProduct(
   if (error) throw error;
 }
 
-export async function setProductPhotoUrl(
+export async function addProductPhotos(
   productId: string,
-  photoUrl: string
+  urls: string[]
 ): Promise<void> {
   const supabase = getSupabaseServerClient();
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from("product_photos")
+    .select("position")
+    .eq("product_id", productId)
+    .order("position", { ascending: false })
+    .limit(1);
+
+  if (fetchErr) throw fetchErr;
+
+  const nextPosition = (existing?.[0]?.position ?? -1) + 1;
+
+  const { error } = await supabase.from("product_photos").insert(
+    urls.map((url, index) => ({
+      product_id: productId,
+      url,
+      position: nextPosition + index,
+    }))
+  );
+
+  if (error) throw error;
+}
+
+export async function deleteProductPhoto(photoId: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
   const { error } = await supabase
-    .from("products")
-    .update({ photo_url: photoUrl })
-    .eq("id", productId);
+    .from("product_photos")
+    .delete()
+    .eq("id", photoId);
 
   if (error) throw error;
 }

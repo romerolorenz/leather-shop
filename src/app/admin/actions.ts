@@ -9,10 +9,15 @@ import {
   addVariant,
   updateVariant,
   deleteVariant,
-  setProductPhotoUrl,
+  addProductPhotos,
+  deleteProductPhoto,
   type ProductInput,
 } from "@/lib/admin/catalog";
-import { markOrderPaid, markOrderShipped } from "@/lib/orders";
+import {
+  markOrderPaid,
+  markOrderShipped,
+  cancelOrderAndRestoreStock,
+} from "@/lib/orders";
 import { updateSettings } from "@/lib/settings";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -85,29 +90,59 @@ export async function deleteVariantAction(
 
 export async function uploadPhotoAction(productId: string, formData: FormData) {
   await assertAdmin();
-  const file = formData.get("photo");
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Choose a photo to upload.");
+  const files = formData
+    .getAll("photos")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+
+  if (files.length === 0) {
+    throw new Error("Choose at least one photo to upload.");
   }
 
   const supabase = getSupabaseServerClient();
-  const ext = file.name.split(".").pop() ?? "jpg";
-  const path = `${productId}/${Date.now()}.${ext}`;
+  const urls: string[] = [];
 
-  const { error: uploadError } = await supabase.storage
-    .from("product-photos")
-    .upload(path, await file.arrayBuffer(), {
-      contentType: file.type,
-      upsert: true,
-    });
+  for (const file of files) {
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${productId}/${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}.${ext}`;
 
-  if (uploadError) throw uploadError;
+    const { error: uploadError } = await supabase.storage
+      .from("product-photos")
+      .upload(path, await file.arrayBuffer(), {
+        contentType: file.type,
+        upsert: true,
+      });
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("product-photos").getPublicUrl(path);
+    if (uploadError) throw uploadError;
 
-  await setProductPhotoUrl(productId, publicUrl);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("product-photos").getPublicUrl(path);
+    urls.push(publicUrl);
+  }
+
+  await addProductPhotos(productId, urls);
+  revalidatePath(`/admin/products/${productId}`);
+  revalidateStorefront();
+}
+
+export async function deletePhotoAction(
+  photoId: string,
+  productId: string,
+  photoUrl: string
+) {
+  await assertAdmin();
+
+  const supabase = getSupabaseServerClient();
+  const marker = "/product-photos/";
+  const markerIndex = photoUrl.indexOf(marker);
+  if (markerIndex !== -1) {
+    const storagePath = photoUrl.slice(markerIndex + marker.length);
+    await supabase.storage.from("product-photos").remove([storagePath]);
+  }
+
+  await deleteProductPhoto(photoId);
   revalidatePath(`/admin/products/${productId}`);
   revalidateStorefront();
 }
@@ -124,6 +159,14 @@ export async function markOrderShippedAction(orderId: string) {
   await markOrderShipped(orderId);
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
+}
+
+export async function cancelOrderAction(orderId: string) {
+  await assertAdmin();
+  await cancelOrderAndRestoreStock(orderId);
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+  revalidateStorefront();
 }
 
 export async function updateSettingsAction(formData: FormData) {

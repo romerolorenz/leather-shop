@@ -1,6 +1,10 @@
 import { listOrdersForAdmin, type Order, type OrderStatus } from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
-import { markOrderPaidAction, markOrderShippedAction } from "../actions";
+import {
+  markOrderPaidAction,
+  markOrderShippedAction,
+  cancelOrderAction,
+} from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const STATUS_ORDER: OrderStatus[] = [
@@ -20,6 +24,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 function OrderCard({ order }: { order: Order }) {
   const markPaid = markOrderPaidAction.bind(null, order.id);
   const markShipped = markOrderShippedAction.bind(null, order.id);
+  const cancelOrder = cancelOrderAction.bind(null, order.id);
 
   return (
     <li className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
@@ -45,11 +50,21 @@ function OrderCard({ order }: { order: Order }) {
 
       <div className="mt-3 flex gap-3">
         {order.status === "pending_payment" && (
-          <form action={markPaid}>
-            <button type="submit" className="text-sm underline">
-              Mark paid
-            </button>
-          </form>
+          <>
+            <form action={markPaid}>
+              <button type="submit" className="text-sm underline">
+                Mark paid
+              </button>
+            </form>
+            <form action={cancelOrder}>
+              <button
+                type="submit"
+                className="text-sm text-red-600 underline"
+              >
+                Cancel order
+              </button>
+            </form>
+          </>
         )}
         {order.status === "paid" && (
           <form action={markShipped}>
@@ -82,16 +97,16 @@ export default async function AdminOrdersPage() {
         if (group.length === 0) return null;
 
         return (
-          <section key={status} className="mb-10">
-            <h2 className="mb-4 text-sm font-medium text-zinc-500">
+          <details key={status} className="mb-6" open={status !== "cancelled"}>
+            <summary className="mb-4 cursor-pointer text-sm font-medium text-zinc-500">
               {STATUS_LABEL[status]} ({group.length})
-            </h2>
+            </summary>
             <ul className="flex flex-col gap-4">
               {group.map((order) => (
                 <OrderCard key={order.id} order={order} />
               ))}
             </ul>
-          </section>
+          </details>
         );
       })}
     </main>

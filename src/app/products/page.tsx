@@ -16,9 +16,9 @@ export default async function ProductsPage() {
         {products.map((product) => (
           <li key={product.slug}>
             <Link href={`/products/${product.slug}`} className="block">
-              {product.photoUrl ? (
+              {product.photos[0] ? (
                 <Image
-                  src={product.photoUrl}
+                  src={product.photos[0]}
                   alt={product.name}
                   width={600}
                   height={600}

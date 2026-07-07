@@ -52,19 +52,41 @@ need a real browser session:
 
 ## Follow-ups from Phase 5 findings
 
-- [ ] Photo upload: uploaded photo now shows on `/products` and the PDP
+- [x] Photo upload: uploaded photo now shows on `/products` and the PDP
   (was only ever saved to `photo_url`, never rendered — public queries
   didn't select it and both pages hardcoded a gray placeholder box).
-  Findings:
+  Findings: working, but highlight choose file as clickable and give click feedback; allow for multiple images
 
-- [ ] `/admin` dashboard now shows separate Pending/Paid/Shipped counts
+- [x] `/admin` dashboard now shows separate Pending/Paid/Shipped counts
   instead of one combined "paid + shipped" figure.
-  Findings:
+  Findings: working
 
-- [ ] `/admin/orders` groups orders under status headings (Pending
+- [x] `/admin/orders` groups orders under status headings (Pending
   payment / Paid / Shipped / Cancelled) instead of one flat list.
+  Findings: working, allow collapsing groups; for unpaid orders allow cancelling also
+
+- [x] Buttons and links show visible feedback on click/tap (slight
+  opacity + scale change) site-wide.
+  Findings: working on most, check on `choose file` under the admin product page as mentioned above
+
+## Follow-ups from the second round of findings
+
+- [ ] `/admin/products/<id>` — "Choose File" now renders as a proper
+  button (matches the site's other buttons) with hover/active feedback,
+  and accepts selecting multiple images at once. Uploading multiple shows
+  all of them as a thumbnail grid, each with its own Delete button.
   Findings:
 
-- [ ] Buttons and links show visible feedback on click/tap (slight
-  opacity + scale change) site-wide.
+- [ ] PDP shows a thumbnail grid of any additional photos below the main
+  photo when a product has more than one.
+  Findings:
+
+- [ ] `/admin/orders`: each status section (Pending payment / Paid /
+  Shipped / Cancelled) is now collapsible — click the heading to
+  expand/collapse. Cancelled starts collapsed, others start open.
+  Findings:
+
+- [ ] A pending-payment order now has a **Cancel order** button
+  alongside **Mark paid** — clicking it cancels the order and restores
+  its stock (same effect as the 48h auto-expiry, just manual/immediate).
   Findings:
