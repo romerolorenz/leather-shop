@@ -71,22 +71,29 @@ need a real browser session:
 
 ## Follow-ups from the second round of findings
 
-- [ ] `/admin/products/<id>` — "Choose File" now renders as a proper
+- [x] `/admin/products/<id>` — "Choose File" now renders as a proper
   button (matches the site's other buttons) with hover/active feedback,
   and accepts selecting multiple images at once. Uploading multiple shows
   all of them as a thumbnail grid, each with its own Delete button.
-  Findings:
+  Findings: working
 
-- [ ] PDP shows a thumbnail grid of any additional photos below the main
+- [x] PDP shows a thumbnail grid of any additional photos below the main
   photo when a product has more than one.
-  Findings:
+  Findings: it shows the thumbnail but isnt clickable; make sure that all, even currently selected image, is shown in the grid
 
-- [ ] `/admin/orders`: each status section (Pending payment / Paid /
+- [x] `/admin/orders`: each status section (Pending payment / Paid /
   Shipped / Cancelled) is now collapsible — click the heading to
   expand/collapse. Cancelled starts collapsed, others start open.
-  Findings:
+  Findings: working
 
-- [ ] A pending-payment order now has a **Cancel order** button
+- [x] A pending-payment order now has a **Cancel order** button
   alongside **Mark paid** — clicking it cancels the order and restores
   its stock (same effect as the 48h auto-expiry, just manual/immediate).
+  Findings: working
+
+## Follow-up: interactive gallery
+
+- [ ] PDP: clicking a thumbnail swaps it into the main photo position.
+  The thumbnail grid now shows *all* photos (including whichever one is
+  currently the main photo), with the active one outlined.
   Findings:
