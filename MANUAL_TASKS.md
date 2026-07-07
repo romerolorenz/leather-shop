@@ -7,10 +7,6 @@ project rule in CLAUDE.md.
 
 ## Outstanding
 
-- [ ] **Rotate the Supabase database password.** A real password briefly
-  sat in `.env.example` before being moved to `.env.local` — low risk since
-  it was never committed, but rotating it in the Supabase dashboard
-  (Settings → Database) is cheap insurance.
 - [ ] **Set `RESEND_API_KEY` in `.env.local`.** Without it, order emails
   silently no-op with a console warning instead of actually sending. Get a
   key from [resend.com](https://resend.com).
@@ -39,3 +35,4 @@ project rule in CLAUDE.md.
 
 - [x] Create the Supabase project.
 - [x] Run `supabase/migrations/0001_init.sql` against it.
+- [x] Rotate the Supabase database password.
