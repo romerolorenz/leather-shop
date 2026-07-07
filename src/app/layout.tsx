@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { CartProvider } from "@/lib/cart-context";
 import CartLink from "@/components/CartLink";
+import { getCustomerEmail } from "@/lib/customer/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,11 +21,13 @@ export const metadata: Metadata = {
   description: "Handcrafted leather goods, made in small batches.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const customerEmail = await getCustomerEmail();
+
   return (
     <html
       lang="en"
@@ -41,6 +44,25 @@ export default function RootLayout({
                 <Link href="/products">Shop</Link>
                 <Link href="/faq">FAQ</Link>
                 <Link href="/contact">Contact Us</Link>
+                {customerEmail ? (
+                  <Link href="/account" aria-label="My Account">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-5 w-5"
+                    >
+                      <path d="M20 21a8 8 0 0 0-16 0" />
+                      <circle cx="12" cy="8" r="5" />
+                    </svg>
+                  </Link>
+                ) : (
+                  <Link href="/login?next=/account">Log In</Link>
+                )}
                 <CartLink />
               </div>
             </nav>

@@ -1,6 +1,6 @@
 import { Resend } from "resend";
-import { formatPrice, getProductBySlug } from "@/lib/products";
-import type { Order } from "@/lib/orders";
+import { formatPrice } from "@/lib/products";
+import { getOrderItemPhotos, type Order } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
 
 type EmailContent = {
@@ -179,19 +179,8 @@ export async function sendOrderNotificationEmail(order: Order) {
   );
 }
 
-async function getItemPhotos(order: Order): Promise<ItemPhotos> {
-  const uniqueSlugs = [...new Set(order.items.map((item) => item.slug))];
-  const entries = await Promise.all(
-    uniqueSlugs.map(async (slug) => {
-      const product = await getProductBySlug(slug);
-      return [slug, product?.photos[0] ?? null] as const;
-    })
-  );
-  return Object.fromEntries(entries);
-}
-
 export async function sendOrderConfirmationEmail(order: Order) {
-  const itemPhotos = await getItemPhotos(order);
+  const itemPhotos: ItemPhotos = await getOrderItemPhotos([order]);
   await sendEmail(
     buildOrderConfirmationEmail(order, itemPhotos),
     `order confirmation for order ${order.id}`

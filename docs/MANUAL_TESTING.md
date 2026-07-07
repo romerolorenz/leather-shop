@@ -135,3 +135,69 @@ when signed out. The rest needs a real admin session:
 - [x] `/admin/faq` — Save is now a floppy-disk icon instead of text, with
   hover/click feedback matching the trash icon's style.
   Findings: working
+
+## Phase 8 — Customer accounts
+
+Verified via curl: `/account` and `/account/addresses` both redirect to
+`/login?next=...` when signed out; the header nav shows **Log In** when
+signed out; `/admin` gating is unaffected; `/login` shows "Admin Login"
+when `next=/admin` and generic "Log In" otherwise; guest checkout (no
+saved addresses) still loads. Everything below needs a real Google login
+as a *non-admin* account (or your own account, logged in via the header's
+Log In link rather than `/login` directly — same Google login used for
+admin, just via the customer flow this time):
+
+- [x] Click **Log In** in the header nav → Google OAuth → lands back on
+  `/account` (not `/admin`), header nav now shows **My Account** instead
+  of Log In.
+  Findings: working, use a user icon instead of `My account`
+
+- [x] `/account` shows your past orders (if any placed with this email at
+  checkout) with status and items, or "No orders yet" if none.
+  Findings: group by order status, in an order card list orders by row and add an image of the order with the customization options as subtext
+
+- [x] `/account/addresses` — add a new address (label, recipient name,
+  phone, street, city, optionally check "Default address"), confirm it
+  appears in the list.
+  Findings: working
+
+- [x] Edit an address's fields, Save (floppy-disk icon), confirm it
+  updates. Mark a second address as default, confirm the first one's
+  "Default" badge disappears (only one default at a time).
+  Findings: working
+
+- [x] Delete an address (trash icon), confirm it's gone.
+  Findings: working
+
+- [x] `/checkout` (with items in cart, logged in with at least one saved
+  address) — a **Use a saved address** dropdown appears above the form,
+  defaulted to your default address with name/phone/street/city
+  pre-filled. Switching the dropdown updates those fields; "Enter a new
+  address" clears back to blank/manual entry.
+  Findings: it doesnt clear the entries
+
+- [x] Sign out (via the Sign out button in `/account`'s header bar),
+  confirm header nav reverts to **Log In** and `/account` redirects to
+  login again.
+  Findings: working
+
+## Follow-ups from Phase 8 findings
+
+- [x] Header nav shows a user icon (instead of "My Account" text) when
+  signed in, linking to `/account`.
+  Findings: working
+
+- [x] `/account` — orders are now grouped by status (Pending payment /
+  Paid / Shipped / Cancelled, collapsible, same as `/admin/orders`), and
+  each order card lists its items one per row with a product thumbnail
+  and the variant shown as subtext below the item name.
+  Findings: add breadcrumbs to /account page
+
+- [x] `/account` and `/account/addresses` now show a breadcrumb trail
+  (Home / My Account and Home / My Account / Saved addresses).
+  Findings: working
+
+- [x] `/checkout` — with a saved address selected, switching the
+  dropdown back to "Enter a new address" now clears the
+  name/phone/street/city fields instead of leaving the old values.
+  Findings: working

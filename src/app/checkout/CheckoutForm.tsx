@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import type { CustomerAddress } from "@/lib/customer/addresses";
 
 const checkoutCrumbs = [
   { label: "Home", href: "/" },
@@ -15,14 +16,34 @@ const checkoutCrumbs = [
 export default function CheckoutForm({
   cities,
   shippingFeeCentavos,
+  customerEmail,
+  savedAddresses = [],
 }: {
   cities: string[];
   shippingFeeCentavos: number;
+  customerEmail?: string;
+  savedAddresses?: CustomerAddress[];
 }) {
   const { items, totalCentavos, clear } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const streetRef = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLSelectElement>(null);
+
+  const defaultAddress =
+    savedAddresses.find((address) => address.isDefault) ?? savedAddresses[0];
+
+  function applySavedAddress(addressId: string) {
+    const address = savedAddresses.find((a) => a.id === addressId);
+    if (nameRef.current) nameRef.current.value = address?.recipientName ?? "";
+    if (phoneRef.current) phoneRef.current.value = address?.phone ?? "";
+    if (streetRef.current) streetRef.current.value = address?.street ?? "";
+    if (cityRef.current) cityRef.current.value = address?.city ?? "";
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -113,6 +134,26 @@ export default function CheckoutForm({
 
       <div className="grid grid-cols-1 gap-10 sm:grid-cols-2">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {savedAddresses.length > 0 && (
+            <div>
+              <label className="text-sm font-medium" htmlFor="savedAddress">
+                Use a saved address
+              </label>
+              <select
+                id="savedAddress"
+                defaultValue={defaultAddress?.id ?? ""}
+                onChange={(e) => applySavedAddress(e.target.value)}
+                className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+              >
+                <option value="">Enter a new address</option>
+                {savedAddresses.map((address) => (
+                  <option key={address.id} value={address.id}>
+                    {address.label} — {address.street}, {address.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium" htmlFor="name">
               Full name
@@ -120,6 +161,8 @@ export default function CheckoutForm({
             <input
               id="name"
               name="name"
+              ref={nameRef}
+              defaultValue={defaultAddress?.recipientName}
               required
               className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
             />
@@ -132,6 +175,7 @@ export default function CheckoutForm({
               id="email"
               name="email"
               type="email"
+              defaultValue={customerEmail}
               required
               className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
             />
@@ -143,6 +187,8 @@ export default function CheckoutForm({
             <input
               id="phone"
               name="phone"
+              ref={phoneRef}
+              defaultValue={defaultAddress?.phone}
               required
               className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
             />
@@ -154,6 +200,8 @@ export default function CheckoutForm({
             <input
               id="street"
               name="street"
+              ref={streetRef}
+              defaultValue={defaultAddress?.street}
               required
               className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
             />
@@ -165,8 +213,9 @@ export default function CheckoutForm({
             <select
               id="city"
               name="city"
+              ref={cityRef}
               required
-              defaultValue=""
+              defaultValue={defaultAddress?.city ?? ""}
               className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
             >
               <option value="" disabled>

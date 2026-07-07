@@ -17,6 +17,11 @@ blockers, then items that don't block any phase.
   rows (`contact_email`, `contact_instagram_url`, both placeholder values
   to update once real brand info exists). Without it, `/faq`, `/contact`,
   and `/admin/faq` all error.
+- [x] **Blocks Phase 8 (customer accounts, in progress) verification: run
+  `supabase/migrations/0007_customer_addresses.sql`** against the Supabase
+  project — adds the `customer_addresses` table (saved shipping addresses,
+  scoped per logged-in customer by email). Without it, `/account/addresses`
+  and checkout's saved-address selector both error.
 - [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
   Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
   send to your own account email (`marcolorenzoromero@gmail.com`) — it

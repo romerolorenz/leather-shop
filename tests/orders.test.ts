@@ -3,6 +3,7 @@ import {
   cancelOrderAndRestoreStock,
   createOrder,
   getExpiredPendingOrderIds,
+  listOrdersForCustomer,
   InsufficientStockError,
   type NewOrder,
 } from "@/lib/orders";
@@ -59,14 +60,22 @@ afterEach(async () => {
   }
 });
 
-function buildOrder(items: NewOrder["items"]): NewOrder {
+function buildOrder(
+  items: NewOrder["items"],
+  overrides: Partial<NewOrder["customer"]> = {}
+): NewOrder {
   const subtotalCentavos = items.reduce(
     (sum, item) => sum + item.priceCentavos * item.quantity,
     0
   );
   const shippingCentavos = 15000;
   return {
-    customer: { name: "Vitest", email: "vitest@example.com", phone: "123" },
+    customer: {
+      name: "Vitest",
+      email: "vitest@example.com",
+      phone: "123",
+      ...overrides,
+    },
     shippingAddress: { street: "1 Test St", city: "Pasig" },
     items,
     subtotalCentavos,
@@ -301,5 +310,33 @@ describe("getExpiredPendingOrderIds", () => {
 
     expect(await getExpiredPendingOrderIds(48)).toContain(order.id);
     expect(await getExpiredPendingOrderIds(72)).not.toContain(order.id);
+  });
+});
+
+describe("listOrdersForCustomer", () => {
+  it("only returns orders matching the given customer email", async () => {
+    const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
+    const item = {
+      slug: wallet.slug,
+      name: wallet.name,
+      variant: variant.label,
+      quantity: 1,
+      priceCentavos: wallet.priceCentavos,
+      productId: wallet.id,
+      variantId: variant.id,
+    };
+
+    const mine = await createOrder(
+      buildOrder([item], { email: "vitest-account@example.com" })
+    );
+    cleanupOrderIds.push(mine.id);
+    const theirs = await createOrder(
+      buildOrder([item], { email: "vitest@example.com" })
+    );
+    cleanupOrderIds.push(theirs.id);
+
+    const results = await listOrdersForCustomer("vitest-account@example.com");
+    expect(results.map((o) => o.id)).toContain(mine.id);
+    expect(results.map((o) => o.id)).not.toContain(theirs.id);
   });
 });

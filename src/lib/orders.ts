@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getProductBySlug } from "@/lib/products";
 
 export type OrderItem = {
   slug: string;
@@ -236,18 +237,52 @@ function mapOrderRow(row: OrderRow): Order {
   };
 }
 
-const ADMIN_ORDER_SELECT =
+const ORDER_SELECT =
   "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, total_centavos, order_items(quantity, unit_price_centavos, products(slug, name), product_variants(label))";
 
 export async function listOrdersForAdmin(): Promise<Order[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("orders")
-    .select(ADMIN_ORDER_SELECT)
+    .select(ORDER_SELECT)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
   return (data as unknown as OrderRow[]).map(mapOrderRow);
+}
+
+// Order history (Phase 8, US-17) — scoped to the logged-in customer's own
+// orders by matching their verified Google account email against
+// orders.customer_email (the email typed at checkout, guest or not).
+export async function listOrdersForCustomer(email: string): Promise<Order[]> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select(ORDER_SELECT)
+    .eq("customer_email", email)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as unknown as OrderRow[]).map(mapOrderRow);
+}
+
+// Each item's product photo, keyed by slug — used by the order
+// confirmation email and the customer order-history page. Dedupes slugs
+// across all passed-in orders so a customer's order history only fetches
+// each product once, not once per order.
+export async function getOrderItemPhotos(
+  orders: Order[]
+): Promise<Record<string, string | null>> {
+  const uniqueSlugs = [
+    ...new Set(orders.flatMap((order) => order.items.map((item) => item.slug))),
+  ];
+  const entries = await Promise.all(
+    uniqueSlugs.map(async (slug) => {
+      const product = await getProductBySlug(slug);
+      return [slug, product?.photos[0] ?? null] as const;
+    })
+  );
+  return Object.fromEntries(entries);
 }
 
 export async function markOrderPaid(orderId: string): Promise<void> {
