@@ -10,11 +10,9 @@ project rule in CLAUDE.md.
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [ ] **Blocks Phase 4 (Admin auth, in progress) verification: run
-  `supabase/migrations/0003_admin_users.sql`** against the Supabase project
-  (same SQL Editor flow as the earlier migrations) — adds the admin
-  allow-list table the login flow checks against. Without it, `src/proxy.ts`
-  can't verify who's an admin.
+Nothing outstanding blocks Phase 5 (next up) — Phases 1 and 4, which it
+depends on, are both done.
+
 - [ ] **Blocks Phase 6 (email loop) verification: set `RESEND_API_KEY` in
   `.env.local`.** Without it, order emails silently no-op with a console
   warning instead of actually sending. Get a key from
@@ -45,3 +43,6 @@ blockers, then items that don't block any phase.
 - [x] Decide on Facebook login — Google-only, no Facebook.
 - [x] Set up Google OAuth for Supabase Auth (Google Cloud Console client +
   Supabase provider config).
+- [x] Run `supabase/migrations/0003_admin_users.sql` against it.
+- [x] Verify the live login flow: allow-listed email reaches `/admin`,
+  a different Google account gets denied.

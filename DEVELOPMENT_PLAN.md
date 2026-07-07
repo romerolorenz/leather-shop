@@ -103,8 +103,8 @@ Ref: US-19. Depends on: Phase 0's Privacy Policy page existing.
   policy URL from Phase 0).
 - Implement the email allow-list check (env var or a small `admin_users`
   table) gating `/admin/*`.
-- Add a login page/flow for `/admin` and route protection (middleware or
-  per-page session check).
+- Add a login page/flow for `/admin` and route protection via `src/proxy.ts`
+  (Next.js 16 renamed the `middleware.ts` convention to `proxy.ts`).
 
 **Exit criteria**: logging into `/admin` with the owner's Google account
 works; logging in with a different Google account is denied.

@@ -82,6 +82,11 @@ standing up three separate services:
 - **Auth** — Google OAuth for both customer accounts (order history, per
   PRD §6) and admin access (same login mechanism, but gated by an email
   allow-list rather than a separate credential system — see PRD §6 Admin).
+  The allow-list itself is the `admin_users` table (RLS default-deny,
+  service-role-only read). `src/proxy.ts` (Next.js 16 renamed
+  `middleware.ts` to `proxy.ts`) checks every `/admin/*` request: no
+  session → redirect to `/login`; session but email not in `admin_users`
+  → redirect to `/login?error=unauthorized`.
 - **Storage** — product photos, served via Supabase's CDN, referenced by
   URL from the `products`/`product_variants` tables.
 
@@ -185,7 +190,7 @@ otherwise have held.
 | Stock | Real quantity, decremented at order placement | ✅ done (Phase 3) — atomic via Postgres function, race-safe |
 | Order expiry | Configurable-duration (default 48h) auto-cancel + stock restore via Vercel Cron | Route built (Phase 3); actual cron trigger only fires once deployed to Vercel (see MANUAL_TASKS.md) |
 | Shop config (shipping fee, delivery cities, hold duration, etc.) | Admin-editable `settings` table | ✅ done (Phase 1/3) — reads live; admin editing UI still Phase 5 |
-| Auth | Google OAuth (customers + admin allow-list) | None — `/admin` is a public, unauthenticated placeholder |
+| Auth | Google OAuth (customers + admin allow-list) | ✅ admin login done (Phase 4) — verified live: allow-listed email reaches `/admin`, other Google accounts denied. Customer-facing login still Phase 8 |
 | Product photos | Supabase Storage | None — PDP renders an empty placeholder box |
 | Cart | localStorage (unchanged) | ✅ already matches target |
 | Checkout → order API | Supabase-backed | ✅ done (Phase 3) |
