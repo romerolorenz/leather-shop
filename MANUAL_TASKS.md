@@ -10,12 +10,6 @@ project rule in CLAUDE.md.
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [ ] **Blocks Phase 4 (Admin auth, next up) and Phase 8 (customer
-  accounts): set up Google OAuth for Supabase Auth.** In Google Cloud
-  Console: create an OAuth client, and when configuring the consent
-  screen, use the live `/privacy` page URL (now built) as the privacy
-  policy link. Then add the client ID/secret to Supabase's Auth providers
-  settings.
 - [ ] **Blocks Phase 6 (email loop) verification: set `RESEND_API_KEY` in
   `.env.local`.** Without it, order emails silently no-op with a console
   warning instead of actually sending. Get a key from
@@ -44,3 +38,5 @@ blockers, then items that don't block any phase.
 - [x] Set `CRON_SECRET` locally (generated automatically for testing —
   still need to set the same value in Vercel's env vars on deploy).
 - [x] Decide on Facebook login — Google-only, no Facebook.
+- [x] Set up Google OAuth for Supabase Auth (Google Cloud Console client +
+  Supabase provider config).
