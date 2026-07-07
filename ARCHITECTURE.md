@@ -14,7 +14,7 @@ flowchart TD
 
     subgraph NextJS["Next.js (Vercel)"]
         UI["Pages / UI \n (App Router)"]
-        API["API routes \n POST /api/orders \n /api/admin/* \n POST /api/orders/expire"]
+        API["API routes \n POST /api/orders \n /api/admin/* \n GET /api/orders/expire"]
     end
 
     subgraph SB["Supabase"]
@@ -50,18 +50,22 @@ Single codebase, both roles:
     triggers both emails.
   - `/api/admin/*` — product CRUD, order status updates, FAQ content edits.
     All gated on the admin allow-list (see Auth below).
-  - `POST /api/orders/expire` — the order-hold check (PRD §5, §6):
-    reads the configured hold duration from the `settings` table (default
-    48 hours — admin-editable, not a code constant), finds orders still
+  - `GET /api/orders/expire` — the order-hold check (PRD §5, §6): reads
+    the configured hold duration from the `settings` table (default 48
+    hours — admin-editable, not a code constant), finds orders still
     `pending_payment` past that many hours since `created_at`, flips them
-    to `cancelled`, and restores their `order_items`' stock quantities.
-    Not user-facing — only ever called by the scheduler below.
+    to `cancelled`, and restores their `order_items`' stock quantities via
+    the `restore_variant_stock` Postgres function. `GET`, not `POST`,
+    because that's what Vercel Cron actually sends. Not otherwise
+    user-facing — requires a `CRON_SECRET` bearer token, which Vercel
+    attaches automatically once the env var is set; any request without a
+    matching token gets a 401.
 
 ### Scheduler (Vercel Cron)
 There's no long-running server process to just leave a timer on, so the
 expiry check needs something external triggering it periodically —
 a Vercel Cron Job (defined in `vercel.json`) calling
-`POST /api/orders/expire` on a fixed schedule (e.g. hourly). That
+`GET /api/orders/expire` on a fixed schedule (e.g. hourly). That
 schedule interval is a deploy-time config (`vercel.json`), separate from
 the admin-configurable hold *duration* the route checks against — changing
 how often the check runs still needs a deploy, changing how long the hold
@@ -150,7 +154,8 @@ otherwise have held.
 
 ## Request flow: order expiry (payment hold)
 
-1. Vercel Cron fires on schedule → `POST /api/orders/expire`.
+1. Vercel Cron fires on schedule → `GET /api/orders/expire` (with the
+   `CRON_SECRET` bearer token Vercel attaches automatically).
 2. Route reads `order_payment_hold_hours` from `settings` (default 48),
    then queries Supabase for orders where `status = 'pending_payment'`
    and `created_at` is older than that many hours.
@@ -175,16 +180,16 @@ otherwise have held.
 
 | Piece | Target | Actually built today |
 |---|---|---|
-| Products | Supabase table, admin-editable | Hardcoded array in `src/lib/products.ts` |
-| Orders | Supabase table | In-memory array, wiped on restart |
-| Stock | Real quantity, decremented at order placement | Static `inStock: boolean` per variant, no decrement |
-| Order expiry | Configurable-duration (default 48h) auto-cancel + stock restore via Vercel Cron | Not built — orders sit `pending_payment` indefinitely |
-| Shop config (shipping fee, delivery cities, hold duration, etc.) | Admin-editable `settings` table | Hardcoded constants scattered in code (`SHIPPING_CENTAVOS`, `METRO_MANILA_CITIES`) |
+| Products | Supabase table, admin-editable | ✅ done (Phase 2) — reads live; admin editing UI still Phase 5 |
+| Orders | Supabase table | ✅ done (Phase 3) |
+| Stock | Real quantity, decremented at order placement | ✅ done (Phase 3) — atomic via Postgres function, race-safe |
+| Order expiry | Configurable-duration (default 48h) auto-cancel + stock restore via Vercel Cron | Route built (Phase 3); actual cron trigger only fires once deployed to Vercel (see MANUAL_TASKS.md) |
+| Shop config (shipping fee, delivery cities, hold duration, etc.) | Admin-editable `settings` table | ✅ done (Phase 1/3) — reads live; admin editing UI still Phase 5 |
 | Auth | Google OAuth (customers + admin allow-list) | None — `/admin` is a public, unauthenticated placeholder |
 | Product photos | Supabase Storage | None — PDP renders an empty placeholder box |
 | Cart | localStorage (unchanged) | ✅ already matches target |
-| Checkout → order API | Supabase-backed | ✅ API shape already matches target, backed by placeholder data |
-| Emails | Resend, both directions | ✅ already matches target (admin notification confirmed working; customer confirmation email not yet wired) |
+| Checkout → order API | Supabase-backed | ✅ done (Phase 3) |
+| Emails | Resend, both directions | Admin notification confirmed working; customer confirmation email still Phase 6 |
 | Payments | Manual v1 → PayMongo v2 | ✅ manual v1 already matches target |
 
 The next implementation step is closing the biggest row in that table:

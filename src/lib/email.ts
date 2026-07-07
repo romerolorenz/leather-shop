@@ -1,9 +1,7 @@
 import { Resend } from "resend";
 import { formatPrice } from "@/lib/products";
 import type { Order } from "@/lib/orders";
-
-const ADMIN_NOTIFICATION_EMAIL =
-  process.env.ADMIN_NOTIFICATION_EMAIL ?? "marcolorenzoromero@gmail.com";
+import { getSettings } from "@/lib/settings";
 
 export async function sendOrderNotificationEmail(order: Order) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -15,6 +13,7 @@ export async function sendOrderNotificationEmail(order: Order) {
     return;
   }
 
+  const { adminNotificationEmail } = await getSettings();
   const resend = new Resend(apiKey);
 
   const itemLines = order.items
@@ -28,7 +27,7 @@ export async function sendOrderNotificationEmail(order: Order) {
 
   await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev",
-    to: ADMIN_NOTIFICATION_EMAIL,
+    to: adminNotificationEmail,
     subject: `New order ${order.id} — ${formatPrice(order.totalCentavos)}`,
     text: [
       `New order placed: ${order.id}`,

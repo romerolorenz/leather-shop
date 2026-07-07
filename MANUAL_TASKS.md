@@ -20,12 +20,11 @@ project rule in CLAUDE.md.
   through Meta's App Review process — more overhead than Google alone.
   Confirm whether it's still wanted for v1 or if Google-only is fine.
 - [ ] **Deploy to Vercel.** Connect the GitHub repo, and set all the
-  `.env.local` variables (Supabase, Resend) in the Vercel project's
-  environment variable settings — they don't carry over automatically.
-- [ ] **Enable the order-expiry scheduled job**, once Phase 3 ships the
-  `/api/orders/expire` route: either add a Vercel Cron entry in
-  `vercel.json` (check whether the desired frequency needs a paid Vercel
-  plan) or enable Supabase's `pg_cron` extension in the dashboard.
+  `.env.local` variables (Supabase, Resend, `CRON_SECRET`) in the Vercel
+  project's environment variable settings — they don't carry over
+  automatically. This is also what makes `vercel.json`'s Cron entry for
+  `/api/orders/expire` actually start firing — check whether your Vercel
+  plan supports hourly frequency (some tiers restrict Cron to daily).
 - [ ] **Upload real product photos** to Supabase Storage. PDPs currently
   render an empty gray placeholder box — no real photos exist yet.
 - [ ] **Provide real brand assets** (logo, color palette, final copy) —
@@ -36,3 +35,6 @@ project rule in CLAUDE.md.
 - [x] Create the Supabase project.
 - [x] Run `supabase/migrations/0001_init.sql` against it.
 - [x] Rotate the Supabase database password.
+- [x] Run `supabase/migrations/0002_stock_functions.sql` against it.
+- [x] Set `CRON_SECRET` locally (generated automatically for testing —
+  still need to set the same value in Vercel's env vars on deploy).
