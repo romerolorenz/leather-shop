@@ -14,3 +14,13 @@
   architecture, data models, or process flows in markdown, use a
   ```mermaid``` code block instead of ASCII art, unless there's a specific
   reason Mermaid can't express it.
+- **Manual tasks get tracked in MANUAL_TASKS.md, not just mentioned in
+  chat.** Whenever a step can't be done directly (creating external
+  accounts, pasting API keys, clicking through a dashboard, rotating a
+  credential, uploading real assets, etc.), add it to
+  [MANUAL_TASKS.md](./MANUAL_TASKS.md) as a checklist item instead of only
+  saying it in conversation — so outstanding manual work doesn't get lost
+  once the chat scrolls past it. Check items off there once done.
+- **Commit after every phase.** Each phase in DEVELOPMENT_PLAN.md gets its
+  own git commit once its exit criteria are met, before moving on to the
+  next phase — don't let multiple phases pile up uncommitted.
