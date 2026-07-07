@@ -37,9 +37,10 @@ Unblocks everything else. Ref: ARCHITECTURE.md § Data Model.
   admin notification email, order payment-hold duration — see
   ARCHITECTURE.md § Data Model; this is what makes "no hardcoded business
   configuration" in PRD §6/§7 real, not just a docs statement).
-- Install `@supabase/supabase-js` (+ `@supabase/ssr` for server components);
-  add `src/lib/supabase/client.ts` (browser) and `server.ts` (server-side,
-  using the service-role key for API routes).
+- Install `@supabase/supabase-js`; add `src/lib/supabase/server.ts`
+  (service-role client, server-only — API routes and server components).
+  No browser client yet — nothing consumes one until Phase 4 (auth) or
+  Phase 8 (customer accounts), so it's deferred rather than built unused.
 - Seed the two existing mock products (`classic-bifold-wallet`, `tote-bag`)
   into the real table so Phase 2 has something to render against. Seed
   `settings` with today's current hardcoded values as defaults (₱150
