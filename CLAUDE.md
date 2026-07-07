@@ -21,6 +21,10 @@
   [MANUAL_TASKS.md](./MANUAL_TASKS.md) as a checklist item instead of only
   saying it in conversation — so outstanding manual work doesn't get lost
   once the chat scrolls past it. Check items off there once done.
+  **The file edit comes first** — update MANUAL_TASKS.md in the same turn
+  where the task is identified, before or alongside asking the user to do
+  it in chat. Asking in chat without having just added/updated the
+  checklist item is the failure mode this rule exists to prevent.
 - **Order MANUAL_TASKS.md's Outstanding list by what it blocks.** Items
   that block the next unstarted phase in DEVELOPMENT_PLAN.md go first,
   ahead of items that block a later phase, ahead of items that don't block

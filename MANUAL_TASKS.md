@@ -10,9 +10,12 @@ project rule in CLAUDE.md.
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-Nothing outstanding blocks Phase 5 (next up) — Phases 1 and 4, which it
-depends on, are both done.
-
+- [ ] **Blocks Phase 5 (Admin catalog UI, in progress) verification: run
+  `supabase/migrations/0004_product_photos.sql`** against the Supabase
+  project (same SQL Editor flow as the earlier migrations) — adds the
+  `photo_url` column and the `product-photos` Storage bucket. Without it,
+  the admin product list/edit pages error (they select `photo_url`, which
+  doesn't exist yet) and photo upload has nowhere to write to.
 - [ ] **Blocks Phase 6 (email loop) verification: set `RESEND_API_KEY` in
   `.env.local`.** Without it, order emails silently no-op with a console
   warning instead of actually sending. Get a key from
