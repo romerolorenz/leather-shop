@@ -21,6 +21,12 @@
   [MANUAL_TASKS.md](./MANUAL_TASKS.md) as a checklist item instead of only
   saying it in conversation — so outstanding manual work doesn't get lost
   once the chat scrolls past it. Check items off there once done.
+- **Order MANUAL_TASKS.md's Outstanding list by what it blocks.** Items
+  that block the next unstarted phase in DEVELOPMENT_PLAN.md go first,
+  ahead of items that block a later phase, ahead of items that don't block
+  any phase (content/business tasks like real photos or brand assets).
+  Note which phase each blocking item is holding up. Re-sort whenever a
+  phase completes or a task is checked off, since the "next phase" shifts.
 - **Commit after every phase.** Each phase in DEVELOPMENT_PLAN.md gets its
   own git commit once its exit criteria are met, before moving on to the
   next phase — don't let multiple phases pile up uncommitted.
