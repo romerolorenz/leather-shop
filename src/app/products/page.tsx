@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { getProducts, formatPrice } from "@/lib/products";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default async function ProductsPage() {
   const products = await getProducts();
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">
         Shop the collection
       </h1>

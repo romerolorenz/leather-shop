@@ -4,6 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+
+const checkoutCrumbs = [
+  { label: "Home", href: "/" },
+  { label: "Cart", href: "/cart" },
+  { label: "Checkout" },
+];
 
 export default function CheckoutForm({
   cities,
@@ -65,6 +72,7 @@ export default function CheckoutForm({
   if (orderId) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+        <Breadcrumbs items={checkoutCrumbs} />
         <h1 className="mb-4 text-2xl font-semibold tracking-tight">
           Order placed — #{orderId}
         </h1>
@@ -83,6 +91,7 @@ export default function CheckoutForm({
   if (items.length === 0) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+        <Breadcrumbs items={checkoutCrumbs} />
         <h1 className="mb-4 text-2xl font-semibold tracking-tight">
           Checkout
         </h1>
@@ -99,6 +108,7 @@ export default function CheckoutForm({
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+      <Breadcrumbs items={checkoutCrumbs} />
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">Checkout</h1>
 
       <div className="grid grid-cols-1 gap-10 sm:grid-cols-2">

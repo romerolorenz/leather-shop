@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+
+const cartCrumbs = [{ label: "Home", href: "/" }, { label: "Cart" }];
 
 export default function CartView({
   shippingFeeCentavos,
@@ -14,6 +17,7 @@ export default function CartView({
   if (items.length === 0) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+        <Breadcrumbs items={cartCrumbs} />
         <h1 className="mb-8 text-2xl font-semibold tracking-tight">
           Your cart
         </h1>
@@ -30,6 +34,7 @@ export default function CartView({
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+      <Breadcrumbs items={cartCrumbs} />
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">
         Your cart
       </h1>

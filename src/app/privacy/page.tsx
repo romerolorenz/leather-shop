@@ -1,3 +1,5 @@
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+
 export const metadata = {
   title: "Privacy Policy — Leather Shop",
 };
@@ -5,6 +7,9 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+      <Breadcrumbs
+        items={[{ label: "Home", href: "/" }, { label: "Privacy Policy" }]}
+      />
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">
         Privacy Policy
       </h1>

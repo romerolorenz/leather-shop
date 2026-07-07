@@ -37,3 +37,15 @@ Dev server: http://localhost:3000 (ask if it's not running).
 - [ ] `/admin/settings` — change something small (e.g. shipping fee by
   ₱1), Save, then check `/cart` shows the new fee.
   Findings:
+
+## Breadcrumbs (shopper + admin)
+
+Verified via curl on the storefront side (`/products`, PDP, `/cart`,
+`/privacy` all render correctly). Admin pages are gated by login, so these
+need a real browser session:
+
+- [ ] `/admin`, `/admin/products`, `/admin/products/new`,
+  `/admin/products/<id>`, `/admin/orders`, `/admin/settings` each show a
+  breadcrumb trail (e.g. Admin / Products / *Product Name*) above the page
+  heading, and each non-current crumb is a working link.
+  Findings:
