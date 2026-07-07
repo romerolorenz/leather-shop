@@ -48,3 +48,6 @@
   this rule produced already caught a real production bug
   (`cancelOrderAndRestoreStock` restoring stock before checking order
   status) that manual curl testing had missed.
+- **Keep git commit messages concise.** A short summary line plus 2-4
+  bullet points covering what changed and why is enough — don't restate
+  the full reasoning already visible in the diff or in chat.
