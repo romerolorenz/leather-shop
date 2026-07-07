@@ -5,6 +5,8 @@ export type Settings = {
   deliveryCities: string[];
   adminNotificationEmail: string;
   orderPaymentHoldHours: number;
+  contactEmail: string;
+  contactInstagramUrl: string;
 };
 
 // Admin-editable shop configuration (CLAUDE.md: settings are configurable,
@@ -21,6 +23,8 @@ export async function getSettings(): Promise<Settings> {
     delivery_cities: string[];
     admin_notification_email: string;
     order_payment_hold_hours: number;
+    contact_email: string;
+    contact_instagram_url: string;
   };
 
   return {
@@ -28,6 +32,8 @@ export async function getSettings(): Promise<Settings> {
     deliveryCities: map.delivery_cities,
     adminNotificationEmail: map.admin_notification_email,
     orderPaymentHoldHours: map.order_payment_hold_hours,
+    contactEmail: map.contact_email,
+    contactInstagramUrl: map.contact_instagram_url,
   };
 }
 
@@ -36,6 +42,8 @@ const SETTINGS_KEYS: Record<keyof Settings, string> = {
   deliveryCities: "delivery_cities",
   adminNotificationEmail: "admin_notification_email",
   orderPaymentHoldHours: "order_payment_hold_hours",
+  contactEmail: "contact_email",
+  contactInstagramUrl: "contact_instagram_url",
 };
 
 export async function updateSettings(input: Partial<Settings>): Promise<void> {

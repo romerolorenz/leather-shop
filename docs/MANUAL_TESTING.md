@@ -97,3 +97,41 @@ need a real browser session:
   The thumbnail grid now shows *all* photos (including whichever one is
   currently the main photo), with the active one outlined.
   Findings: working
+
+## Phase 7 — Content pages (FAQ, Contact, footer)
+
+Verified via curl: `/faq` renders the seeded questions, `/contact` shows
+the mailto/Instagram links from settings, footer links (Shop/FAQ/Contact
+Us/Privacy Policy) render on every page, checkout's "outside Metro Manila"
+note links to `/contact`, and `/admin/faq` correctly redirects to `/login`
+when signed out. The rest needs a real admin session:
+
+- [x] `/admin/faq` — lists the 5 seeded FAQ items, each with its own
+  editable question/answer + Save, and a Delete button.
+  Findings: working, add ability to reorder faq; use a trash icon to delete instead of `delete`
+
+- [x] On `/admin/faq`: edit a question or answer, Save, confirm it updates
+  on the public `/faq` page.
+  Findings: working
+
+- [x] On `/admin/faq`: add a new FAQ item via the form at the bottom,
+  confirm it appears on `/faq`. Delete it again, confirm it's gone.
+  Findings: working
+
+- [x] `/admin/settings` — update the two new fields (Contact email,
+  Instagram URL), Save, confirm `/contact` shows the new values.
+  Findings: working
+
+- [x] `/admin` nav includes a working **FAQ** link to `/admin/faq`.
+  Findings: working
+
+## Follow-ups from Phase 7 findings
+
+- [x] `/admin/faq` — each item now has ↑/↓ buttons to reorder it (swaps
+  position with the neighbor), and the Delete button is now a trash icon
+  instead of text.
+  Findings: use save icon instead of text
+
+- [x] `/admin/faq` — Save is now a floppy-disk icon instead of text, with
+  hover/click feedback matching the trash icon's style.
+  Findings: working

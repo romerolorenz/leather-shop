@@ -191,11 +191,12 @@ otherwise have held.
 | Order expiry | Configurable-duration (default 48h) auto-cancel + stock restore via Vercel Cron | Route built (Phase 3); actual cron trigger only fires once deployed to Vercel (see MANUAL_TASKS.md) |
 | Shop config (shipping fee, delivery cities, hold duration, etc.) | Admin-editable `settings` table | ✅ done (Phase 1/3) — reads live; admin editing UI still Phase 5 |
 | Auth | Google OAuth (customers + admin allow-list) | ✅ admin login done (Phase 4) — verified live: allow-listed email reaches `/admin`, other Google accounts denied. Customer-facing login still Phase 8 |
-| Product photos | Supabase Storage | None — PDP renders an empty placeholder box |
+| Product photos | Supabase Storage | ✅ done (Phase 5) — multi-photo gallery, admin upload/delete, clickable PDP thumbnails |
 | Cart | localStorage (unchanged) | ✅ already matches target |
 | Checkout → order API | Supabase-backed | ✅ done (Phase 3) |
-| Emails | Resend, both directions | Admin notification confirmed working; customer confirmation email still Phase 6 |
+| Emails | Resend, both directions | ✅ done (Phase 6) — admin notification + customer confirmation (HTML, with product photo) both verified live. Go-live blocker: sandbox sender can't reach real customers until a domain is verified (see MANUAL_TASKS.md) |
 | Payments | Manual v1 → PayMongo v2 | ✅ manual v1 already matches target |
+| FAQ / Contact / Privacy | Admin-editable FAQ (`faq_items` table), static Contact/Privacy pages, linked from header + footer | ✅ done (Phase 7) |
 
 The next implementation step is closing the biggest row in that table:
 replacing the hardcoded products file and in-memory order store with real

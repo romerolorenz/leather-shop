@@ -39,11 +39,21 @@ export default function RootLayout({
               </Link>
               <div className="flex gap-6 text-sm">
                 <Link href="/products">Shop</Link>
+                <Link href="/faq">FAQ</Link>
+                <Link href="/contact">Contact Us</Link>
                 <CartLink />
               </div>
             </nav>
           </header>
           <div className="flex flex-1 flex-col">{children}</div>
+          <footer className="border-t border-black/[.08] px-6 py-8 dark:border-white/[.145]">
+            <nav className="mx-auto flex max-w-3xl flex-wrap gap-6 text-sm text-zinc-500">
+              <Link href="/products">Shop</Link>
+              <Link href="/faq">FAQ</Link>
+              <Link href="/contact">Contact Us</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+            </nav>
+          </footer>
         </CartProvider>
       </body>
     </html>

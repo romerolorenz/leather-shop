@@ -19,6 +19,12 @@ import {
   cancelOrderAndRestoreStock,
 } from "@/lib/orders";
 import { updateSettings } from "@/lib/settings";
+import {
+  createFaqItem,
+  updateFaqItem,
+  deleteFaqItem,
+  moveFaqItem,
+} from "@/lib/admin/faq";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 function parseProductInput(formData: FormData): ProductInput {
@@ -186,9 +192,54 @@ export async function updateSettingsAction(formData: FormData) {
       formData.get("adminNotificationEmail") ?? ""
     ).trim(),
     orderPaymentHoldHours: Number(formData.get("orderPaymentHoldHours")),
+    contactEmail: String(formData.get("contactEmail") ?? "").trim(),
+    contactInstagramUrl: String(
+      formData.get("contactInstagramUrl") ?? ""
+    ).trim(),
   });
 
   revalidatePath("/admin/settings");
   revalidatePath("/cart");
   revalidatePath("/checkout");
+  revalidatePath("/contact");
+}
+
+export async function createFaqItemAction(formData: FormData) {
+  await assertAdmin();
+  const question = String(formData.get("question") ?? "").trim();
+  const answer = String(formData.get("answer") ?? "").trim();
+  if (!question || !answer) {
+    throw new Error("Question and answer are both required.");
+  }
+
+  await createFaqItem(question, answer);
+  revalidatePath("/admin/faq");
+  revalidatePath("/faq");
+}
+
+export async function updateFaqItemAction(id: string, formData: FormData) {
+  await assertAdmin();
+  const question = String(formData.get("question") ?? "").trim();
+  const answer = String(formData.get("answer") ?? "").trim();
+  if (!question || !answer) {
+    throw new Error("Question and answer are both required.");
+  }
+
+  await updateFaqItem(id, question, answer);
+  revalidatePath("/admin/faq");
+  revalidatePath("/faq");
+}
+
+export async function deleteFaqItemAction(id: string) {
+  await assertAdmin();
+  await deleteFaqItem(id);
+  revalidatePath("/admin/faq");
+  revalidatePath("/faq");
+}
+
+export async function moveFaqItemAction(id: string, direction: "up" | "down") {
+  await assertAdmin();
+  await moveFaqItem(id, direction);
+  revalidatePath("/admin/faq");
+  revalidatePath("/faq");
 }

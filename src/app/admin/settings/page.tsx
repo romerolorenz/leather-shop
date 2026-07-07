@@ -84,6 +84,37 @@ export default async function AdminSettingsPage() {
           </p>
         </div>
 
+        <div>
+          <label className="text-sm font-medium" htmlFor="contactEmail">
+            Contact Us email
+          </label>
+          <input
+            id="contactEmail"
+            name="contactEmail"
+            type="email"
+            required
+            defaultValue={settings.contactEmail}
+            className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          />
+        </div>
+
+        <div>
+          <label
+            className="text-sm font-medium"
+            htmlFor="contactInstagramUrl"
+          >
+            Contact Us Instagram URL
+          </label>
+          <input
+            id="contactInstagramUrl"
+            name="contactInstagramUrl"
+            type="url"
+            required
+            defaultValue={settings.contactInstagramUrl}
+            className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          />
+        </div>
+
         <button
           type="submit"
           className="w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"

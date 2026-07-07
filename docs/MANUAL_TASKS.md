@@ -10,6 +10,13 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
+- [x] **Blocks Phase 7 (content pages, in progress) verification: run
+  `supabase/migrations/0006_faq_and_contact.sql`** against the Supabase
+  project (same SQL Editor flow as the earlier migrations) — adds the
+  `faq_items` table (seeded with starter content) and two new `settings`
+  rows (`contact_email`, `contact_instagram_url`, both placeholder values
+  to update once real brand info exists). Without it, `/faq`, `/contact`,
+  and `/admin/faq` all error.
 - [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
   Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
   send to your own account email (`marcolorenzoromero@gmail.com`) — it

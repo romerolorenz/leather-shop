@@ -180,7 +180,11 @@ export default function CheckoutForm({
             </select>
             <p className="mt-1 text-sm text-zinc-500">
               Delivery is available in Metro Manila only. Outside Metro
-              Manila? Reach out via Instagram or email instead.
+              Manila?{" "}
+              <Link href="/contact" className="underline">
+                Contact us
+              </Link>{" "}
+              instead.
             </p>
           </div>
 
