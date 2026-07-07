@@ -30,3 +30,24 @@ export async function getSettings(): Promise<Settings> {
     orderPaymentHoldHours: map.order_payment_hold_hours,
   };
 }
+
+const SETTINGS_KEYS: Record<keyof Settings, string> = {
+  shippingFeeCentavos: "shipping_fee_centavos",
+  deliveryCities: "delivery_cities",
+  adminNotificationEmail: "admin_notification_email",
+  orderPaymentHoldHours: "order_payment_hold_hours",
+};
+
+export async function updateSettings(input: Partial<Settings>): Promise<void> {
+  const supabase = getSupabaseServerClient();
+
+  for (const [field, value] of Object.entries(input)) {
+    const key = SETTINGS_KEYS[field as keyof Settings];
+    const { error } = await supabase
+      .from("settings")
+      .update({ value, updated_at: new Date().toISOString() })
+      .eq("key", key);
+
+    if (error) throw error;
+  }
+}

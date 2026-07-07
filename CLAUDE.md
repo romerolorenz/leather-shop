@@ -34,3 +34,17 @@
 - **Commit after every phase.** Each phase in DEVELOPMENT_PLAN.md gets its
   own git commit once its exit criteria are met, before moving on to the
   next phase — don't let multiple phases pile up uncommitted.
+- **Verify with real test cases (`npm test`, Vitest), not one-off curl
+  commands or throwaway scripts.** Business logic (`src/lib/*`) and API
+  routes get test files under `tests/` that call the actual functions/route
+  handlers directly and assert on results — not manual `curl` invocations
+  or `node verify-*.mjs` scripts written once and deleted. Tests run
+  against the real (dev) Supabase project, since there's no separate test
+  database — every test must clean up any data/stock it touches (in
+  `afterEach`/`afterAll`), and must push cleanup state *immediately* after
+  a mutation, before any assertion that could throw and skip it. A
+  temporary debugging script is fine mid-investigation, but once behavior
+  is confirmed, encode it as a test rather than discarding it — the tests
+  this rule produced already caught a real production bug
+  (`cancelOrderAndRestoreStock` restoring stock before checking order
+  status) that manual curl testing had missed.

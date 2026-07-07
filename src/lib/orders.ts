@@ -139,6 +139,21 @@ export async function cancelOrderAndRestoreStock(
 ): Promise<boolean> {
   const supabase = getSupabaseServerClient();
 
+  // Guarded status update happens FIRST — only restore stock if this order
+  // was actually still pending_payment. Restoring unconditionally would add
+  // stock back for an order that's already paid/shipped/cancelled.
+  const { data: updated, error: statusErr } = await supabase
+    .from("orders")
+    .update({ status: "cancelled" })
+    .eq("id", orderId)
+    .eq("status", "pending_payment")
+    .select("id");
+
+  if (statusErr) throw statusErr;
+  if ((updated?.length ?? 0) === 0) {
+    return false;
+  }
+
   const { data: items, error: itemsErr } = await supabase
     .from("order_items")
     .select("variant_id, quantity")
@@ -154,15 +169,7 @@ export async function cancelOrderAndRestoreStock(
     if (error) throw error;
   }
 
-  const { data: updated, error: statusErr } = await supabase
-    .from("orders")
-    .update({ status: "cancelled" })
-    .eq("id", orderId)
-    .eq("status", "pending_payment")
-    .select("id");
-
-  if (statusErr) throw statusErr;
-  return (updated?.length ?? 0) > 0;
+  return true;
 }
 
 // Used by the order-expiry scheduled job (POST /api/orders/expire).
@@ -180,4 +187,104 @@ export async function getExpiredPendingOrderIds(
 
   if (error) throw error;
   return data.map((row) => row.id);
+}
+
+type OrderRow = {
+  id: string;
+  created_at: string;
+  status: OrderStatus;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  shipping_street: string;
+  shipping_city: string;
+  subtotal_centavos: number;
+  shipping_centavos: number;
+  total_centavos: number;
+  order_items: {
+    quantity: number;
+    unit_price_centavos: number;
+    products: { slug: string; name: string } | null;
+    product_variants: { label: string } | null;
+  }[];
+};
+
+function mapOrderRow(row: OrderRow): Order {
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    status: row.status,
+    customer: {
+      name: row.customer_name,
+      email: row.customer_email,
+      phone: row.customer_phone,
+    },
+    shippingAddress: {
+      street: row.shipping_street,
+      city: row.shipping_city,
+    },
+    items: row.order_items.map((item) => ({
+      slug: item.products?.slug ?? "",
+      name: item.products?.name ?? "(deleted product)",
+      variant: item.product_variants?.label ?? "(deleted variant)",
+      quantity: item.quantity,
+      priceCentavos: item.unit_price_centavos,
+    })),
+    subtotalCentavos: row.subtotal_centavos,
+    shippingCentavos: row.shipping_centavos,
+    totalCentavos: row.total_centavos,
+  };
+}
+
+const ADMIN_ORDER_SELECT =
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, total_centavos, order_items(quantity, unit_price_centavos, products(slug, name), product_variants(label))";
+
+export async function listOrdersForAdmin(): Promise<Order[]> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select(ADMIN_ORDER_SELECT)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as unknown as OrderRow[]).map(mapOrderRow);
+}
+
+export async function markOrderPaid(orderId: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "paid" })
+    .eq("id", orderId)
+    .eq("status", "pending_payment");
+
+  if (error) throw error;
+}
+
+export async function markOrderShipped(orderId: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "shipped" })
+    .eq("id", orderId)
+    .eq("status", "paid");
+
+  if (error) throw error;
+}
+
+export async function getSalesSummary(): Promise<{
+  orderCount: number;
+  revenueCentavos: number;
+}> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("total_centavos")
+    .in("status", ["paid", "shipped"]);
+
+  if (error) throw error;
+  return {
+    orderCount: data.length,
+    revenueCentavos: data.reduce((sum, row) => sum + row.total_centavos, 0),
+  };
 }
