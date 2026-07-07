@@ -10,6 +10,11 @@ project rule in CLAUDE.md.
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
+- [ ] **Blocks Phase 4 (Admin auth, in progress) verification: run
+  `supabase/migrations/0003_admin_users.sql`** against the Supabase project
+  (same SQL Editor flow as the earlier migrations) — adds the admin
+  allow-list table the login flow checks against. Without it, `src/proxy.ts`
+  can't verify who's an admin.
 - [ ] **Blocks Phase 6 (email loop) verification: set `RESEND_API_KEY` in
   `.env.local`.** Without it, order emails silently no-op with a console
   warning instead of actually sending. Get a key from
