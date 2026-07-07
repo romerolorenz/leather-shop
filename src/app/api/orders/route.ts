@@ -6,7 +6,10 @@ import {
   InsufficientStockError,
   type NewOrderItem,
 } from "@/lib/orders";
-import { sendOrderNotificationEmail } from "@/lib/email";
+import {
+  sendOrderNotificationEmail,
+  sendOrderConfirmationEmail,
+} from "@/lib/email";
 
 type OrderRequestBody = {
   customer?: { name?: string; email?: string; phone?: string };
@@ -104,7 +107,16 @@ export async function POST(request: Request) {
     await sendOrderNotificationEmail(order);
   } catch (err) {
     console.error(
-      `[email] Failed to send notification for order ${order.id}:`,
+      `[email] Failed to send admin notification for order ${order.id}:`,
+      err
+    );
+  }
+
+  try {
+    await sendOrderConfirmationEmail(order);
+  } catch (err) {
+    console.error(
+      `[email] Failed to send customer confirmation for order ${order.id}:`,
       err
     );
   }

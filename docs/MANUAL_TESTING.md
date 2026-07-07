@@ -93,7 +93,7 @@ need a real browser session:
 
 ## Follow-up: interactive gallery
 
-- [ ] PDP: clicking a thumbnail swaps it into the main photo position.
+- [x] PDP: clicking a thumbnail swaps it into the main photo position.
   The thumbnail grid now shows *all* photos (including whichever one is
   currently the main photo), with the active one outlined.
-  Findings:
+  Findings: working

@@ -10,17 +10,14 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [x] **Blocks the multi-photo gallery follow-up (in progress): run
-  `supabase/migrations/0005_product_photo_gallery.sql`** against the
-  Supabase project (same SQL Editor flow as the earlier migrations) —
-  replaces the single `photo_url` column with a `product_photos` table
-  (migrates any existing photo automatically) and drops `photo_url`.
-  Without it, admin/public product pages error (they now query
-  `product_photos`, which doesn't exist yet).
-- [ ] **Blocks Phase 6 (email loop) verification: set `RESEND_API_KEY` in
-  `.env.local`.** Without it, order emails silently no-op with a console
-  warning instead of actually sending. Get a key from
-  [resend.com](https://resend.com).
+- [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
+  Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
+  send to your own account email (`marcolorenzoromero@gmail.com`) — it
+  rejected even a `+alias` of that same address. This means **customer
+  order-confirmation emails currently cannot reach any real customer**,
+  only you. Code/tests are otherwise done (Phase 6). Verify a domain at
+  resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it
+  before real customers place orders.
 - [ ] **Doesn't block any phase's build, but needed to go live: deploy to
   Vercel.** Connect the GitHub repo, and set all the `.env.local`
   variables (Supabase, Resend, `CRON_SECRET`) in the Vercel project's
@@ -29,9 +26,6 @@ blockers, then items that don't block any phase.
   `/api/orders/expire` actually start firing (it's already correct code,
   just not running anywhere yet) — check whether your Vercel plan supports
   hourly frequency (some tiers restrict Cron to daily).
-- [ ] **Doesn't block any phase: upload real product photos** to Supabase
-  Storage. PDPs currently render an empty gray placeholder box — Phase 5
-  builds the upload capability itself, so this can happen anytime after.
 - [ ] **Doesn't block any phase: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.
@@ -51,3 +45,9 @@ blockers, then items that don't block any phase.
 - [x] Verify the live login flow: allow-listed email reaches `/admin`,
   a different Google account gets denied.
 - [x] Run `supabase/migrations/0004_product_photos.sql` against it.
+- [x] Run `supabase/migrations/0005_product_photo_gallery.sql` against it.
+- [x] Set `RESEND_API_KEY` in `.env.local`.
+- [x] Verify both order emails live: admin notification and customer
+  confirmation (with HTML formatting + product photo) both actually
+  arrived, sent to `marcolorenzoromero@gmail.com`.
+- [x] Upload real product photos — done via the admin UI during testing.
