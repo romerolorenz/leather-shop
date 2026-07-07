@@ -273,18 +273,30 @@ export async function markOrderShipped(orderId: string): Promise<void> {
 }
 
 export async function getSalesSummary(): Promise<{
-  orderCount: number;
+  pendingCount: number;
+  paidCount: number;
+  shippedCount: number;
   revenueCentavos: number;
 }> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("orders")
-    .select("total_centavos")
-    .in("status", ["paid", "shipped"]);
+    .select("status, total_centavos");
 
   if (error) throw error;
+
+  const paidAndShipped = data.filter(
+    (row) => row.status === "paid" || row.status === "shipped"
+  );
+
   return {
-    orderCount: data.length,
-    revenueCentavos: data.reduce((sum, row) => sum + row.total_centavos, 0),
+    pendingCount: data.filter((row) => row.status === "pending_payment")
+      .length,
+    paidCount: data.filter((row) => row.status === "paid").length,
+    shippedCount: data.filter((row) => row.status === "shipped").length,
+    revenueCentavos: paidAndShipped.reduce(
+      (sum, row) => sum + row.total_centavos,
+      0
+    ),
   };
 }

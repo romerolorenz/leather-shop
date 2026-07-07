@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { getProductBySlug } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import ProductDetail from "./ProductDetail";
@@ -21,7 +22,18 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
         ]}
       />
       <div className="grid grid-cols-1 gap-10 sm:grid-cols-2">
-        <div className="aspect-square w-full rounded-lg bg-zinc-100 dark:bg-zinc-900" />
+        {product.photoUrl ? (
+          <Image
+            src={product.photoUrl}
+            alt={product.name}
+            width={800}
+            height={800}
+            priority
+            className="aspect-square w-full rounded-lg object-cover"
+          />
+        ) : (
+          <div className="aspect-square w-full rounded-lg bg-zinc-100 dark:bg-zinc-900" />
+        )}
         <ProductDetail product={product} />
       </div>
     </main>

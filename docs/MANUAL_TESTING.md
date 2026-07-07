@@ -11,32 +11,32 @@ MANUAL_TASKS.md.
 
 Dev server: http://localhost:3000 (ask if it's not running).
 
-- [ ] `/admin` shows order count/revenue tiles and links to
+- [x] `/admin` shows order count/revenue tiles and links to
   Products/Orders/Shop settings.
-  Findings:
+  Findings: working, add a separate count for pending orders awaiting payment, paid, and shipped
 
-- [ ] `/admin/products` → **New product** → fill in name/description/
+- [x] `/admin/products` → **New product** → fill in name/description/
   category/price/lead time → Create. Lands on that product's edit page.
-  Findings:
+  Findings: 
 
-- [ ] On the edit page: **Add variant** (e.g. "Red", stock 5), **Save** it
+- [x] On the edit page: **Add variant** (e.g. "Red", stock 5), **Save** it
   with a different stock number, then **Delete** it.
-  Findings:
+  Findings: working
 
-- [ ] Upload a photo (any image file) — shows a preview instead of the
+- [x] Upload a photo (any image file) — shows a preview instead of the
   gray box.
-  Findings:
+  Findings: uploaded an image but its not showing in the shop page
 
-- [ ] Edit the product's price or description, **Save product**, confirm
+- [x] Edit the product's price or description, **Save product**, confirm
   it shows updated on `/products/<slug>` on the public storefront.
-  Findings:
+  Findings: working
 
-- [ ] `/admin/orders` lists orders (empty is fine if none exist).
-  Findings:
+- [x] `/admin/orders` lists orders (empty is fine if none exist).
+  Findings: group orders by status
 
-- [ ] `/admin/settings` — change something small (e.g. shipping fee by
+- [x] `/admin/settings` — change something small (e.g. shipping fee by
   ₱1), Save, then check `/cart` shows the new fee.
-  Findings:
+  Findings: working
 
 ## Breadcrumbs (shopper + admin)
 
@@ -44,8 +44,27 @@ Verified via curl on the storefront side (`/products`, PDP, `/cart`,
 `/privacy` all render correctly). Admin pages are gated by login, so these
 need a real browser session:
 
-- [ ] `/admin`, `/admin/products`, `/admin/products/new`,
+- [x] `/admin`, `/admin/products`, `/admin/products/new`,
   `/admin/products/<id>`, `/admin/orders`, `/admin/settings` each show a
   breadcrumb trail (e.g. Admin / Products / *Product Name*) above the page
   heading, and each non-current crumb is a working link.
+  Findings: working
+
+## Follow-ups from Phase 5 findings
+
+- [ ] Photo upload: uploaded photo now shows on `/products` and the PDP
+  (was only ever saved to `photo_url`, never rendered — public queries
+  didn't select it and both pages hardcoded a gray placeholder box).
+  Findings:
+
+- [ ] `/admin` dashboard now shows separate Pending/Paid/Shipped counts
+  instead of one combined "paid + shipped" figure.
+  Findings:
+
+- [ ] `/admin/orders` groups orders under status headings (Pending
+  payment / Paid / Shipped / Cancelled) instead of one flat list.
+  Findings:
+
+- [ ] Buttons and links show visible feedback on click/tap (slight
+  opacity + scale change) site-wide.
   Findings:

@@ -16,10 +16,11 @@ export type Product = {
   orderingEnabled: boolean;
   variants: ProductVariant[];
   description: string;
+  photoUrl: string | null;
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, product_variants(id, label, in_stock)";
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, photo_url, product_variants(id, label, in_stock)";
 
 type ProductRow = {
   id: string;
@@ -30,6 +31,7 @@ type ProductRow = {
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
+  photo_url: string | null;
   product_variants: { id: string; label: string; in_stock: boolean }[];
 };
 
@@ -43,6 +45,7 @@ function mapRow(row: ProductRow): Product {
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
     description: row.description,
+    photoUrl: row.photo_url,
     variants: row.product_variants.map((v) => ({
       id: v.id,
       label: v.label,

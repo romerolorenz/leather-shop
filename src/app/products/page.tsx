@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getProducts, formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
@@ -15,7 +16,17 @@ export default async function ProductsPage() {
         {products.map((product) => (
           <li key={product.slug}>
             <Link href={`/products/${product.slug}`} className="block">
-              <div className="aspect-square w-full rounded-lg bg-zinc-100 dark:bg-zinc-900" />
+              {product.photoUrl ? (
+                <Image
+                  src={product.photoUrl}
+                  alt={product.name}
+                  width={600}
+                  height={600}
+                  className="aspect-square w-full rounded-lg object-cover"
+                />
+              ) : (
+                <div className="aspect-square w-full rounded-lg bg-zinc-100 dark:bg-zinc-900" />
+              )}
               <h2 className="mt-3 font-medium">{product.name}</h2>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
                 {formatPrice(product.priceCentavos)}
