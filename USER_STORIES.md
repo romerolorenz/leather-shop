@@ -72,8 +72,8 @@ without constantly checking the admin portal. [§6]
 
 ## Accounts
 
-**US-16**: As a Shopper, I want to log in with Google or Facebook, so that
-I don't need to create and remember a new password. [§6]
+**US-16**: As a Shopper, I want to log in with Google, so that I don't need
+to create and remember a new password. [§6]
 
 **US-17**: As a returning Shopper, I want to view my past orders and their
 status, so that I can track a purchase without emailing the shop. [§6]

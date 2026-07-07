@@ -123,7 +123,8 @@ finalized and swapped in later without a structural rebuild.
 - Guest checkout (account optional, not required).
 
 ### Account
-- Login/Creation should only be via social login (google/facebook)
+- Login/Creation should only be via Google social login (no email/password,
+  no Facebook — decided to keep auth to a single provider).
 - Order history / order status lookup.
 - Saved addresses.
 
@@ -179,8 +180,8 @@ finalized and swapped in later without a structural rebuild.
   separate backend service.
 - Hosting: Vercel (or equivalent) as the path of least friction for Next.js.
 - **Database**: Supabase (Postgres). Chosen over a bare Postgres connection
-  because it also bundles the Google/Facebook social login already required
-  in §6 (Account) and file storage for product photos in §5 — one
+  because it also bundles the Google social login already required in §6
+  (Account) and file storage for product photos in §5 — one
   integration covers persistence, auth, and image hosting instead of three
   separate services. Relational fits the data model (products → variants →
   orders → order items) and supports the aggregation queries behind the

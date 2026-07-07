@@ -164,8 +164,9 @@ navigation/footer; FAQ content editable from `/admin` without a deploy.
 ## Phase 8 — Customer accounts
 
 Ref: US-16, US-17, US-18. Confirmed in scope for v1.
-- Google/Facebook social login for customers (reuses the Supabase Auth
-  setup from Phase 4, different consumer).
+- Google social login for customers (reuses the Supabase Auth setup from
+  Phase 4, different consumer — no Facebook, decided to keep auth to a
+  single provider).
 - Order history / status lookup (US-17) — query `orders` by the logged-in
   user's email.
 - Saved addresses (US-18).
