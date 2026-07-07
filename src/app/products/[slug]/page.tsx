@@ -1,8 +1,24 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import ProductDetail from "./ProductDetail";
 import ProductGallery from "./ProductGallery";
+
+export async function generateMetadata(
+  props: PageProps<"/products/[slug]">
+): Promise<Metadata> {
+  const { slug } = await props.params;
+  const product = await getProductBySlug(slug);
+  if (!product) return {};
+
+  return {
+    title: `${product.name} — Leather Shop`,
+    description:
+      product.description ||
+      `${product.name} — handcrafted leather goods, made in small batches.`,
+  };
+}
 
 export default async function ProductPage(props: PageProps<"/products/[slug]">) {
   const { slug } = await props.params;

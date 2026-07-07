@@ -159,6 +159,7 @@ export default async function EditProductPage(
                     <input
                       name={`label:${variant.id}`}
                       defaultValue={variant.label}
+                      aria-label="Variant label"
                       required
                       className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
                     />
@@ -167,6 +168,7 @@ export default async function EditProductPage(
                       type="number"
                       min="0"
                       defaultValue={variant.stockQuantity}
+                      aria-label="Stock quantity"
                       required
                       className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
                     />
@@ -191,7 +193,7 @@ export default async function EditProductPage(
           </form>
         )}
         {product.variants.length === 0 && (
-          <p className="mb-6 text-sm text-zinc-500">No variants yet.</p>
+          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">No variants yet.</p>
         )}
 
         <form action={addVariant} className="flex items-center gap-2">
@@ -206,6 +208,7 @@ export default async function EditProductPage(
             type="number"
             min="0"
             defaultValue={0}
+            aria-label="Stock quantity"
             required
             className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
           />

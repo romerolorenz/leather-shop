@@ -23,7 +23,7 @@ export default async function FaqPage() {
           </div>
         ))}
         {items.length === 0 && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             No FAQ content yet — check back soon.
           </p>
         )}

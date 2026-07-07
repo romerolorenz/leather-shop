@@ -81,12 +81,14 @@ export default async function AdminFaqPage() {
                 <input
                   name="question"
                   defaultValue={item.question}
+                  aria-label="Question"
                   required
                   className="w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm font-medium dark:border-white/[.2]"
                 />
                 <textarea
                   name="answer"
                   defaultValue={item.answer}
+                  aria-label="Answer"
                   required
                   rows={3}
                   className="w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm dark:border-white/[.2]"
@@ -118,7 +120,7 @@ export default async function AdminFaqPage() {
           );
         })}
         {items.length === 0 && (
-          <li className="text-sm text-zinc-500">No FAQ items yet.</li>
+          <li className="text-sm text-zinc-500 dark:text-zinc-400">No FAQ items yet.</li>
         )}
       </ul>
 

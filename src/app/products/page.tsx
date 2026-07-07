@@ -3,6 +3,12 @@ import Image from "next/image";
 import { getProducts, formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
+export const metadata = {
+  title: "Shop — Leather Shop",
+  description:
+    "Shop handcrafted leather goods, made in small batches — wallets, bags, and more.",
+};
+
 export default async function ProductsPage() {
   const products = await getProducts();
 
@@ -32,7 +38,7 @@ export default async function ProductsPage() {
                 {formatPrice(product.priceCentavos)}
               </p>
               {!product.orderingEnabled && (
-                <p className="text-sm text-zinc-500">Currently unavailable</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Currently unavailable</p>
               )}
             </Link>
           </li>

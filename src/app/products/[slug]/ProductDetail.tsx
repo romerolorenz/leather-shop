@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatPrice, type Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
+import { trackEvent } from "@/lib/track-event";
 
 export default function ProductDetail({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -25,6 +26,11 @@ export default function ProductDetail({ product }: { product: Product }) {
       priceCentavos: product.priceCentavos,
       variant: selectedVariant,
       photoUrl: product.photos[0] ?? null,
+    });
+    trackEvent("add_to_cart", {
+      slug: product.slug,
+      variant: selectedVariant,
+      priceCentavos: product.priceCentavos,
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
@@ -64,7 +70,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
       </div>
 
-      <p className="mt-4 text-sm text-zinc-500">
+      <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
         Lead time: ~{product.leadTimeDays} days
       </p>
 

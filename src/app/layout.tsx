@@ -34,6 +34,12 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-md focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:text-background"
+        >
+          Skip to content
+        </a>
         <CartProvider>
           <header className="border-b border-black/[.08] dark:border-white/[.145]">
             <nav className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
@@ -82,9 +88,11 @@ export default async function RootLayout({
               </div>
             </nav>
           </header>
-          <div className="flex flex-1 flex-col">{children}</div>
+          <div id="main-content" className="flex flex-1 flex-col">
+            {children}
+          </div>
           <footer className="border-t border-black/[.08] px-6 py-8 dark:border-white/[.145]">
-            <nav className="mx-auto flex max-w-3xl flex-wrap gap-6 text-sm text-zinc-500">
+            <nav className="mx-auto flex max-w-3xl flex-wrap gap-6 text-sm text-zinc-500 dark:text-zinc-400">
               <Link href="/products">Shop</Link>
               <Link href="/faq">FAQ</Link>
               <Link href="/contact">Contact Us</Link>

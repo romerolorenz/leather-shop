@@ -14,19 +14,19 @@ export default async function AdminPage() {
 
       <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-          <p className="text-sm text-zinc-500">Pending payment</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Pending payment</p>
           <p className="text-2xl font-semibold">{pendingCount}</p>
         </div>
         <div className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-          <p className="text-sm text-zinc-500">Paid</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Paid</p>
           <p className="text-2xl font-semibold">{paidCount}</p>
         </div>
         <div className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-          <p className="text-sm text-zinc-500">Shipped</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Shipped</p>
           <p className="text-2xl font-semibold">{shippedCount}</p>
         </div>
         <div className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-          <p className="text-sm text-zinc-500">Revenue</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Revenue</p>
           <p className="text-2xl font-semibold">
             {formatPrice(revenueCentavos)}
           </p>

@@ -33,10 +33,10 @@ function OrderCard({ order }: { order: Order }) {
           <p className="font-medium">
             #{order.id.slice(0, 8)} — {order.customer.name}
           </p>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {order.customer.email} · {order.customer.phone}
           </p>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {order.shippingAddress.street}, {order.shippingAddress.city}
           </p>
           <p className="mt-2 text-sm">
@@ -89,7 +89,7 @@ export default async function AdminOrdersPage() {
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">Orders</h1>
 
       {orders.length === 0 && (
-        <p className="text-sm text-zinc-500">No orders yet.</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">No orders yet.</p>
       )}
 
       {STATUS_ORDER.map((status) => {
@@ -98,7 +98,7 @@ export default async function AdminOrdersPage() {
 
         return (
           <details key={status} className="mb-6" open={status !== "cancelled"}>
-            <summary className="mb-4 cursor-pointer text-sm font-medium text-zinc-500">
+            <summary className="mb-4 cursor-pointer text-sm font-medium text-zinc-500 dark:text-zinc-400">
               {STATUS_LABEL[status]} ({group.length})
             </summary>
             <ul className="flex flex-col gap-4">

@@ -35,7 +35,7 @@ export default async function AdminProductsPage() {
               >
                 <div>
                   <p className="font-medium">{product.name}</p>
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
                     {product.category} · {formatPrice(product.priceCentavos)}{" "}
                     · {product.variants.length} variant
                     {product.variants.length === 1 ? "" : "s"} · stock:{" "}
@@ -43,14 +43,14 @@ export default async function AdminProductsPage() {
                   </p>
                 </div>
                 {!product.orderingEnabled && (
-                  <span className="text-sm text-zinc-500">Paused</span>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">Paused</span>
                 )}
               </Link>
             </li>
           );
         })}
         {products.length === 0 && (
-          <li className="py-4 text-sm text-zinc-500">No products yet.</li>
+          <li className="py-4 text-sm text-zinc-500 dark:text-zinc-400">No products yet.</li>
         )}
       </ul>
     </main>

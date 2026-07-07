@@ -12,6 +12,31 @@ collapsed to a one-line summary below (full history is in git — see the
 phase's commit and any follow-up commits for exactly what was tested and
 fixed).
 
+## Phase 9 — Non-functional hardening
+
+Verified programmatically: Lighthouse (mobile viewport, headless Chrome)
+scores 100/100/100 (accessibility/best-practices/SEO) on `/` and a product
+page, 100/100 on `/checkout` (its 63 SEO score is expected — `/checkout` is
+correctly excluded from indexing via `robots.txt`, which is what the SEO
+audit is flagging, not a defect). `/sitemap.xml` and `/robots.txt` verified
+live. Event logging (`add_to_cart`, `checkout_started`, `order_placed`)
+covered by `tests/events.test.ts` and `tests/api-events.test.ts`. What's
+left needs an actual mobile device or emulator, not just a resized desktop
+browser window:
+
+- [ ] **Pending — blocked on deploy.** On a real mobile device (or a
+  device emulator, not just a resized desktop window): browse `/products`
+  → open a product → add to cart → `/cart` → `/checkout` → place an
+  order. Confirm every step is usable — tap targets aren't too small,
+  text is legible without zooming, no horizontal scrolling, the
+  sticky/fixed elements (if any) don't overlap content.
+  Findings:
+
+- [ ] **Pending — blocked on deploy.** On the same device: log in via the
+  header's Log In link (Google OAuth), check `/account` and
+  `/account/addresses`.
+  Findings:
+
 ## Done
 
 - [x] **IMPROVEMENTS.md follow-through.** Verified across two rounds:

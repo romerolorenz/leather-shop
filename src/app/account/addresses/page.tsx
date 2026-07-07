@@ -41,7 +41,7 @@ export default async function AddressesPage() {
             >
               <div className="mb-2 flex items-center justify-between">
                 {address.isDefault && (
-                  <span className="text-xs font-medium text-zinc-500">
+                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                     Default
                   </span>
                 )}
@@ -111,7 +111,7 @@ export default async function AddressesPage() {
                     </option>
                   ))}
                 </select>
-                <label className="flex items-center gap-2 text-sm text-zinc-500">
+                <label className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
                   <input
                     type="checkbox"
                     name="isDefault"
@@ -146,7 +146,7 @@ export default async function AddressesPage() {
           );
         })}
         {addresses.length === 0 && (
-          <li className="text-sm text-zinc-500">No saved addresses yet.</li>
+          <li className="text-sm text-zinc-500 dark:text-zinc-400">No saved addresses yet.</li>
         )}
       </ul>
 
@@ -191,7 +191,7 @@ export default async function AddressesPage() {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-2 text-sm text-zinc-500">
+        <label className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
           <input type="checkbox" name="isDefault" />
           Default address
         </label>

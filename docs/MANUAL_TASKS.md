@@ -10,6 +10,20 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
+- [ ] **Blocks Phase 9 (non-functional hardening, in progress) exit
+  criteria, also needed to go live: deploy to Vercel.** Connect the
+  GitHub repo, and set all the `.env.local` variables (Supabase, Resend,
+  `CRON_SECRET`) in the Vercel project's environment variable settings —
+  they don't carry over automatically. This is also what makes
+  `vercel.json`'s Cron entry for `/api/orders/expire` actually start
+  firing (it's already correct code, just not running anywhere yet) —
+  check whether your Vercel plan supports hourly frequency (some tiers
+  restrict Cron to daily). Also set `NEXT_PUBLIC_SITE_URL` to the real
+  production domain (Phase 9) — it defaults to `http://localhost:3000`,
+  which would otherwise ship into the live sitemap/robots.txt. Once
+  deployed: do the mobile-device walkthrough in MANUAL_TESTING.md's
+  Phase 9 section (real device, not a resized desktop window) — that's
+  the last piece of Phase 9's exit criteria.
 - [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
   Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
   send to your own account email (`marcolorenzoromero@gmail.com`) — it
@@ -18,14 +32,6 @@ blockers, then items that don't block any phase.
   only you. Code/tests are otherwise done (Phase 6). Verify a domain at
   resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it
   before real customers place orders.
-- [ ] **Doesn't block any phase's build, but needed to go live: deploy to
-  Vercel.** Connect the GitHub repo, and set all the `.env.local`
-  variables (Supabase, Resend, `CRON_SECRET`) in the Vercel project's
-  environment variable settings — they don't carry over automatically.
-  This is also what makes `vercel.json`'s Cron entry for
-  `/api/orders/expire` actually start firing (it's already correct code,
-  just not running anywhere yet) — check whether your Vercel plan supports
-  hourly frequency (some tiers restrict Cron to daily).
 - [ ] **Doesn't block any phase: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.

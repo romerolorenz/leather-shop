@@ -15,7 +15,7 @@ export default async function AccountLayout({
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex items-center justify-between border-b border-black/[.08] px-6 py-3 text-sm dark:border-white/[.145]">
-        <span className="text-zinc-500">Signed in as {user?.email}</span>
+        <span className="text-zinc-500 dark:text-zinc-400">Signed in as {user?.email}</span>
         <form action="/auth/signout" method="post">
           <button type="submit" className="underline">
             Sign out

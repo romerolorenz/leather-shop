@@ -118,7 +118,7 @@ export function buildOrderConfirmationEmail(
         Delivery is Metro Manila only.
       </p>
 
-      <p style="font-size:12px;color:#a1a1aa;margin:24px 0 0;">Order ID: ${order.id}</p>
+      <p style="font-size:12px;color:#71717a;margin:24px 0 0;">Order ID: ${order.id}</p>
     </div>
   `;
 

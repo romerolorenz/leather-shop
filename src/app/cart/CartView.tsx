@@ -59,8 +59,8 @@ export default function CartView({
               )}
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-zinc-500">{item.variant}</p>
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variant}</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   {formatPrice(item.priceCentavos)}
                 </p>
               </div>
@@ -95,7 +95,7 @@ export default function CartView({
                 type="button"
                 onClick={() => removeItem(item.slug, item.variant)}
                 aria-label="Remove item"
-                className="rounded-md p-1.5 text-zinc-500 transition-transform hover:bg-red-600/10 hover:text-red-600 active:scale-95"
+                className="rounded-md p-1.5 text-zinc-500 dark:text-zinc-400 transition-transform hover:bg-red-600/10 hover:text-red-600 active:scale-95"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -123,7 +123,7 @@ export default function CartView({
         <span className="font-medium">Subtotal</span>
         <span className="font-medium">{formatPrice(totalCentavos)}</span>
       </div>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
         Shipping ({formatPrice(shippingFeeCentavos)} flat, Metro Manila)
         calculated at checkout.
       </p>

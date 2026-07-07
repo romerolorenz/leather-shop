@@ -20,6 +20,14 @@ later work. Not started until explicitly requested — see items below.
   of inline feedback. No modal/toast primitive exists in the codebase yet
   — pick one (native `<dialog>`, a small custom component, or a library)
   before wiring it up everywhere.
+- [ ] **Header nav: "Log In" is still a text link, inconsistent with the
+  rest of the nav.** `src/app/layout.tsx:68-86` shows a person icon linking
+  to `/account` when `customerEmail` is set, but falls back to a plain
+  `Log In` text link (line 85) when logged out — every other nav item
+  (Shop, Account, Cart) is icon-only. Give the logged-out state an icon
+  too (e.g. a login/person-outline icon) so the nav is visually consistent
+  regardless of auth state, keeping an `aria-label="Log In"` since the
+  visible text goes away.
 
 ## Done
 

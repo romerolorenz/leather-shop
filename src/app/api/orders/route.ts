@@ -10,6 +10,7 @@ import {
   sendOrderNotificationEmail,
   sendOrderConfirmationEmail,
 } from "@/lib/email";
+import { logEvent } from "@/lib/events";
 
 type OrderRequestBody = {
   customer?: { name?: string; email?: string; phone?: string };
@@ -102,6 +103,12 @@ export async function POST(request: Request) {
     }
     throw err;
   }
+
+  logEvent("order_placed", {
+    orderId: order.id,
+    itemCount: order.items.length,
+    totalCentavos: order.totalCentavos,
+  });
 
   try {
     await sendOrderNotificationEmail(order);

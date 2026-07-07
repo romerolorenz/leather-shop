@@ -78,7 +78,7 @@ export default async function AdminSettingsPage() {
             defaultValue={settings.orderPaymentHoldHours}
             className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
           />
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             An unpaid order auto-cancels and restores its stock after this
             many hours.
           </p>

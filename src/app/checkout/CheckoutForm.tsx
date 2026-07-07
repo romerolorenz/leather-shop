@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { trackEvent } from "@/lib/track-event";
 import type { CustomerAddress } from "@/lib/customer/addresses";
 
 const checkoutCrumbs = [
@@ -33,6 +34,20 @@ export default function CheckoutForm({
   const phoneRef = useRef<HTMLInputElement>(null);
   const streetRef = useRef<HTMLInputElement>(null);
   const cityRef = useRef<HTMLSelectElement>(null);
+  const hasTrackedCheckoutStart = useRef(false);
+
+  useEffect(() => {
+    // Cart hydrates from localStorage asynchronously (see cart-context.tsx),
+    // so items.length can go 0 -> N after mount — wait for that instead of
+    // firing on the initial empty render, but only fire once per visit.
+    if (!hasTrackedCheckoutStart.current && items.length > 0) {
+      hasTrackedCheckoutStart.current = true;
+      trackEvent("checkout_started", {
+        itemCount: items.length,
+        totalCentavos,
+      });
+    }
+  }, [items.length, totalCentavos]);
 
   const defaultAddress =
     savedAddresses.find((address) => address.isDefault) ?? savedAddresses[0];
@@ -227,7 +242,7 @@ export default function CheckoutForm({
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               Delivery is available in Metro Manila only. Outside Metro
               Manila?{" "}
               <Link href="/contact" className="underline">
@@ -277,7 +292,7 @@ export default function CheckoutForm({
             <span>Total</span>
             <span>{formatPrice(totalCentavos + shippingFeeCentavos)}</span>
           </div>
-          <p className="mt-4 text-sm text-zinc-500">
+          <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
             Payment is handled manually after ordering (bank transfer / GCash
             / Maya) — we&apos;ll follow up with instructions.
           </p>

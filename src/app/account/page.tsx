@@ -61,7 +61,7 @@ function OrderCard({
                 <p className="text-sm">
                   {item.quantity}x {item.name}
                 </p>
-                <p className="text-sm text-zinc-500">{item.variant}</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variant}</p>
               </div>
             </li>
           );
@@ -89,7 +89,7 @@ export default async function AccountPage() {
       </div>
 
       {orders.length === 0 && (
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
           No orders yet.{" "}
           <Link href="/products" className="underline">
             Browse the collection
@@ -104,7 +104,7 @@ export default async function AccountPage() {
 
         return (
           <details key={status} className="mb-6" open={status !== "cancelled"}>
-            <summary className="mb-4 cursor-pointer text-sm font-medium text-zinc-500">
+            <summary className="mb-4 cursor-pointer text-sm font-medium text-zinc-500 dark:text-zinc-400">
               {STATUS_LABEL[status]} ({group.length})
             </summary>
             <ul className="flex flex-col gap-4">
