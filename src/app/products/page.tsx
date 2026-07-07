@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { products, formatPrice } from "@/lib/products";
+import { getProducts, formatPrice } from "@/lib/products";
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const products = await getProducts();
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">

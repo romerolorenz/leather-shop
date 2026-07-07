@@ -1,3 +1,5 @@
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+
 export type ProductVariant = {
   label: string;
   inStock: boolean;
@@ -14,37 +16,60 @@ export type Product = {
   description: string;
 };
 
-export const products: Product[] = [
-  {
-    slug: "classic-bifold-wallet",
-    name: "Classic Bifold Wallet",
-    category: "Wallets",
-    priceCentavos: 189900,
-    leadTimeDays: 5,
-    orderingEnabled: true,
-    variants: [
-      { label: "Chestnut Brown", inStock: true },
-      { label: "Black", inStock: true },
-    ],
-    description: "Full-grain leather bifold wallet, hand-stitched.",
-  },
-  {
-    slug: "tote-bag",
-    name: "Everyday Tote Bag",
-    category: "Bags",
-    priceCentavos: 429900,
-    leadTimeDays: 14,
-    orderingEnabled: true,
-    variants: [
-      { label: "Chestnut Brown", inStock: true },
-      { label: "Black", inStock: false },
-    ],
-    description: "Made-to-order tote, hand-cut and hand-stitched.",
-  },
-];
+const PRODUCT_SELECT =
+  "slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, product_variants(label, in_stock)";
 
-export function getProductBySlug(slug: string): Product | undefined {
-  return products.find((product) => product.slug === slug);
+type ProductRow = {
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  price_centavos: number;
+  lead_time_days: number;
+  ordering_enabled: boolean;
+  product_variants: { label: string; in_stock: boolean }[];
+};
+
+function mapRow(row: ProductRow): Product {
+  return {
+    slug: row.slug,
+    name: row.name,
+    category: row.category,
+    priceCentavos: row.price_centavos,
+    leadTimeDays: row.lead_time_days,
+    orderingEnabled: row.ordering_enabled,
+    description: row.description,
+    variants: row.product_variants.map((v) => ({
+      label: v.label,
+      inStock: v.in_stock,
+    })),
+  };
+}
+
+export async function getProducts(): Promise<Product[]> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data as ProductRow[]).map(mapRow);
+}
+
+export async function getProductBySlug(
+  slug: string
+): Promise<Product | undefined> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return undefined;
+  return mapRow(data as ProductRow);
 }
 
 export function formatPrice(centavos: number): string {

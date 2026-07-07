@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   const orderItems: OrderItem[] = [];
   for (const requested of body.items) {
     const product = requested.slug
-      ? getProductBySlug(requested.slug)
+      ? await getProductBySlug(requested.slug)
       : undefined;
     const quantity = requested.quantity ?? 0;
 
