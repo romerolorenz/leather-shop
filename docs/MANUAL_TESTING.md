@@ -37,40 +37,20 @@ browser window:
   `/account/addresses`.
   Findings:
 
-## IMPROVEMENTS.md follow-through (round 2)
-
-Verified via curl: header nav's Log In link now renders as an icon
-(`aria-label="Log In"`, no visible text), admin pages still gate correctly.
-The rest needs a real admin session:
-
-- [ ] `/admin/products/<id>` — deleting a variant or a photo now shows a
-  native browser confirm dialog first; cancelling it leaves the
-  variant/photo untouched. Confirming shows a toast in the bottom-right
-  ("Variant deleted." / "Photo deleted.").
-  Findings:
-
-- [x] `/admin/faq` — deleting a FAQ item shows a confirm dialog, then a
-  toast on success.
-  Findings: working
-
-- [ ] `/admin/orders` — **Mark paid** and **Mark shipped** show a success
-  toast (no confirm dialog — not destructive). **Cancel order** shows a
-  confirm dialog first, then a toast confirming the order was cancelled
-  and stock restored.
-  Findings:
-
-- [ ] Trigger an error path (e.g. click Cancel order on an order that's
-  already paid/shipped, if you can find one, or two rapid double-clicks)
-  — confirm it shows a red error toast instead of a Next.js error page.
-  Findings:
-
 ## Done
 
-- [x] **IMPROVEMENTS.md follow-through.** Verified across two rounds:
+- [x] **IMPROVEMENTS.md follow-through.** Verified across three rounds:
   admin variant/photo Delete are trash icons (photo delete overlaid
   top-right), variant list batch-saves in one submit, cart line items show
   a photo thumbnail with a trash-icon Remove, header nav uses icons for
-  Shop/Cart in FAQ / Contact Us / Shop / Account / Cart order.
+  Shop/Cart/Log In (FAQ / Contact Us / Shop / Account-or-Log In / Cart
+  order). Round 3: `/admin/products/<id>` and `/admin/faq` show a native
+  confirm dialog before deleting a variant/photo/FAQ item, `/admin/orders`
+  shows one before Cancel order (not before Mark paid/Mark shipped — those
+  aren't destructive); all six mutations show a success or error toast
+  instead of a bare Next.js error page. The error-toast path itself
+  couldn't be triggered during manual testing (no order in a state that
+  would reject Cancel), so that half is unverified, not confirmed working.
 - [x] **Phase 5 — Admin catalog + order management UI.** Verified across
   three rounds of fixes: separate pending/paid/shipped counts, multi-photo
   upload with a clickable thumbnail gallery on the PDP, orders grouped by
