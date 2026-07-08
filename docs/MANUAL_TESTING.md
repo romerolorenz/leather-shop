@@ -12,19 +12,24 @@ collapsed to a one-line summary below (full history is in git — see the
 phase's commit and any follow-up commits for exactly what was tested and
 fixed).
 
-## Follow-ups from round 5 findings
-
-- [ ] Header nav: My Account and Log In are now circular icons (person-in-
-  circle / arrow-in-circle), matching FAQ's circle silhouette instead of
-  the sparser line-based icons from before — the goal was to even out the
-  visual weight so the Shop↔Account/Login and Login↔Cart gaps don't read
-  as wider than the others. Screenshotted locally and the gaps measured
-  visually even (~43-44px each), but check on your end too, especially on
-  the actual deployed site.
-  Findings:
-
 ## Done
 
+- [x] **Round 6 — Tooltips, admin save toasts, Contact Us icons.** Header
+  nav icons (FAQ, Contact Us, Shop, My Account/Log In, Cart) show a hover/
+  focus tooltip; deliberately *not* added to the cart's −/+ or any other
+  admin icon (self-explanatory or already has a confirm dialog) — a first
+  pass over-applied tooltips everywhere and was reverted back to
+  navbar-only. Admin save/create actions (Save product, Add variant, Save
+  all variants, Upload photo, Save settings, Add/save FAQ item) now show a
+  success or error toast via new `ActionForm`/`SubmitButton` components,
+  matching the existing delete/mark/cancel toast behavior. Found and fixed
+  a real crash along the way: `ActionForm`'s original render-prop API
+  passed a function as `children` from a Server Component to a Client
+  Component (RSC can't serialize functions) — fixed by reading pending
+  state via `useFormStatus` in `SubmitButton` instead. `/contact` shows a
+  mail icon + Instagram icon next to each link, with a new
+  `contact_instagram_handle` setting so the link reads "@handle" instead
+  of the literal word "Instagram".
 - [x] **Round 4 — Contact form + header icon consistency.** Verified via
   curl: `/contact` renders the form, `/api/contact` correctly rejects
   missing fields and invalid emails (400). FAQ is now an icon too (header

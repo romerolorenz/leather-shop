@@ -1,6 +1,8 @@
 import { getSettings } from "@/lib/settings";
 import { updateSettingsAction } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { ActionForm } from "@/components/admin/ActionForm";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 export default async function AdminSettingsPage() {
   const settings = await getSettings();
@@ -13,7 +15,7 @@ export default async function AdminSettingsPage() {
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">
         Shop Settings
       </h1>
-      <form action={updateSettingsAction} className="flex flex-col gap-6">
+      <ActionForm action={updateSettingsAction} className="flex flex-col gap-6">
         <div>
           <label className="text-sm font-medium" htmlFor="shippingFee">
             Shipping fee (₱)
@@ -115,13 +117,30 @@ export default async function AdminSettingsPage() {
           />
         </div>
 
-        <button
-          type="submit"
-          className="w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+        <div>
+          <label
+            className="text-sm font-medium"
+            htmlFor="contactInstagramHandle"
+          >
+            Contact Us Instagram handle (shown as text, e.g. @yourshop)
+          </label>
+          <input
+            id="contactInstagramHandle"
+            name="contactInstagramHandle"
+            type="text"
+            required
+            defaultValue={settings.contactInstagramHandle}
+            className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          />
+        </div>
+
+        <SubmitButton
+          pendingLabel="Saving…"
+          className="w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
         >
           Save settings
-        </button>
-      </form>
+        </SubmitButton>
+      </ActionForm>
     </main>
   );
 }

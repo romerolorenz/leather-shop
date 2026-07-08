@@ -5,27 +5,84 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Icon-only controls need a hover tooltip, not just `aria-label`.**
-  All the icon work above (header nav, admin action buttons, cart, FAQ
-  reorder/save, saved addresses) left every icon with an `aria-label` for
-  screen readers but nothing visible on mouse hover — a sighted user has
-  to guess or click to find out what an icon does. Worst case is the
-  header nav (`src/app/layout.tsx:71-143`): FAQ, Contact Us, Shop,
-  My Account/Log In, and Cart are now five icons in a row with zero
-  visible text and no hover hint. Same gap on
-  `src/components/admin/ActionButton.tsx` (delete/mark paid/mark
-  shipped/cancel), the FAQ move-up/down/save icons
-  (`src/app/admin/faq/page.tsx`), and the saved-address delete/save icons
-  (`src/app/account/addresses/page.tsx`). Cheapest fix: add a native
-  `title` attribute alongside each existing `aria-label` (zero JS, browser
-  default styling, but inconsistent look across browsers and no styling
-  control). Nicer fix: a small shared `Tooltip` component — no
-  tooltip/icon-library primitive exists in the codebase yet, so pick one
-  approach and apply it everywhere rather than mixing native `title` in
-  some places and a custom component in others.
+- [ ] **Narrow tooltips to the header navbar only.** Currently `Tooltip`
+  (`src/components/Tooltip.tsx`) is applied broadly — navbar, every
+  `ActionButton` use (admin delete/mark/cancel icons), FAQ move-up/down and
+  the per-item save icon, and the saved-address delete/save icons (see the
+  "Icon-only controls" Done entry below). Manual-testing feedback: "I only
+  want the tooltips on the navbar; let's remove the others." When
+  implemented, remove the `Tooltip` wrapping from `ActionButton`
+  (`src/components/admin/ActionButton.tsx`), the cart's Remove button
+  (`src/app/cart/CartView.tsx`), `src/app/admin/faq/page.tsx`'s
+  move-up/down/save icons, and `src/app/account/addresses/page.tsx`'s
+  delete/save icons — leave `src/app/layout.tsx`'s navbar icons as the only
+  ones tooltipped.
+- [ ] **Product options beyond color: admin-configurable custom choices
+  (thread color, size, length, etc.), not just a single flat variant.**
+  Today a product's only selectable dimension is `product_variants.label`
+  — a single free-text field per row (`supabase/migrations/0001_init.sql`)
+  with one stock/capacity count each. The admin edit page
+  (`src/app/admin/products/[id]/page.tsx`) lets you add/edit/delete these
+  flat labels, and the PDP (`src/app/products/[slug]/ProductDetail.tsx`,
+  ~line 48-49) hardcodes the heading "Color" over a single row of swatch
+  buttons built from that one label list — there's no way to add a second
+  independent choice (e.g. thread color) without hacking it into the same
+  free-text label (e.g. typing "Black / Natural thread" as one variant),
+  which breaks stock tracking per real combination and reads wrong under a
+  "Color" heading. This is actually a gap against the PRD, not new scope —
+  `docs/PRODUCT_REQUIREMENTS.md` §3/§5 and **US-3** already call for
+  "select a color, size, and thread color from fixed dropdown/swatch
+  options," but only the single flat dimension got built.
+  Direction: introduce admin-defined **option types** per product (e.g.
+  "Color", "Thread Color", "Size", "Length"), each with its own ordered
+  list of admin-entered values, and make a **variant** a combination of one
+  value per option type (the standard e-commerce options→variants model).
+  This is a bigger change than the polish items above — touches the data
+  model (new `product_option_types` / `product_option_values` tables, or
+  similar; a migration), `src/lib/admin/catalog.ts` and `src/lib/products.ts`
+  (variant shape and combination logic), the admin product edit UI (define
+  option types + generate/manage variant combinations instead of one flat
+  list), the PDP (a selector group per option type instead of one "Color"
+  swatch row), and the cart item shape (`CartItem.variant` in
+  `src/lib/cart-context.tsx:11-17` is a single string today — would need to
+  become structured, e.g. an array of `{ optionType, value }`, echoed
+  through checkout/order emails which currently just print the flat variant
+  label). Existing products/orders only have the single flat label, so this
+  needs a migration path, not a breaking rewrite of existing data.
 
 ## Done
 
+- [x] **Icon-only controls now show a hover/focus tooltip.** New shared
+  `src/components/Tooltip.tsx` (pure CSS, `group/tooltip` + `group-hover`/
+  `group-focus-within`, no new dependency) wraps every icon-only control:
+  header nav (`src/app/layout.tsx`), `CartLink`, the cart's trash-icon
+  Remove button, `ActionButton` (auto-applies via its existing `ariaLabel`
+  prop — covers delete variant/photo/FAQ item, cancel order), FAQ
+  move-up/down and the per-item save icon, and the saved-address
+  delete/save icons. Cart's −/+ quantity buttons were deliberately left
+  untooltipped per manual-testing feedback — the glyphs are self-explanatory,
+  a tooltip there was noise.
+- [x] **Contact Us page: email + Instagram icons, real handle instead of
+  the word "Instagram".** `src/app/contact/page.tsx` now shows an icon next
+  to both links, keeping the existing text. Added a
+  `contactInstagramHandle` setting (`supabase/migrations/0008_contact_instagram_handle.sql`,
+  wired through `src/lib/settings.ts` and a new field on
+  `/admin/settings`) instead of parsing the handle out of the URL.
+- [x] **Admin: success toast for save actions, not just delete/mark/cancel.**
+  New `src/components/admin/ActionForm.tsx` (`useActionState` + the
+  existing `ToastProvider`) covers the actions `ActionButton` couldn't:
+  save product, add variant, save all variants, upload photo, create
+  product, create/update FAQ item, save settings. Each action now takes
+  `(prevState, formData)` and returns `ActionResult`; a sibling
+  `src/components/admin/SubmitButton.tsx` reads pending state via React's
+  `useFormStatus` (not a render prop — a Server Component can't pass a
+  function as `children` to a Client Component; that RSC violation crashed
+  every converted admin page on first manual test, fixed by moving pending
+  state into `SubmitButton` instead of prop-drilling it through
+  `children`). `createProductAction` keeps its `redirect()` on success
+  (navigating to the new product's edit page is the success signal) but
+  now also catches validation errors into a toast instead of a bare
+  Next.js error page.
 - [x] Customer-facing "my orders" page — shipped as part of Phase 8
   (customer accounts): `/account` shows order history grouped by status,
   `/account/addresses` handles saved addresses (US-18).

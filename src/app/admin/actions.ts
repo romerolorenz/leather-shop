@@ -61,31 +61,58 @@ function revalidateStorefront() {
   revalidatePath("/products", "layout");
 }
 
-export async function createProductAction(formData: FormData) {
+// prevState is unused (createProductAction navigates away via redirect() on
+// success, which throws and skips the return) but useActionState requires
+// the signature — it's only ever read on a validation failure.
+export async function createProductAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   await assertAdmin();
-  const { id } = await createProduct(parseProductInput(formData));
+  let id: string;
+  try {
+    ({ id } = await createProduct(parseProductInput(formData)));
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Something went wrong.",
+    };
+  }
+  // redirect() throws, so it must run outside the try/catch above.
   revalidatePath("/admin/products");
   revalidateStorefront();
   redirect(`/admin/products/${id}`);
 }
 
-export async function updateProductAction(id: string, formData: FormData) {
-  await assertAdmin();
-  await updateProduct(id, parseProductInput(formData));
-  revalidatePath(`/admin/products/${id}`);
-  revalidatePath("/admin/products");
-  revalidateStorefront();
+export async function updateProductAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateProduct(id, parseProductInput(formData));
+    revalidatePath(`/admin/products/${id}`);
+    revalidatePath("/admin/products");
+    revalidateStorefront();
+  }, "Product saved.");
 }
 
-export async function addVariantAction(productId: string, formData: FormData) {
-  await assertAdmin();
-  const label = String(formData.get("label") ?? "").trim();
-  const stockQuantity = Number(formData.get("stockQuantity"));
-  if (!label) throw new Error("Variant label is required.");
+export async function addVariantAction(
+  productId: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const label = String(formData.get("label") ?? "").trim();
+    const stockQuantity = Number(formData.get("stockQuantity"));
+    if (!label) throw new Error("Variant label is required.");
 
-  await addVariant(productId, label, stockQuantity);
-  revalidatePath(`/admin/products/${productId}`);
-  revalidateStorefront();
+    await addVariant(productId, label, stockQuantity);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Variant added.");
 }
 
 export async function deleteVariantAction(
@@ -107,56 +134,65 @@ export async function deleteVariantAction(
 export async function updateAllVariantsAction(
   productId: string,
   variantIds: string[],
+  prevState: ActionResult | null,
   formData: FormData
-) {
-  await assertAdmin();
-  for (const variantId of variantIds) {
-    const label = String(formData.get(`label:${variantId}`) ?? "").trim();
-    const stockQuantity = Number(formData.get(`stock:${variantId}`));
-    if (!label) throw new Error("Variant label is required.");
-    await updateVariant(variantId, label, stockQuantity);
-  }
-  revalidatePath(`/admin/products/${productId}`);
-  revalidateStorefront();
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    for (const variantId of variantIds) {
+      const label = String(formData.get(`label:${variantId}`) ?? "").trim();
+      const stockQuantity = Number(formData.get(`stock:${variantId}`));
+      if (!label) throw new Error("Variant label is required.");
+      await updateVariant(variantId, label, stockQuantity);
+    }
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Variants saved.");
 }
 
-export async function uploadPhotoAction(productId: string, formData: FormData) {
-  await assertAdmin();
-  const files = formData
-    .getAll("photos")
-    .filter((f): f is File => f instanceof File && f.size > 0);
+export async function uploadPhotoAction(
+  productId: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const files = formData
+      .getAll("photos")
+      .filter((f): f is File => f instanceof File && f.size > 0);
 
-  if (files.length === 0) {
-    throw new Error("Choose at least one photo to upload.");
-  }
+    if (files.length === 0) {
+      throw new Error("Choose at least one photo to upload.");
+    }
 
-  const supabase = getSupabaseServerClient();
-  const urls: string[] = [];
+    const supabase = getSupabaseServerClient();
+    const urls: string[] = [];
 
-  for (const file of files) {
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${productId}/${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}.${ext}`;
+    for (const file of files) {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${productId}/${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("product-photos")
-      .upload(path, await file.arrayBuffer(), {
-        contentType: file.type,
-        upsert: true,
-      });
+      const { error: uploadError } = await supabase.storage
+        .from("product-photos")
+        .upload(path, await file.arrayBuffer(), {
+          contentType: file.type,
+          upsert: true,
+        });
 
-    if (uploadError) throw uploadError;
+      if (uploadError) throw uploadError;
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("product-photos").getPublicUrl(path);
-    urls.push(publicUrl);
-  }
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("product-photos").getPublicUrl(path);
+      urls.push(publicUrl);
+    }
 
-  await addProductPhotos(productId, urls);
-  revalidatePath(`/admin/products/${productId}`);
-  revalidateStorefront();
+    await addProductPhotos(productId, urls);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Photo uploaded.");
 }
 
 export async function deletePhotoAction(
@@ -227,59 +263,78 @@ export async function cancelOrderAction(
   }
 }
 
-export async function updateSettingsAction(formData: FormData) {
-  await assertAdmin();
+export async function updateSettingsAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
 
-  const deliveryCities = String(formData.get("deliveryCities") ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+    const deliveryCities = String(formData.get("deliveryCities") ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
 
-  await updateSettings({
-    shippingFeeCentavos: Math.round(
-      Number(formData.get("shippingFee")) * 100
-    ),
-    deliveryCities,
-    adminNotificationEmail: String(
-      formData.get("adminNotificationEmail") ?? ""
-    ).trim(),
-    orderPaymentHoldHours: Number(formData.get("orderPaymentHoldHours")),
-    contactEmail: String(formData.get("contactEmail") ?? "").trim(),
-    contactInstagramUrl: String(
-      formData.get("contactInstagramUrl") ?? ""
-    ).trim(),
-  });
+    await updateSettings({
+      shippingFeeCentavos: Math.round(
+        Number(formData.get("shippingFee")) * 100
+      ),
+      deliveryCities,
+      adminNotificationEmail: String(
+        formData.get("adminNotificationEmail") ?? ""
+      ).trim(),
+      orderPaymentHoldHours: Number(formData.get("orderPaymentHoldHours")),
+      contactEmail: String(formData.get("contactEmail") ?? "").trim(),
+      contactInstagramUrl: String(
+        formData.get("contactInstagramUrl") ?? ""
+      ).trim(),
+      contactInstagramHandle: String(
+        formData.get("contactInstagramHandle") ?? ""
+      ).trim(),
+    });
 
-  revalidatePath("/admin/settings");
-  revalidatePath("/cart");
-  revalidatePath("/checkout");
-  revalidatePath("/contact");
+    revalidatePath("/admin/settings");
+    revalidatePath("/cart");
+    revalidatePath("/checkout");
+    revalidatePath("/contact");
+  }, "Settings saved.");
 }
 
-export async function createFaqItemAction(formData: FormData) {
-  await assertAdmin();
-  const question = String(formData.get("question") ?? "").trim();
-  const answer = String(formData.get("answer") ?? "").trim();
-  if (!question || !answer) {
-    throw new Error("Question and answer are both required.");
-  }
+export async function createFaqItemAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const question = String(formData.get("question") ?? "").trim();
+    const answer = String(formData.get("answer") ?? "").trim();
+    if (!question || !answer) {
+      throw new Error("Question and answer are both required.");
+    }
 
-  await createFaqItem(question, answer);
-  revalidatePath("/admin/faq");
-  revalidatePath("/faq");
+    await createFaqItem(question, answer);
+    revalidatePath("/admin/faq");
+    revalidatePath("/faq");
+  }, "FAQ item added.");
 }
 
-export async function updateFaqItemAction(id: string, formData: FormData) {
-  await assertAdmin();
-  const question = String(formData.get("question") ?? "").trim();
-  const answer = String(formData.get("answer") ?? "").trim();
-  if (!question || !answer) {
-    throw new Error("Question and answer are both required.");
-  }
+export async function updateFaqItemAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const question = String(formData.get("question") ?? "").trim();
+    const answer = String(formData.get("answer") ?? "").trim();
+    if (!question || !answer) {
+      throw new Error("Question and answer are both required.");
+    }
 
-  await updateFaqItem(id, question, answer);
-  revalidatePath("/admin/faq");
-  revalidatePath("/faq");
+    await updateFaqItem(id, question, answer);
+    revalidatePath("/admin/faq");
+    revalidatePath("/faq");
+  }, "FAQ item saved.");
 }
 
 export async function deleteFaqItemAction(id: string): Promise<ActionResult> {

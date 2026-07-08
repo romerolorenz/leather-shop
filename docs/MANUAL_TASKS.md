@@ -25,6 +25,12 @@ blockers, then items that don't block any phase.
   `/admin/settings`'s "Contact Us email" is still `marco@example.com` (set
   during Phase 7 testing) — the new `/contact` form sends there, so it
   needs to be a real inbox you check before the form is useful.
+- [ ] **Doesn't block any phase: set the real Instagram handle.**
+  `/admin/settings`'s new "Contact Us Instagram handle" field is still the
+  placeholder `@yourshop` (migration `0008_contact_instagram_handle.sql`
+  is run — this is just setting the real value) — update it via
+  `/admin/settings` so `/contact` shows the actual handle instead of the
+  placeholder.
 - [ ] **Doesn't block any phase: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.
@@ -64,3 +70,4 @@ blockers, then items that don't block any phase.
   not just the exact `/auth/callback` path, since the app's requested
   `redirectTo` includes a `?next=...` query string that didn't match the
   non-wildcard entry.
+- [x] Run `supabase/migrations/0008_contact_instagram_handle.sql` against it.

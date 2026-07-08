@@ -7,6 +7,8 @@ import {
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ActionButton } from "@/components/admin/ActionButton";
+import { ActionForm } from "@/components/admin/ActionForm";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 export default async function AdminFaqPage() {
   const items = await listFaqItemsForAdmin();
@@ -77,7 +79,7 @@ export default async function AdminFaqPage() {
                   </svg>
                 </ActionButton>
               </div>
-              <form action={updateItem} className="flex flex-col gap-2">
+              <ActionForm action={updateItem} className="flex flex-col gap-2">
                 <input
                   name="question"
                   defaultValue={item.question}
@@ -94,10 +96,9 @@ export default async function AdminFaqPage() {
                   className="w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm dark:border-white/[.2]"
                 />
                 <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    aria-label="Save FAQ item"
-                    className="rounded-md p-1.5 transition-transform hover:bg-black/[.05] active:scale-95 dark:hover:bg-white/[.1]"
+                  <SubmitButton
+                    ariaLabel="Save FAQ item"
+                    className="rounded-md p-1.5 transition-transform hover:bg-black/[.05] active:scale-95 disabled:opacity-50 dark:hover:bg-white/[.1]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -113,9 +114,9 @@ export default async function AdminFaqPage() {
                       <path d="M17 21v-8H7v8" />
                       <path d="M7 3v5h8" />
                     </svg>
-                  </button>
+                  </SubmitButton>
                 </div>
-              </form>
+              </ActionForm>
             </li>
           );
         })}
@@ -125,7 +126,7 @@ export default async function AdminFaqPage() {
       </ul>
 
       <h2 className="mb-4 text-sm font-medium">Add FAQ item</h2>
-      <form action={createFaqItemAction} className="flex flex-col gap-3">
+      <ActionForm action={createFaqItemAction} className="flex flex-col gap-3">
         <input
           name="question"
           placeholder="Question"
@@ -139,13 +140,13 @@ export default async function AdminFaqPage() {
           rows={3}
           className="w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm dark:border-white/[.2]"
         />
-        <button
-          type="submit"
-          className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-2 text-sm dark:border-white/[.2]"
+        <SubmitButton
+          pendingLabel="Adding…"
+          className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-2 text-sm disabled:opacity-50 dark:border-white/[.2]"
         >
           Add FAQ item
-        </button>
-      </form>
+        </SubmitButton>
+      </ActionForm>
     </main>
   );
 }

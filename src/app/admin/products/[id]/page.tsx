@@ -12,6 +12,8 @@ import {
 import { ProductFormFields } from "../ProductFormFields";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ActionButton } from "@/components/admin/ActionButton";
+import { ActionForm } from "@/components/admin/ActionForm";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 function TrashIcon() {
   return (
@@ -105,7 +107,7 @@ export default async function EditProductPage(
         {product.photos.length === 0 && (
           <div className="mb-4 h-48 w-48 rounded-lg bg-zinc-100 dark:bg-zinc-900" />
         )}
-        <form action={uploadPhoto} className="flex items-center gap-3">
+        <ActionForm action={uploadPhoto} className="flex items-center gap-3">
           <input
             type="file"
             name="photos"
@@ -114,18 +116,18 @@ export default async function EditProductPage(
             required
             className="text-sm file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-medium file:text-background hover:file:bg-[#383838] active:file:opacity-70 dark:hover:file:bg-[#ccc]"
           />
-          <button
-            type="submit"
-            className="rounded-full border border-black/[.15] px-4 py-2 text-sm dark:border-white/[.2]"
+          <SubmitButton
+            pendingLabel="Uploading…"
+            className="rounded-full border border-black/[.15] px-4 py-2 text-sm disabled:opacity-50 dark:border-white/[.2]"
           >
             Upload
-          </button>
-        </form>
+          </SubmitButton>
+        </ActionForm>
       </section>
 
       <section className="mb-10">
         <h2 className="mb-4 text-sm font-medium">Product details</h2>
-        <form action={updateAction} className="flex flex-col gap-4">
+        <ActionForm action={updateAction} className="flex flex-col gap-4">
           <ProductFormFields
             defaultValues={{
               name: product.name,
@@ -136,19 +138,19 @@ export default async function EditProductPage(
               orderingEnabled: product.orderingEnabled,
             }}
           />
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+          <SubmitButton
+            pendingLabel="Saving…"
+            className="mt-2 w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
           >
             Save product
-          </button>
-        </form>
+          </SubmitButton>
+        </ActionForm>
       </section>
 
       <section>
         <h2 className="mb-4 text-sm font-medium">Variants</h2>
         {product.variants.length > 0 && (
-          <form action={updateAllVariants} className="mb-6">
+          <ActionForm action={updateAllVariants} className="mb-6">
             <ul className="mb-4 flex flex-col gap-3">
               {product.variants.map((variant) => {
                 const removeVariant = deleteVariantAction.bind(
@@ -186,19 +188,19 @@ export default async function EditProductPage(
                 );
               })}
             </ul>
-            <button
-              type="submit"
-              className="rounded-full border border-black/[.15] px-4 py-2 text-sm dark:border-white/[.2]"
+            <SubmitButton
+              pendingLabel="Saving…"
+              className="rounded-full border border-black/[.15] px-4 py-2 text-sm disabled:opacity-50 dark:border-white/[.2]"
             >
               Save all variants
-            </button>
-          </form>
+            </SubmitButton>
+          </ActionForm>
         )}
         {product.variants.length === 0 && (
           <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">No variants yet.</p>
         )}
 
-        <form action={addVariant} className="flex items-center gap-2">
+        <ActionForm action={addVariant} className="flex items-center gap-2">
           <input
             name="label"
             placeholder="e.g. Black"
@@ -214,13 +216,13 @@ export default async function EditProductPage(
             required
             className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
           />
-          <button
-            type="submit"
-            className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm dark:border-white/[.2]"
+          <SubmitButton
+            pendingLabel="Adding…"
+            className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
           >
             Add variant
-          </button>
-        </form>
+          </SubmitButton>
+        </ActionForm>
       </section>
     </main>
   );

@@ -1,6 +1,8 @@
 import { createProductAction } from "../../actions";
 import { ProductFormFields } from "../ProductFormFields";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { ActionForm } from "@/components/admin/ActionForm";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 export default function NewProductPage() {
   return (
@@ -15,15 +17,15 @@ export default function NewProductPage() {
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">
         New Product
       </h1>
-      <form action={createProductAction} className="flex flex-col gap-4">
+      <ActionForm action={createProductAction} className="flex flex-col gap-4">
         <ProductFormFields />
-        <button
-          type="submit"
-          className="mt-2 w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+        <SubmitButton
+          pendingLabel="Creating…"
+          className="mt-2 w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
         >
           Create product
-        </button>
-      </form>
+        </SubmitButton>
+      </ActionForm>
     </main>
   );
 }

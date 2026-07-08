@@ -7,6 +7,7 @@ export type Settings = {
   orderPaymentHoldHours: number;
   contactEmail: string;
   contactInstagramUrl: string;
+  contactInstagramHandle: string;
 };
 
 // Admin-editable shop configuration (CLAUDE.md: settings are configurable,
@@ -25,6 +26,7 @@ export async function getSettings(): Promise<Settings> {
     order_payment_hold_hours: number;
     contact_email: string;
     contact_instagram_url: string;
+    contact_instagram_handle: string;
   };
 
   return {
@@ -34,6 +36,7 @@ export async function getSettings(): Promise<Settings> {
     orderPaymentHoldHours: map.order_payment_hold_hours,
     contactEmail: map.contact_email,
     contactInstagramUrl: map.contact_instagram_url,
+    contactInstagramHandle: map.contact_instagram_handle,
   };
 }
 
@@ -44,6 +47,7 @@ const SETTINGS_KEYS: Record<keyof Settings, string> = {
   orderPaymentHoldHours: "order_payment_hold_hours",
   contactEmail: "contact_email",
   contactInstagramUrl: "contact_instagram_url",
+  contactInstagramHandle: "contact_instagram_handle",
 };
 
 export async function updateSettings(input: Partial<Settings>): Promise<void> {
