@@ -80,3 +80,7 @@ tasks/testing) live in [docs/](./docs/), not the repo root.
   short description of the concept — in the same turn it's published, so
   designs from one session are visible in the next. Link back to the
   `docs/design/` brief it was built from.
+- **Don't read `docs/completed/` into context unless asked.** That
+  directory holds archived/finished docs kept for the record, not active
+  reference material. Skip it during normal exploration and context
+  gathering; only open files there if the user explicitly asks for them.
