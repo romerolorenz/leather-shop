@@ -20,7 +20,7 @@ const order: Order = {
     {
       slug: "classic-bifold-wallet",
       name: "Classic Bifold Wallet",
-      variant: "Chestnut Brown",
+      options: [{ optionTypeName: "Color", optionValue: "Chestnut Brown" }],
       quantity: 2,
       priceCentavos: 189900,
     },
@@ -39,7 +39,7 @@ describe("buildOrderNotificationEmail", () => {
     expect(email.text).toContain("Juan Dela Cruz");
     expect(email.text).toContain("juan@example.com");
     expect(email.text).toContain("123 Rizal St, Makati");
-    expect(email.text).toContain("2x Classic Bifold Wallet (Chestnut Brown)");
+    expect(email.text).toContain("2x Classic Bifold Wallet (Color: Chestnut Brown)");
     expect(email.text).toContain("₱3,948.00");
   });
 });
@@ -51,7 +51,7 @@ describe("buildOrderConfirmationEmail", () => {
     expect(email.to).toBe("juan@example.com");
     expect(email.subject).toContain(order.id.slice(0, 8));
     expect(email.text).toContain("Hi Juan Dela Cruz");
-    expect(email.text).toContain("2x Classic Bifold Wallet (Chestnut Brown)");
+    expect(email.text).toContain("2x Classic Bifold Wallet (Color: Chestnut Brown)");
     expect(email.text).toContain("₱3,948.00");
     expect(email.text).toContain("Metro Manila only");
     expect(email.text).toContain(order.id);

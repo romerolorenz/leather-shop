@@ -4,6 +4,7 @@ import { assertCustomer } from "@/lib/customer/auth";
 import {
   getOrderItemPhotos,
   listOrdersForCustomer,
+  formatItemOptions,
   type Order,
   type OrderStatus,
 } from "@/lib/orders";
@@ -44,6 +45,7 @@ function OrderCard({
       <ul className="mt-3 flex flex-col gap-3">
         {order.items.map((item, index) => {
           const photoUrl = itemPhotos[item.slug];
+          const options = formatItemOptions(item.options);
           return (
             <li key={index} className="flex items-center gap-3">
               {photoUrl ? (
@@ -61,7 +63,9 @@ function OrderCard({
                 <p className="text-sm">
                   {item.quantity}x {item.name}
                 </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variant}</p>
+                {options && (
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">{options}</p>
+                )}
               </div>
             </li>
           );

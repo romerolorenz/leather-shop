@@ -24,7 +24,6 @@ flowchart TD
     end
 
     Resend["Resend \n order confirmation (customer) \n order notification (admin)"]
-    PayMongo["PayMongo (v2, not v1) \n payment intent + webhook"]
 
     Browser -->|HTTPS| UI
     UI --> API
@@ -33,7 +32,6 @@ flowchart TD
     API --> Auth
     API --> Storage
     API --> Resend
-    API -.->|v2 upgrade| PayMongo
 ```
 
 ## Components
@@ -43,8 +41,8 @@ Single codebase, both roles:
 - **UI** — App Router pages: home, `/products`, `/products/[slug]`, `/cart`,
   `/checkout`, `/faq`, `/contact`, `/privacy`, `/admin/*`.
 - **API layer** — Next.js API routes are the only thing allowed to talk to
-  Supabase/Resend/PayMongo directly. The browser never holds a Supabase
-  service-role key or a payment secret. Main routes:
+  Supabase/Resend directly. The browser never holds a Supabase
+  service-role key. Main routes:
   - `POST /api/orders` — validates cart contents against real stock,
     recomputes totals server-side, writes the order, decrements stock,
     triggers both emails.
@@ -54,8 +52,8 @@ Single codebase, both roles:
     the configured hold duration from the `settings` table (default 48
     hours — admin-editable, not a code constant), finds orders still
     `pending_payment` past that many hours since `created_at`, flips them
-    to `cancelled`, and restores their `order_items`' stock quantities via
-    the `restore_variant_stock` Postgres function. `GET`, not `POST`,
+    to `cancelled`, and restores each item's product-level stock via
+    the `restore_product_stock` Postgres function. `GET`, not `POST`,
     because that's what Vercel Cron actually sends. Not otherwise
     user-facing — requires a `CRON_SECRET` bearer token, which Vercel
     attaches automatically once the env var is set; any request without a
@@ -76,7 +74,7 @@ should live in the database instead of the app.
 One integration covering three concerns, chosen specifically to avoid
 standing up three separate services:
 
-- **Postgres** — the actual database. Tables: `products`, `product_variants`,
+- **Postgres** — the actual database. Tables: `products`, `option_types`,
   `orders`, `order_items` (see Data Model below). Replaces the hardcoded
   product list and in-memory order array that exist today.
 - **Auth** — Google OAuth for both customer accounts (order history, per
@@ -88,7 +86,7 @@ standing up three separate services:
   session → redirect to `/login`; session but email not in `admin_users`
   → redirect to `/login?error=unauthorized`.
 - **Storage** — product photos, served via Supabase's CDN, referenced by
-  URL from the `products`/`product_variants` tables.
+  URL from the `product_photos` table.
 
 ### Resend
 Fired from inside `POST /api/orders` after a successful order write:
@@ -98,26 +96,62 @@ Fired from inside `POST /api/orders` after a successful order write:
 No API key configured → the call no-ops with a console warning instead of
 failing the order (already true in the current placeholder implementation).
 
-### PayMongo (v2, not v1)
-Not part of the v1 request path. v1 payment is manual/offline — the order
-is created with status `pending_payment` and the shop owner confirms and
-flips it to `paid` by hand in `/admin`. The reason the API layer exists as
-a distinct boundary (rather than the checkout form writing straight to
-Supabase) is specifically so that swapping in PayMongo later means adding
-a payment-intent step and a webhook handler *inside* `/api/orders`, not
-restructuring the checkout UI or the data model.
-
 ## Data Model (target)
 
 ```
 products
   id, slug, name, description, category, price_centavos,
-  lead_time_days, ordering_enabled, created_at
+  lead_time_days, ordering_enabled, created_at,
+  stock_quantity (a single production-capacity number for the whole
+  product — all v1 products are made-to-order, so it's the same
+  regardless of which option combination a customer picks; not per
+  variant — see PRODUCT_OPTIONS_DESIGN.md's "Course correction"),
+  in_stock (derived: stock_quantity > 0),
+  visible (migration `0012_product_visibility.sql`, default true — admin
+  toggle to hide a product from the shop listing/sitemap/search entirely,
+  its PDP 404s; distinct from ordering_enabled, which still lists the
+  product but shows it as unavailable. getProducts() filters to
+  visible=true; getProductBySlug() deliberately doesn't, since order
+  history needs to resolve a since-hidden product's photo — the PDP and
+  checkout route check product.visible themselves)
 
-product_variants
-  id, product_id (fk), label (e.g. "Chestnut Brown"),
-  stock_quantity (in-stock: real count / made-to-order: capacity threshold),
-  in_stock (derived: stock_quantity > 0)
+option_types
+  id, name (e.g. "Color", "Thread Color", "Size" — unique, shop-wide),
+  display_style ("buttons" | "dropdown", admin-chosen per option type —
+  US-39, and global to the type, not per-product — US-40)
+
+  > **Implemented in code, not yet live** — migration
+  > `0011_option_library_and_order_item_options.sql` written, not yet run
+  > (see MANUAL_TASKS.md; must run after `0010`). Replaces the old
+  > per-product `product_option_types` (migration `0009`) — an admin
+  > defines "Color" once and attaches it to any product, instead of
+  > recreating the same type/value list by hand on every product (see
+  > PRODUCT_OPTIONS_DESIGN.md's "Third course correction").
+
+option_values
+  id, option_type_id (fk), value (e.g. "Black"), position (shop-wide
+  display order)
+
+  > **Implemented in code, not yet live** — see option_types above.
+  > Replaces the old per-product `product_option_values`.
+
+product_options
+  id, product_id (fk), option_type_id (fk), position — which option
+  types a given product uses, and in what order
+
+  > **Implemented in code, not yet live** — the per-product attachment
+  > link (new in `0011`; no equivalent existed before this correction).
+
+product_option_selections
+  product_option_id (fk), option_value_id (fk) — the per-product subset
+  of that type's values this product actually offers (attaching a shared
+  type doesn't expose every value it's ever had — the admin picks a
+  subset per product)
+
+  > **Implemented in code, not yet live** — new in `0011`. No DB
+  > constraint enforces that option_value_id belongs to the same
+  > option_type_id as its product_options row, checked in app code
+  > (src/lib/admin/catalog.ts).
 
 orders
   id, status ("pending_payment" | "paid" | "shipped" | "cancelled" | ...),
@@ -126,8 +160,23 @@ orders
   shipping_centavos, total_centavos, created_at
 
 order_items
-  id, order_id (fk), product_id (fk), variant_id (fk),
-  quantity, unit_price_centavos (snapshot at order time)
+  id, order_id (fk), product_id (fk), quantity,
+  unit_price_centavos (snapshot at order time)
+
+order_item_options
+  id, order_item_id (fk), option_type_name (text, snapshot), option_value
+  (text, snapshot), position — the option values selected for this order
+  item, recorded directly rather than resolved through a variant row; both
+  columns are snapshotted at order time so a later option rename/delete
+  doesn't rewrite historical order display, same reasoning as
+  unit_price_centavos above
+
+  > **Implemented in code, not yet live** — new in `0011`. Replaces
+  > order_items.variant_id/variant_label and the product_variants/
+  > product_variant_options tables entirely (see PRODUCT_OPTIONS_DESIGN.md's
+  > "Second course correction"): any combination of a product's own option
+  > values is orderable, with no admin-created variant row gating which
+  > combinations are allowed.
 
 settings
   key, value — single-row or key/value table holding admin-editable shop
@@ -149,9 +198,9 @@ otherwise have held.
    info.
 3. API route: re-fetches each product/variant from Supabase (never trusts
    client-submitted prices), checks Metro-Manila-only city and stock/
-   ordering-enabled, decrements `stock_quantity` at this point (not at
-   payment confirmation — see PRD §5 for why), writes `orders` +
-   `order_items` rows.
+   ordering-enabled, decrements the product's `stock_quantity` at this
+   point (not at payment confirmation — see PRD §5 for why), writes
+   `orders` + `order_items` rows.
 4. API route: fires both Resend emails.
 5. Browser: shows order confirmation with the order id; cart is cleared.
 6. Shop owner: gets the email, later confirms payment and updates order
@@ -171,8 +220,8 @@ otherwise have held.
    then queries Supabase for orders where `status = 'pending_payment'`
    and `created_at` is older than that many hours.
 3. For each match: sets `status = 'cancelled'`, and for each of its
-   `order_items`, adds the quantity back onto the corresponding
-   `product_variants.stock_quantity`.
+   `order_items`, adds the quantity back onto its product's
+   `stock_quantity`.
 4. No email/notification implied by this flow in the PRD — just the status
    change and stock restore. (Admin sees the cancelled status next time
    they check `/admin`.)
@@ -184,8 +233,8 @@ otherwise have held.
 - **Supabase** is a separate hosted project (Postgres + Auth + Storage);
   Next.js talks to it over its REST/Postgres client using env vars
   (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
-- **Resend** and (later) **PayMongo** are called via API key, also through
-  env vars — no infrastructure of their own to deploy.
+- **Resend** is called via API key, also through env vars — no
+  infrastructure of its own to deploy.
 
 ## Current state vs. target
 
@@ -201,10 +250,12 @@ otherwise have held.
 | Cart | localStorage (unchanged) | ✅ already matches target |
 | Checkout → order API | Supabase-backed | ✅ done (Phase 3) |
 | Emails | Resend, both directions | ✅ done (Phase 6) — admin notification + customer confirmation (HTML, with product photo) both verified live. Go-live blocker: sandbox sender can't reach real customers until a domain is verified (see MANUAL_TASKS.md) |
-| Payments | Manual v1 → PayMongo v2 | ✅ manual v1 already matches target |
+| Payments | Manual/offline — customer pays off-platform, admin confirms and marks `paid` in `/admin` | ✅ already matches target |
 | FAQ / Contact / Privacy | Admin-editable FAQ (`faq_items` table), static Contact/Privacy pages, linked from header + footer | ✅ done (Phase 7) |
 | Customer accounts | Order history + saved addresses, scoped to the logged-in customer's email | ✅ done (Phase 8) — `/account` (order history, grouped by status) and `/account/addresses` (CRUD, default address); checkout pre-fills from a saved address when logged in |
 | Non-functional hardening | Event logging, SEO, accessibility, mobile QA (PRD §8) | ✅ done (Phase 9) — structured funnel-event logging (`add_to_cart`/`checkout_started`/`order_placed`) via `POST /api/events` + direct server-side logging; `sitemap.xml`/`robots.txt`; Lighthouse 100/100/100 (accessibility/best-practices/SEO) on mobile viewport for indexable pages. Mobile-device walkthrough (post-deploy) verified working |
+| Product options | Shop-wide, admin-defined option types (Color, Thread Color, Size, ...) attachable to any product with a per-product value subset (US-40); any combination of a product's own option values is orderable directly — no admin-created variant row required (PRD §3/§5, US-3) | 🔲 done in code, not yet live — see [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md). All 10 checkpoints (0-9) are implemented on `feat/product-options`; blocked on running migrations `0010` then `0011` against the live DB before merging (see MANUAL_TASKS.md) |
 
-Remaining work is Phase 10 (v2: PayMongo online payments) — explicitly
-out of scope for v1 launch.
+Remaining work is running migrations `0010` and `0011` against the live DB
+and merging `feat/product-options` — see PRODUCT_OPTIONS_DESIGN.md and
+MANUAL_TASKS.md.

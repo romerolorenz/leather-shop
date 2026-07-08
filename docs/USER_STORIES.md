@@ -4,12 +4,21 @@ Derived from [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) (PRD
 section references in brackets). Two roles: **Shopper** (customer) and
 **Admin** (shop owner).
 
+## Home Page
+
+**US-37**: As a Shopper, I want to see a small, curated set of featured
+products on the homepage, so that I can quickly discover what's worth
+looking at without browsing the full catalog first. [§6]
+- Admin-curated, not automatic/algorithmic (e.g. not "best sellers" or
+  "newest") — see US-38.
+- Shows at most 3 products.
+
 ## Browsing & Catalog
 
 **US-1**: As a Shopper, I want to browse products by category and filter
-by price/in-stock status, so that I can find what I'm looking for quickly.
+by price/availability, so that I can find what I'm looking for quickly.
 - Category listing pages exist for each product category [§5, §6].
-- Filters: category, price, in-stock. [§6]
+- Filters: category, price, availability (not sold out). [§6]
 
 **US-2**: As a Shopper, I want to see a product's photos, description,
 materials, and care instructions, so that I can judge quality before
@@ -28,7 +37,7 @@ something that can't be fulfilled. [§5]
 
 ## Cart
 
-**US-6**: As a Shopper, I want to add a product (with my selected variant)
+**US-6**: As a Shopper, I want to add a product (with my selected options)
 to my cart, so that I can buy more than one item per checkout. [§6]
 
 **US-7**: As a Shopper, I want to view my cart, adjust quantities, and
@@ -91,8 +100,21 @@ account, so that I don't need to manage a separate password.
 ## Admin — Catalog Management
 
 **US-20**: As an Admin, I want to add and edit products (name, description,
-price, photos, variants), so that I can manage the catalog myself without
+price, photos, options), so that I can manage the catalog myself without
 a developer. [§2, §6]
+
+**US-39**: As an Admin, I want to choose whether each option type (Color,
+Thread Color, Size, ...) displays as swatch buttons or a dropdown on the
+product page, so that I can pick whatever presentation fits — buttons for
+a handful of colors, a dropdown for a long size or length list — instead
+of one style being forced on every option regardless of how many choices
+it has. [§5, §6]
+
+**US-40**: As an Admin, I want to define an option type (e.g. Color: Blue,
+Red, Green) once and attach it to any product, choosing which of its
+values that particular product actually offers, so that I don't have to
+recreate the same option list by hand on every product that shares it.
+[§5, §6]
 
 **US-21**: As an Admin, I want to set a per-product lead time, so that
 customers see accurate made-to-order expectations. [§5, §6]
@@ -101,31 +123,51 @@ customers see accurate made-to-order expectations. [§5, §6]
 (e.g. to pause it), so that I can stop taking orders I can't fulfill in
 time, independent of stock count. [§5, §6]
 
-**US-23**: As an Admin, I want to set a stock quantity (a real count for
-in-stock items, a capacity threshold for made-to-order items) that
-customers never see, so that the storefront automatically shows
-"sold out" once I'm at capacity, without me manually flipping a switch
-every time. [§5]
+**US-41**: As an Admin, I want to hide a product from the shop entirely
+(listing, search, direct link), so that I can stage a product before
+launch or retire one without deleting it and losing its order history —
+distinct from pausing ordering, which still shows the product as
+unavailable rather than removing it. [§5, §6]
 
-**US-24**: As an Admin, I want stock to decrement automatically when an
-order is placed (not when payment clears), so that I don't oversell the
-last unit during the manual-payment window. [§5]
+**US-23**: As an Admin, I want to set a single production-capacity number
+per product (not per color/size/thread combination) that customers never
+see, so that the storefront automatically shows "sold out" once I'm at
+capacity, without me manually flipping a switch every time or tracking
+capacity separately per option combination. [§5]
 
-**US-25**: As an Admin, I want to manually cancel an order and restore its
-stock before the payment hold expires (e.g. a customer asks to cancel via
-Contact Us), so that I'm not stuck waiting on the automatic expiry for a
-cancellation I already know about. [§5]
+**US-24**: As an Admin, I want a product's capacity count to decrement
+automatically when an order is placed (not when payment clears), and to
+apply the same regardless of which option combination the customer chose,
+so that I don't overcommit my production queue during the manual-payment
+window. [§5]
+
+**US-25**: As an Admin, I want to manually cancel an order and restore the
+product's capacity before the payment hold expires (e.g. a customer asks
+to cancel via Contact Us), so that I'm not stuck waiting on the automatic
+expiry for a cancellation I already know about. [§5]
 
 **US-25b**: As an Admin, I want an order that isn't confirmed paid within
-the payment-hold window (default 48 hours) to auto-cancel and have its
-stock automatically restored, so that a non-paying customer can't hold the
-last unit of an item hostage indefinitely under the manual-payment flow.
-[§5, §6]
+the payment-hold window (default 48 hours) to auto-cancel and have the
+product's capacity automatically restored, so that a non-paying customer
+can't hold the last production slot hostage indefinitely under the
+manual-payment flow. [§5, §6]
 
 **US-25c**: As an Admin, I want to change the payment-hold duration myself
 (shorter if I need inventory to free up faster, longer if customers need
 more time to pay), so that I'm not stuck with a hardcoded 48 hours that
 doesn't fit how the shop actually runs. [§6, §7]
+
+**US-38**: As an Admin, I want to mark up to 3 products as "featured," so
+that I control what first-time homepage visitors see without needing a
+developer. [§6]
+- Max of 3 — the UI should stop me from featuring a 4th until I unfeature
+  one, rather than silently allowing more than the homepage is designed
+  to show.
+- Open question, not yet decided: if a featured product later gets
+  paused or goes fully sold out, does it stay featured and show as
+  unavailable on the homepage (consistent with how paused/sold-out
+  products behave on category pages per US-5), or does it get dropped
+  from the featured set automatically? Decide before implementing.
 
 ## Admin — Order Management
 
@@ -160,12 +202,6 @@ resolve (including out-of-area delivery). [§6]
 **US-32**: As a Shopper, I want a Privacy Policy page describing what data
 is collected and how it's used, so that I know how my information is
 handled before I log in with Google or check out. [§6]
-
-## Payments (v2, not v1)
-
-**US-33**: As a Shopper, I want to pay online via GCash/Maya at checkout
-(instead of paying manually after ordering), so that I can complete my
-purchase in one step. [§6 — v2 upgrade, not required for v1 launch]
 
 ## Non-functional (cross-cutting, not tied to one role)
 

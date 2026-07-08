@@ -7,29 +7,36 @@ import { trackEvent } from "@/lib/track-event";
 
 export default function ProductDetail({ product }: { product: Product }) {
   const { addItem } = useCart();
-  const [selectedVariant, setSelectedVariant] = useState(
-    product.variants.find((variant) => variant.inStock)?.label ??
-      product.variants[0]?.label
-  );
+  const [selectedOptions, setSelectedOptions] = useState<
+    Record<string, string>
+  >({});
   const [justAdded, setJustAdded] = useState(false);
 
   const canAddToCart =
     product.orderingEnabled &&
-    product.variants.find((variant) => variant.label === selectedVariant)
-      ?.inStock;
+    product.inStock &&
+    product.optionTypes.every((type) => !!selectedOptions[type.name]);
 
   function handleAddToCart() {
-    if (!canAddToCart || !selectedVariant) return;
+    if (!canAddToCart) return;
+    // Always built from product.optionTypes (its display order), not
+    // straight from selectedOptions state — that state's key order is
+    // whatever order the shopper clicked things in, and the cart/checkout
+    // UI relies on this object's key order to render a stable "Type: Value"
+    // display string.
+    const orderedOptions = Object.fromEntries(
+      product.optionTypes.map((type) => [type.name, selectedOptions[type.name]])
+    );
     addItem({
       slug: product.slug,
       name: product.name,
       priceCentavos: product.priceCentavos,
-      variant: selectedVariant,
+      selectedOptions: orderedOptions,
       photoUrl: product.photos[0] ?? null,
     });
     trackEvent("add_to_cart", {
       slug: product.slug,
-      variant: selectedVariant,
+      options: orderedOptions,
       priceCentavos: product.priceCentavos,
     });
     setJustAdded(true);
@@ -46,29 +53,58 @@ export default function ProductDetail({ product }: { product: Product }) {
         {product.description}
       </p>
 
-      <div className="mt-6">
-        <h2 className="text-sm font-medium">Color</h2>
-        <div className="mt-2 flex gap-2">
-          {product.variants.map((variant) => (
-            <button
-              key={variant.label}
-              type="button"
-              disabled={!variant.inStock}
-              aria-pressed={selectedVariant === variant.label}
-              onClick={() => setSelectedVariant(variant.label)}
-              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                !variant.inStock
-                  ? "cursor-not-allowed border-black/[.08] text-zinc-400 line-through dark:border-white/[.1]"
-                  : selectedVariant === variant.label
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-black/[.15] hover:border-foreground dark:border-white/[.2]"
-              }`}
+      {product.optionTypes.map((type) =>
+        type.displayStyle === "dropdown" ? (
+          <div key={type.id} className="mt-6">
+            <label className="text-sm font-medium" htmlFor={`option-${type.id}`}>
+              {type.name}
+            </label>
+            <select
+              id={`option-${type.id}`}
+              value={selectedOptions[type.name] ?? ""}
+              onChange={(e) =>
+                setSelectedOptions((prev) => ({
+                  ...prev,
+                  [type.name]: e.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm dark:border-white/[.2]"
             >
-              {variant.label}
-            </button>
-          ))}
-        </div>
-      </div>
+              {type.values.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div key={type.id} className="mt-6">
+            <h2 className="text-sm font-medium">{type.name}</h2>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {type.values.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={selectedOptions[type.name] === value}
+                  onClick={() =>
+                    setSelectedOptions((prev) => ({
+                      ...prev,
+                      [type.name]: value,
+                    }))
+                  }
+                  className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                    selectedOptions[type.name] === value
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-black/[.15] hover:border-foreground dark:border-white/[.2]"
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      )}
 
       <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
         Lead time: ~{product.leadTimeDays} days
@@ -81,9 +117,11 @@ export default function ProductDetail({ product }: { product: Product }) {
       >
         {!product.orderingEnabled
           ? "Currently unavailable"
-          : justAdded
-            ? "Added ✓"
-            : "Add to cart"}
+          : !product.inStock
+            ? "Sold out"
+            : justAdded
+              ? "Added ✓"
+              : "Add to cart"}
       </button>
     </div>
   );

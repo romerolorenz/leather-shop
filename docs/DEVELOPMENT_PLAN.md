@@ -191,16 +191,3 @@ once there's a stable app to harden, but treat as a gate before calling v1
 
 **Exit criteria**: Lighthouse (or equivalent) pass on mobile + accessibility
 categories; full purchase flow completed on an actual mobile device/emulator.
-
-## Phase 10 — v2: online payments
-
-Ref: US-33; PRD §6 v2. Explicitly out of scope for v1 launch — start only
-after Phases 1–9 are live and stable.
-- Integrate PayMongo inside `POST /api/orders`: payment-intent creation at
-  checkout, webhook handler to flip order status to `paid` automatically.
-- This is the phase the whole API-layer boundary (ARCHITECTURE.md) was
-  built to make low-effort — if it's turning into a rework, something
-  drifted from the plan in an earlier phase.
-
-**Exit criteria**: a real GCash/Maya payment through PayMongo's sandbox
-flips an order to `paid` without manual admin intervention.

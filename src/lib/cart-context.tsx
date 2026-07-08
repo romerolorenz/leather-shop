@@ -12,18 +12,23 @@ export type CartItem = {
   slug: string;
   name: string;
   priceCentavos: number;
-  variant: string;
+  // Option type name -> chosen value, built in the product's option-type
+  // display order (see ProductDetail.tsx) so display code can iterate it
+  // directly without re-sorting.
+  selectedOptions: Record<string, string>;
   quantity: number;
-  // Optional: items already in a shopper's localStorage cart from before
-  // this field existed won't have it — render must fall back gracefully.
   photoUrl?: string | null;
 };
 
 type CartContextValue = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (slug: string, variant: string) => void;
-  setQuantity: (slug: string, variant: string, quantity: number) => void;
+  removeItem: (slug: string, selectedOptions: Record<string, string>) => void;
+  setQuantity: (
+    slug: string,
+    selectedOptions: Record<string, string>,
+    quantity: number
+  ) => void;
   clear: () => void;
   totalItems: number;
   totalCentavos: number;
@@ -32,6 +37,24 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 const STORAGE_KEY = "leather-shop-cart";
+
+// Cart-item identity key: slug + a stable serialization of selectedOptions
+// (sorted by option type name so key order in the object doesn't matter).
+function serializeOptions(selectedOptions: Record<string, string>): string {
+  return Object.entries(selectedOptions)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([type, value]) => `${type}:${value}`)
+    .join("|");
+}
+
+// "Color: Black, Size: Large" — for line-item display in the cart/checkout.
+export function formatSelectedOptions(
+  selectedOptions: Record<string, string>
+): string {
+  return Object.entries(selectedOptions)
+    .map(([type, value]) => `${type}: ${value}`)
+    .join(", ");
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -60,12 +83,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function addItem(item: Omit<CartItem, "quantity">, quantity = 1) {
     setItems((prev) => {
+      const key = serializeOptions(item.selectedOptions);
       const existing = prev.find(
-        (i) => i.slug === item.slug && i.variant === item.variant
+        (i) => i.slug === item.slug && serializeOptions(i.selectedOptions) === key
       );
       if (existing) {
         return prev.map((i) =>
-          i.slug === item.slug && i.variant === item.variant
+          i.slug === item.slug && serializeOptions(i.selectedOptions) === key
             ? { ...i, quantity: i.quantity + quantity }
             : i
         );
@@ -74,20 +98,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function removeItem(slug: string, variant: string) {
+  function removeItem(slug: string, selectedOptions: Record<string, string>) {
+    const key = serializeOptions(selectedOptions);
     setItems((prev) =>
-      prev.filter((i) => !(i.slug === slug && i.variant === variant))
+      prev.filter(
+        (i) => !(i.slug === slug && serializeOptions(i.selectedOptions) === key)
+      )
     );
   }
 
-  function setQuantity(slug: string, variant: string, quantity: number) {
+  function setQuantity(
+    slug: string,
+    selectedOptions: Record<string, string>,
+    quantity: number
+  ) {
     if (quantity < 1) {
-      removeItem(slug, variant);
+      removeItem(slug, selectedOptions);
       return;
     }
+    const key = serializeOptions(selectedOptions);
     setItems((prev) =>
       prev.map((i) =>
-        i.slug === slug && i.variant === variant ? { ...i, quantity } : i
+        i.slug === slug && serializeOptions(i.selectedOptions) === key
+          ? { ...i, quantity }
+          : i
       )
     );
   }

@@ -24,7 +24,7 @@ finalized and swapped in later without a structural rebuild.
 ## 3. Non-Goals (v1)
 
 - No full product configurator / build-your-own (monogramming beyond a fixed
-  option list, custom dimensions, etc.) — fixed variants only.
+  option list, custom dimensions, etc.) — fixed option lists only.
 - No multi-vendor / marketplace features.
 - No wholesale or B2B ordering flows.
 - No subscriptions or recurring orders.
@@ -41,40 +41,50 @@ finalized and swapped in later without a structural rebuild.
 ## 5. Product Catalog
 
 - Products belong to categories (e.g. bags, wallets, belts, accessories).
+- **All v1 products are made-to-order** — there is no separate "in-stock,
+  ready-made" catalog type. A customer wanting an item made and shipped
+  as-is right now (no wait) asks via the Contact Us channel (US-10/US-31
+  pattern) — that's an out-of-band inquiry, not a catalog/checkout flow.
 - Each product has:
   - Name, description, story/craft notes, materials, care instructions.
   - Multiple photos (incl. detail/texture shots — important for leather).
-  - A **fixed, small set of variants** (e.g. color: 3–5 options, size: S/M/L),
-    each with its own price/stock if needed.
-  - **Thread color** is a selectable fixed-option variant (e.g. natural,
-    black, contrast stitch), presented as a **dropdown** on the product
-    page — not a free-text/custom input.
-  - Price, stock/availability status (in stock, made-to-order, sold out).
-    - **In-stock** = ready-made, fixed items — already produced as-is, no
-      variant customization at order time.
-    - **Made-to-order** = the customer chooses variant options (color,
-      thread color, etc.) at order time, and the item is produced
-      afterward per that choice.
-  - **Stock quantity is a numeric, admin-only field — never shown to
-    customers** (storefront only ever shows the status label: in stock /
-    made-to-order / sold out).
-    - For **in-stock** items: an actual count, **decremented at order
-      placement** (not at payment confirmation) — since v1 payment is
-      manual/offline, decrementing early prevents overselling the last
-      unit while the order awaits payment. Reaching 0 auto-flips status
-      to sold out.
-      - **Payment hold (default 48 hours, admin-configurable — see "Edit
-        shop configuration" below)**: an order not confirmed paid within
-        the hold window is automatically cancelled (status →
-        cancelled/expired) and its stock is automatically restored — not
-        a manual admin step. Admin can still cancel and restore stock
-        manually before the hold expires (e.g. a customer asks to cancel
-        via Contact Us).
-    - For **made-to-order** items: a threshold/capacity limit (e.g. max
-      concurrent made-to-order queue), not physical stock; reaching it
-      auto-flips status to sold out (in addition to the manual
-      ordering-disable toggle below, which admin can still use anytime,
-      e.g. to pause a product regardless of threshold).
+  - A **fixed, small set of admin-defined options** (e.g. color: 3–5
+    choices, size: S/M/L, thread color) — customer picks one value per
+    option type at order time; the item is produced afterward per that
+    choice. Not a full build-your-own configurator (§3).
+  - **Option types/values are defined once, shop-wide, and reused across
+    products** (e.g. a single Color list) — the admin attaches an
+    existing option type to a product and picks which of its values that
+    product actually offers, rather than recreating the same list per
+    product (US-40).
+  - **Thread color** is a selectable fixed-option (e.g. natural, black,
+    contrast stitch) — not a free-text/custom input.
+  - **Admin chooses how each option is presented** — swatch-style buttons
+    or a dropdown — per option type, not hardcoded by which option it is.
+    A color with a handful of choices might read better as buttons; a
+    long size or length list might read better as a dropdown. (Thread
+    color isn't a special case in the system — it's just an option type
+    an admin will typically set to dropdown.)
+  - Price, plus an availability status (made-to-order / sold out).
+  - **Stock is a single admin-only capacity number per product, not per
+    option combination** — never shown to customers (storefront
+    only ever shows the status label: made-to-order / sold out).
+    Regardless of which color/size/thread combination someone orders, it
+    draws from the same product-level count — options don't each have
+    their own stock. This also means a product's availability doesn't
+    depend on which options are picked: it's either orderable or sold out,
+    the same for every option combination.
+    - **Decremented at order placement** (not at payment confirmation) —
+      since v1 payment is manual/offline, decrementing early prevents
+      overselling the last production slot while the order awaits
+      payment. Reaching 0 auto-flips status to sold out.
+    - **Payment hold (default 48 hours, admin-configurable — see "Edit
+      shop configuration" below)**: an order not confirmed paid within the
+      hold window is automatically cancelled (status →
+      cancelled/expired) and the product's count is automatically
+      restored — not a manual admin step. Admin can still cancel and
+      restore it manually before the hold expires (e.g. a customer asks
+      to cancel via Contact Us).
   - **Lead time is set per product** (each product has its own estimated
     production/shipping lead time; not a global setting).
   - Admin can **disable ordering on a product** when its wait time is too
@@ -87,7 +97,8 @@ finalized and swapped in later without a structural rebuild.
 
 ### Storefront
 - Home page: brand story, featured products, categories.
-- Category / catalog listing pages with filtering (category, price, in-stock).
+- Category / catalog listing pages with filtering (category, price,
+  availability — i.e. not sold out).
 - **FAQ page**: shipping (Metro Manila only, ₱150 flat), payment (manual v1 —
   bank transfer/GCash/Maya), made-to-order lead times, materials/care, and
   return/exchange policy (**returns/exchanges accepted only for defective
@@ -102,10 +113,11 @@ finalized and swapped in later without a structural rebuild.
   Google OAuth consent screen verification (§6 Account/Admin both use Google
   login) and for Philippine Data Privacy Act (RA 10173) compliance —
   not just a nice-to-have.
-- Product detail page (PDP): photos, description, variant selection
-  (including a thread color dropdown, where applicable), price, add to cart,
-  lead time, materials/care info.
-- Cart: view items, adjust quantity/variant, remove items.
+- Product detail page (PDP): photos, description, option selection (each
+  option type shown as swatch buttons or a dropdown, per the admin's
+  per-type choice — §5), price, add to cart, lead time, materials/care
+  info.
+- Cart: view items, adjust quantity, remove items.
 - Checkout: shipping address, shipping method, payment, order review.
   - **Metro Manila delivery only.** Site does not accept orders with a
     shipping address outside Metro Manila (this supersedes "domestic
@@ -132,9 +144,12 @@ finalized and swapped in later without a structural rebuild.
 - **Access**: Google login (via Supabase Auth — same mechanism as customer
   social login), restricted to the shop owner's email via an allow-list.
   Not open to any Google account; not a separate credential system.
-- Add/edit products, variants, photos, prices, stock status.
+- Add/edit products, options, photos, prices, stock status.
 - Set/edit per-product lead time, and toggle ordering on/off per product
   (e.g. to pause a product when wait time is too long).
+- **Hide a product from the shop entirely** (listing, search, direct
+  link) — separate from pausing ordering above, for staging an unfinished
+  product or retiring one without deleting it (US-41).
 - View and manage incoming orders (mark shipped, fulfilled, etc.).
 - Basic sales overview (orders, revenue) — not a full analytics suite.
 - **Edit FAQ content** — the FAQ page (§6, Storefront) is admin-editable,
@@ -166,11 +181,6 @@ finalized and swapped in later without a structural rebuild.
   hold inventory hostage under manual payment. The duration itself is a
   shop-configuration value (see Admin/Back Office above), not a hardcoded
   constant, so it can be tightened or loosened without a code change.
-- **v2 (quick upgrade)**: online payment via a standard provider aggregating
-  GCash/Maya (e.g. PayMongo). The order/checkout flow in v1 must be built so
-  swapping in real payment processing (payment intent creation + webhook
-  confirmation) is a drop-in change, not a rework — i.e. keep order status
-  ("pending payment" / "paid") as first-class data from day one.
 
 ## 7. Technical Approach
 
@@ -183,14 +193,15 @@ finalized and swapped in later without a structural rebuild.
   because it also bundles the Google social login already required in §6
   (Account) and file storage for product photos in §5 — one
   integration covers persistence, auth, and image hosting instead of three
-  separate services. Relational fits the data model (products → variants →
+  separate services. Relational fits the data model (products with options →
   orders → order items) and supports the aggregation queries behind the
   Success Metrics in §9.
   - Replaces the current in-memory order store and hardcoded product list
     (both placeholders, reset on every server restart/redeploy).
 - Order/checkout logic should go through an internal API layer (Next.js API
-  routes) from the start, even while payment is manual — this is what keeps
-  the PayMongo upgrade in §6 low-effort.
+  routes) from the start, even while payment is manual — keeps
+  order-writing/stock/pricing logic server-side rather than exposing
+  Supabase credentials to the browser.
 - **Email**: Resend, for both the customer order-confirmation email and the
   admin order-notification email (§6).
 - **No hardcoded business configuration**: shipping fee, delivery area

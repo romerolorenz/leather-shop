@@ -12,6 +12,125 @@ collapsed to a one-line summary below (full history is in git — see the
 phase's commit and any follow-up commits for exactly what was tested and
 fixed).
 
+## Admin product visibility + thumbnail, batched option save, reorder
+
+Verified via automated tests (`tests/products.test.ts`,
+`tests/admin-catalog-options.test.ts`): `getProducts()` excludes a hidden
+product while `getProductBySlug()` still resolves it, and
+`moveProductOption` reorders correctly with a no-op at the boundary — all
+against the real DB **once migration `0012_product_visibility.sql` has
+run** (see MANUAL_TASKS.md). What's left needs a real admin session:
+
+- [ ] `/admin/products` — confirm each row shows its first photo (or a
+  placeholder box for a product with none).
+  Findings:
+
+- [ ] `/admin/products/<id>` — uncheck "Visible in shop", save, then visit
+  the product's PDP directly by URL — confirm it 404s. Confirm it's also
+  gone from `/products` and doesn't appear in a fresh `/sitemap.xml`
+  fetch. Re-check the box and confirm it reappears everywhere.
+  Findings:
+
+- [ ] Place an order for a product, then hide that product — confirm the
+  order still displays correctly (name, photo, options) in `/admin/orders`
+  and `/account`, since hiding shouldn't affect order history.
+  Findings:
+
+- [ ] On a product with 2+ attached options, change value checkboxes on
+  more than one option, click "Save options" once — confirm both changes
+  persisted (not just the last one touched).
+  Findings:
+
+- [ ] Reorder attached options with ↑/↓ — confirm the boundary buttons
+  (first row's ↑, last row's ↓) are disabled and the PDP reflects the new
+  order.
+  Findings:
+
+## Product options: shop-wide library, no variant entity
+
+Verified via automated tests (`tests/admin-catalog-options.test.ts`,
+`tests/orders.test.ts`, `tests/api-orders.test.ts`, `tests/email.test.ts`):
+shop-wide option-type/value CRUD, attach/detach/selection-subset functions,
+per-product independent value subsets, cascade-delete removing an option
+from every product using it, order placement recording
+`order_item_options`, and the composed "Type: Value" display strings all
+work correctly against the real DB — **once migrations `0010` and `0011`
+have both run, in that order** (see MANUAL_TASKS.md; `0011` drops
+`product_variants`/`product_variant_options`/the old per-product
+`product_option_types`/`product_option_values`, so `0010` must already be
+live first). This replaces the "Product options beyond color" checklist
+that used to be here — that one tested the old variant-creation flow, which
+no longer exists. What's left needs a real admin session and mouse, **after
+both migrations have run**.
+
+`supabase/scripts/wipe_test_data.sql` and `supabase/scripts/seed_test_data.sql`
+(run via the Supabase SQL editor, same as migrations) reset the dev DB to a
+clean set of test products for this checklist — five products covering
+independent per-product value subsets on a shared option type, a
+zero-option product, and a sold-out/paused product. Wipe is destructive
+(deletes every product/option/order row); don't run it against anything but
+the dev DB.
+
+- [ ] `/admin/options` — create a new option type (e.g. "Thread Color", set
+  to dropdown), add a couple of values, rename one, confirm both persist
+  and the list order matches insertion order.
+  Findings:
+
+- [ ] `/admin/products/<id>` — attach the option type you just created via
+  "Attach existing option…", confirm it shows up with an empty checkbox
+  list ("no values yet" if you haven't added values, or the checkboxes if
+  you have), check a subset, save, and confirm the PDP shows only the
+  checked values.
+  Findings:
+
+- [ ] On a second product, attach the same shared option type and select a
+  *different* subset of values — confirm the two products' PDPs show
+  independent value lists for the same option type.
+  Findings:
+
+- [ ] Use the "Create & attach new" shortcut directly from a product page
+  (not via `/admin/options` first) — confirm it appears in the library too.
+  Findings:
+
+- [ ] On a product with 2+ attached options, check/uncheck values across
+  *multiple* options, then click "Save options" once — confirm all of them
+  saved together (not just the last one touched), and that the PDP shows
+  the updated selection for every option, not just one.
+  Findings:
+
+- [ ] On that same product, use the ↑/↓ buttons to reorder its attached
+  options — confirm the order updates immediately (no separate save step),
+  the boundary buttons (first row's ↑, last row's ↓) are disabled, and the
+  new order is reflected on the PDP (option types render top-to-bottom in
+  this order).
+  Findings:
+
+- [ ] Detach an option from one product — confirm the other product(s)
+  still using the same shared type are unaffected.
+  Findings:
+
+- [ ] Delete an option type or value from `/admin/options` — confirm the
+  confirmation copy warns it affects every product using it, and confirm
+  it actually disappears from every product's PDP that had it, not just
+  the one you were looking at.
+  Findings:
+
+- [ ] On a product with 2+ option types, pick every possible combination
+  of values on its PDP — confirm all of them are addable to cart (no
+  "not available" state exists anymore) as long as the product itself is
+  in stock and ordering-enabled.
+  Findings:
+
+- [ ] Set a product's stock to 0 in admin — confirm every option
+  combination on its PDP shows "Sold out" uniformly, then set it back.
+  Findings:
+
+- [ ] Add an item to cart, go to checkout, place a real order — confirm
+  the cart/checkout/confirmation email/`/admin/orders`/`/account` all show
+  the correct "Type: Value" display string(s), and the product's stock
+  decrements by the ordered quantity.
+  Findings:
+
 ## Done
 
 - [x] **Round 6 — Tooltips, admin save toasts, Contact Us icons.** Header

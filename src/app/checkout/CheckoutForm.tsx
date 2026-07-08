@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useCart } from "@/lib/cart-context";
+import { useCart, formatSelectedOptions } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trackEvent } from "@/lib/track-event";
@@ -83,7 +83,7 @@ export default function CheckoutForm({
           },
           items: items.map((item) => ({
             slug: item.slug,
-            variant: item.variant,
+            selectedOptions: item.selectedOptions,
             quantity: item.quantity,
           })),
         }),
@@ -266,19 +266,23 @@ export default function CheckoutForm({
         <div>
           <h2 className="text-sm font-medium">Order summary</h2>
           <ul className="mt-2 divide-y divide-black/[.08] dark:divide-white/[.145]">
-            {items.map((item) => (
-              <li
-                key={`${item.slug}-${item.variant}`}
-                className="flex justify-between py-2 text-sm"
-              >
-                <span>
-                  {item.quantity}x {item.name} ({item.variant})
-                </span>
-                <span>
-                  {formatPrice(item.priceCentavos * item.quantity)}
-                </span>
-              </li>
-            ))}
+            {items.map((item) => {
+              const optionsLabel = formatSelectedOptions(item.selectedOptions);
+              return (
+                <li
+                  key={`${item.slug}-${JSON.stringify(item.selectedOptions)}`}
+                  className="flex justify-between py-2 text-sm"
+                >
+                  <span>
+                    {item.quantity}x {item.name}
+                    {optionsLabel && ` (${optionsLabel})`}
+                  </span>
+                  <span>
+                    {formatPrice(item.priceCentavos * item.quantity)}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
           <div className="mt-4 flex justify-between text-sm">
             <span>Subtotal</span>

@@ -15,7 +15,11 @@ import { logEvent } from "@/lib/events";
 type OrderRequestBody = {
   customer?: { name?: string; email?: string; phone?: string };
   shippingAddress?: { street?: string; city?: string };
-  items?: { slug?: string; variant?: string; quantity?: number }[];
+  items?: {
+    slug?: string;
+    selectedOptions?: Record<string, string>;
+    quantity?: number;
+  }[];
 };
 
 export async function POST(request: Request) {
@@ -53,19 +57,33 @@ export async function POST(request: Request) {
       : undefined;
     const quantity = requested.quantity ?? 0;
 
-    if (!product || !requested.variant || quantity < 1) {
+    // A hidden product is treated the same as a nonexistent one here —
+    // it's not listed anywhere a shopper could have legitimately gotten
+    // this slug from.
+    if (!product || !product.visible || quantity < 1) {
       return NextResponse.json(
         { error: "One or more cart items are invalid." },
         { status: 400 }
       );
     }
 
-    const variant = product.variants.find(
-      (v) => v.label === requested.variant
-    );
-    if (!variant?.inStock || !product.orderingEnabled) {
+    const selectedOptions = requested.selectedOptions ?? {};
+    const validSelection =
+      Object.keys(selectedOptions).length === product.optionTypes.length &&
+      product.optionTypes.every((type) =>
+        type.values.includes(selectedOptions[type.name])
+      );
+
+    if (!validSelection) {
       return NextResponse.json(
-        { error: `${product.name} (${requested.variant}) is unavailable.` },
+        { error: `Select a valid option for ${product.name}.` },
+        { status: 400 }
+      );
+    }
+
+    if (!product.inStock || !product.orderingEnabled) {
+      return NextResponse.json(
+        { error: `${product.name} is unavailable.` },
         { status: 400 }
       );
     }
@@ -73,11 +91,13 @@ export async function POST(request: Request) {
     orderItems.push({
       slug: product.slug,
       name: product.name,
-      variant: variant.label,
+      options: product.optionTypes.map((type) => ({
+        optionTypeName: type.name,
+        optionValue: selectedOptions[type.name],
+      })),
       quantity,
       priceCentavos: product.priceCentavos,
       productId: product.id,
-      variantId: variant.id,
     });
   }
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { listProductsForAdmin } from "@/lib/admin/catalog";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -23,27 +24,38 @@ export default async function AdminProductsPage() {
 
       <ul className="divide-y divide-black/[.08] dark:divide-white/[.145]">
         {products.map((product) => {
-          const totalStock = product.variants.reduce(
-            (sum, v) => sum + v.stockQuantity,
-            0
-          );
+          const photo = product.photos[0];
           return (
             <li key={product.id} className="py-4">
               <Link
                 href={`/admin/products/${product.id}`}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between gap-4"
               >
-                <div>
-                  <p className="font-medium">{product.name}</p>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {product.category} · {formatPrice(product.priceCentavos)}{" "}
-                    · {product.variants.length} variant
-                    {product.variants.length === 1 ? "" : "s"} · stock:{" "}
-                    {totalStock}
-                  </p>
+                <div className="flex items-center gap-3">
+                  {photo ? (
+                    <Image
+                      src={photo.url}
+                      alt={product.name}
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 flex-none rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 flex-none rounded-md bg-zinc-100 dark:bg-zinc-900" />
+                  )}
+                  <div>
+                    <p className="font-medium">{product.name}</p>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      {product.category} · {formatPrice(product.priceCentavos)}{" "}
+                      · stock: {product.stockQuantity}
+                    </p>
+                  </div>
                 </div>
-                {!product.orderingEnabled && (
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">Paused</span>
+                {(!product.orderingEnabled || !product.visible) && (
+                  <div className="flex flex-none flex-col items-end gap-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+                    {!product.visible && <span>Hidden</span>}
+                    {!product.orderingEnabled && <span>Paused</span>}
+                  </div>
                 )}
               </Link>
             </li>

@@ -5,41 +5,69 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Product options beyond color: admin-configurable custom choices
-  (thread color, size, length, etc.), not just a single flat variant.**
-  Today a product's only selectable dimension is `product_variants.label`
-  — a single free-text field per row (`supabase/migrations/0001_init.sql`)
-  with one stock/capacity count each. The admin edit page
-  (`src/app/admin/products/[id]/page.tsx`) lets you add/edit/delete these
-  flat labels, and the PDP (`src/app/products/[slug]/ProductDetail.tsx`,
-  ~line 48-49) hardcodes the heading "Color" over a single row of swatch
-  buttons built from that one label list — there's no way to add a second
-  independent choice (e.g. thread color) without hacking it into the same
-  free-text label (e.g. typing "Black / Natural thread" as one variant),
-  which breaks stock tracking per real combination and reads wrong under a
-  "Color" heading. This is actually a gap against the PRD, not new scope —
-  `docs/PRODUCT_REQUIREMENTS.md` §3/§5 and **US-3** already call for
-  "select a color, size, and thread color from fixed dropdown/swatch
-  options," but only the single flat dimension got built.
-  Direction: introduce admin-defined **option types** per product (e.g.
-  "Color", "Thread Color", "Size", "Length"), each with its own ordered
-  list of admin-entered values, and make a **variant** a combination of one
-  value per option type (the standard e-commerce options→variants model).
-  This is a bigger change than the polish items above — touches the data
-  model (new `product_option_types` / `product_option_values` tables, or
-  similar; a migration), `src/lib/admin/catalog.ts` and `src/lib/products.ts`
-  (variant shape and combination logic), the admin product edit UI (define
-  option types + generate/manage variant combinations instead of one flat
-  list), the PDP (a selector group per option type instead of one "Color"
-  swatch row), and the cart item shape (`CartItem.variant` in
-  `src/lib/cart-context.tsx:11-17` is a single string today — would need to
-  become structured, e.g. an array of `{ optionType, value }`, echoed
-  through checkout/order emails which currently just print the flat variant
-  label). Existing products/orders only have the single flat label, so this
-  needs a migration path, not a breaking rewrite of existing data.
+(none — see Done below)
 
 ## Done
 
+- [x] **Admin → Products: hide a product from the shop entirely, plus a
+  batched option-selection save and reorderable options (US-41).**
+  `products.visible` (migration `0012_product_visibility.sql`, default
+  true) — a new "Visible in shop" checkbox on the product form; unchecking
+  it excludes the product from `getProducts()` (listing + sitemap) and
+  404s its PDP directly, but `getProductBySlug()` still resolves it
+  (order history/photos for past orders of a since-hidden product still
+  render). Distinct from the existing "Ordering enabled" pause, which
+  still lists the product as unavailable. Also: the product page's Options
+  section now saves every attached option's value selection in one submit
+  (`updateProductOptionSelectionsAction`) instead of one form per option,
+  and gained ↑/↓ reorder buttons (`moveProductOption`, same swap-adjacent-
+  position approach as `moveFaqItem`) — both routed through `ActionButton`
+  rather than a nested `<form>`, since they live inside the batch-save
+  form.
+- [x] **Admin → Products list: show each product's photo thumbnail.**
+  `/admin/products` now renders the first product photo (or a placeholder
+  box) beside each row, matching the cart/PDP thumbnail pattern.
+- [x] **Drop the variant entity — any combination of a product's option
+  values should be orderable, no admin-created variant row required.**
+  See [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md)'s "Second
+  course correction" section. `product_variants`/`product_variant_options`
+  are gone (migration `0011_option_library_and_order_item_options.sql`,
+  not yet run against the live DB — see MANUAL_TASKS.md); selected options
+  are recorded on the order directly (`order_item_options`, snapshotted)
+  instead of via a `variant_id` FK. The PDP's "not available in this
+  combination" state is gone — any combination of a product's own option
+  values is addable to cart as long as the product itself is in stock and
+  ordering-enabled.
+- [x] **Shop-wide reusable option library — define an option type once
+  (e.g. Color: Blue, Red, Green) and attach it to any product.** See
+  [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md)'s "Third course
+  correction" section (US-40). `product_option_types`/`product_option_values`
+  became shop-wide (`option_types`/`option_values`, same migration `0011`
+  as above — both share the same underlying tables so they share one
+  migration); each product attaches a type and picks a subset of its
+  values (`product_options`/`product_option_selections`) via a new
+  `/admin/options` library page plus a reworked Options section on the
+  product page. `display_style` is a global setting on the option type.
+- [x] **Product options beyond color: admin-configurable custom choices
+  (thread color, size, length, etc.), not just a single flat variant.**
+  See [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md) for the full
+  design. Admin defines option types per product (Color, Thread Color,
+  Size, ...) each with its own ordered value list
+  (`product_option_types`/`product_option_values`, migration
+  `0009_product_options.sql`), each displayed on the PDP as either swatch
+  buttons or a dropdown (`display_style`, admin's choice per option
+  type — US-39, migration `0010_product_level_stock.sql`); a variant is a
+  combination of one value per type (`product_variant_options`), immutable
+  after creation. Stock is a single production-capacity number per
+  *product* (`products.stock_quantity`), not per variant/option
+  combination — all v1 products are made-to-order, so every option
+  combination is orderable or sold out together
+  (`decrement_product_stock`/`restore_product_stock`). Existing variants/
+  orders migrated losslessly (variant ids preserved, order display
+  snapshotted onto `order_items.variant_label`; each product's existing
+  per-variant stock summed into its new single capacity number). Built on
+  a separate `feat/product-options` branch — run migration `0010` before
+  merging to `develop` (see MANUAL_TASKS.md).
 - [x] **Narrow tooltips to the header navbar only.** Removed the `Tooltip`
   wrapping from `ActionButton`, the cart's Remove button, `admin/faq`'s
   move-up/down/save icons, and `account/addresses`'s delete/save icons —

@@ -5,6 +5,8 @@ type Defaults = {
   price?: number;
   leadTimeDays?: number;
   orderingEnabled?: boolean;
+  visible?: boolean;
+  stockQuantity?: number;
 };
 
 export function ProductFormFields({
@@ -81,6 +83,26 @@ export function ProductFormFields({
           className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
         />
       </div>
+      <div>
+        <label className="text-sm font-medium" htmlFor="stockQuantity">
+          Stock (production capacity)
+        </label>
+        <input
+          id="stockQuantity"
+          name="stockQuantity"
+          type="number"
+          step="1"
+          min="0"
+          required
+          defaultValue={defaultValues.stockQuantity ?? 0}
+          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+        />
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          One capacity number for the whole product — the same regardless of
+          which option combination a customer picks. Never shown to
+          customers.
+        </p>
+      </div>
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
@@ -89,6 +111,21 @@ export function ProductFormFields({
         />
         Ordering enabled
       </label>
+      <div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="visible"
+            defaultChecked={defaultValues.visible ?? true}
+          />
+          Visible in shop
+        </label>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Unchecking this hides the product from the shop listing and
+          search entirely (its page 404s) — different from disabling
+          ordering, which still lists it as unavailable.
+        </p>
+      </div>
     </>
   );
 }

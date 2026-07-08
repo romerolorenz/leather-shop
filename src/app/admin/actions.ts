@@ -6,12 +6,20 @@ import { assertAdmin } from "@/lib/admin/auth";
 import {
   createProduct,
   updateProduct,
-  addVariant,
-  updateVariant,
-  deleteVariant,
+  createOptionType,
+  updateOptionType,
+  deleteOptionType,
+  createOptionValue,
+  updateOptionValue,
+  deleteOptionValue,
+  attachOptionToProduct,
+  updateProductOptionSelection,
+  detachOptionFromProduct,
+  moveProductOption,
   addProductPhotos,
   deleteProductPhoto,
   type ProductInput,
+  type OptionDisplayStyle,
 } from "@/lib/admin/catalog";
 import {
   markOrderPaid,
@@ -54,7 +62,14 @@ function parseProductInput(formData: FormData): ProductInput {
     priceCentavos: Math.round(Number(formData.get("price")) * 100),
     leadTimeDays: Number(formData.get("leadTimeDays")),
     orderingEnabled: formData.get("orderingEnabled") === "on",
+    visible: formData.get("visible") === "on",
+    stockQuantity: Number(formData.get("stockQuantity")),
   };
+}
+
+function parseDisplayStyle(formData: FormData): OptionDisplayStyle {
+  const value = String(formData.get("displayStyle") ?? "");
+  return value === "dropdown" ? "dropdown" : "buttons";
 }
 
 function revalidateStorefront() {
@@ -98,56 +113,170 @@ export async function updateProductAction(
   }, "Product saved.");
 }
 
-export async function addVariantAction(
+// Shop-wide option library (/admin/options) — see
+// docs/PRODUCT_OPTIONS_DESIGN.md's "Third course correction". Renaming/
+// restyling a type or renaming/deleting a value applies everywhere it's
+// attached, hence the broad revalidation.
+export async function createOptionTypeAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) throw new Error("Option type name is required.");
+    await createOptionType(name, parseDisplayStyle(formData));
+    revalidatePath("/admin/options");
+  }, "Option type added.");
+}
+
+export async function updateOptionTypeAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) throw new Error("Option type name is required.");
+    await updateOptionType(id, name, parseDisplayStyle(formData));
+    revalidatePath("/admin/options");
+    revalidateStorefront();
+  }, "Option type saved.");
+}
+
+export async function deleteOptionTypeAction(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteOptionType(id);
+    revalidatePath("/admin/options");
+    revalidateStorefront();
+  }, "Option type deleted.");
+}
+
+export async function createOptionValueAction(
+  optionTypeId: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const value = String(formData.get("value") ?? "").trim();
+    if (!value) throw new Error("Value is required.");
+    await createOptionValue(optionTypeId, value);
+    revalidatePath("/admin/options");
+  }, "Value added.");
+}
+
+export async function updateOptionValueAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const value = String(formData.get("value") ?? "").trim();
+    if (!value) throw new Error("Value is required.");
+    await updateOptionValue(id, value);
+    revalidatePath("/admin/options");
+    revalidateStorefront();
+  }, "Value saved.");
+}
+
+export async function deleteOptionValueAction(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteOptionValue(id);
+    revalidatePath("/admin/options");
+    revalidateStorefront();
+  }, "Value deleted.");
+}
+
+// ─── attaching shared options to a product (per-product page) ───────────
+
+export async function attachOptionAction(
   productId: string,
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const label = String(formData.get("label") ?? "").trim();
-    const stockQuantity = Number(formData.get("stockQuantity"));
-    if (!label) throw new Error("Variant label is required.");
-
-    await addVariant(productId, label, stockQuantity);
+    const optionTypeId = String(formData.get("optionTypeId") ?? "").trim();
+    if (!optionTypeId) throw new Error("Select an option to attach.");
+    await attachOptionToProduct(productId, optionTypeId, []);
     revalidatePath(`/admin/products/${productId}`);
-    revalidateStorefront();
-  }, "Variant added.");
+  }, "Option attached.");
 }
 
-export async function deleteVariantAction(
-  variantId: string,
+// Creates a brand-new shop-wide type and immediately attaches it to this
+// product — the "create new" shortcut from the product page. Starts with
+// no values selected; add values on /admin/options, then pick the subset
+// here.
+export async function createOptionTypeAndAttachAction(
+  productId: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) throw new Error("Option type name is required.");
+    const { id } = await createOptionType(name, parseDisplayStyle(formData));
+    await attachOptionToProduct(productId, id, []);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidatePath("/admin/options");
+  }, "Option type created and attached.");
+}
+
+// productOptionIds is bound at render time from the product's attached-
+// options list the page already fetched (mirrors createVariantAction's old
+// optionTypeIds bind) — one checkbox group per option, named
+// `valueIds:{productOptionId}`, so this reads and saves every attached
+// option's selection in a single submit instead of one form per option.
+export async function updateProductOptionSelectionsAction(
+  productId: string,
+  productOptionIds: string[],
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    for (const productOptionId of productOptionIds) {
+      const valueIds = formData.getAll(`valueIds:${productOptionId}`).map(String);
+      await updateProductOptionSelection(productOptionId, valueIds);
+    }
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Options saved.");
+}
+
+export async function detachOptionAction(
+  productOptionId: string,
   productId: string
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    await deleteVariant(variantId);
+    await detachOptionFromProduct(productOptionId);
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
-  }, "Variant deleted.");
+  }, "Option detached.");
 }
 
-// Saves every variant's label/stock in one submit instead of one form per
-// row — variantIds is bound at render time from the variant list the page
-// already fetched, so this only ever touches variants that belong to
-// productId.
-export async function updateAllVariantsAction(
+// Returns ActionResult (unlike moveFaqItemAction's void return) because
+// this button lives inside the "Save options" batch form — it has to go
+// through ActionButton rather than a nested <form>, and ActionButton's
+// action prop requires an ActionResult to toast.
+export async function moveProductOptionAction(
+  productOptionId: string,
   productId: string,
-  variantIds: string[],
-  prevState: ActionResult | null,
-  formData: FormData
+  direction: "up" | "down"
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    for (const variantId of variantIds) {
-      const label = String(formData.get(`label:${variantId}`) ?? "").trim();
-      const stockQuantity = Number(formData.get(`stock:${variantId}`));
-      if (!label) throw new Error("Variant label is required.");
-      await updateVariant(variantId, label, stockQuantity);
-    }
+    await moveProductOption(productId, productOptionId, direction);
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
-  }, "Variants saved.");
+  }, "Reordered.");
 }
 
 export async function uploadPhotoAction(
