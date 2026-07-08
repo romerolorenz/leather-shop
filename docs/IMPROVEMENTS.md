@@ -5,7 +5,24 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-Nothing outstanding right now — see Done below.
+- [ ] **Icon-only controls need a hover tooltip, not just `aria-label`.**
+  All the icon work above (header nav, admin action buttons, cart, FAQ
+  reorder/save, saved addresses) left every icon with an `aria-label` for
+  screen readers but nothing visible on mouse hover — a sighted user has
+  to guess or click to find out what an icon does. Worst case is the
+  header nav (`src/app/layout.tsx:71-143`): FAQ, Contact Us, Shop,
+  My Account/Log In, and Cart are now five icons in a row with zero
+  visible text and no hover hint. Same gap on
+  `src/components/admin/ActionButton.tsx` (delete/mark paid/mark
+  shipped/cancel), the FAQ move-up/down/save icons
+  (`src/app/admin/faq/page.tsx`), and the saved-address delete/save icons
+  (`src/app/account/addresses/page.tsx`). Cheapest fix: add a native
+  `title` attribute alongside each existing `aria-label` (zero JS, browser
+  default styling, but inconsistent look across browsers and no styling
+  control). Nicer fix: a small shared `Tooltip` component — no
+  tooltip/icon-library primitive exists in the codebase yet, so pick one
+  approach and apply it everywhere rather than mixing native `title` in
+  some places and a custom component in others.
 
 ## Done
 

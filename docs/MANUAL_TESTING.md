@@ -12,30 +12,25 @@ collapsed to a one-line summary below (full history is in git — see the
 phase's commit and any follow-up commits for exactly what was tested and
 fixed).
 
-## Follow-ups from round 4 findings
+## Follow-ups from round 5 findings
 
-Verified via curl: `/contact` renders the form, `/api/contact` correctly
-rejects missing fields and invalid emails (400). FAQ is now an icon too
-(header nav is fully icon-only: FAQ / Contact Us / Shop / Account-or-Log
-In / Cart, each `inline-flex` for consistent box sizing). Actually
-submitting the form and receiving the email needs a real browser +
-inbox check — and will currently fail with a "couldn't send" error until
-Resend has a verified domain and the placeholder Contact Us email in
-`/admin/settings` is updated to a real inbox (both tracked in
-MANUAL_TASKS.md):
-
-- [ ] Header nav: confirm the gaps between all five icons (FAQ, Contact
-  Us, Shop, Account/Log In, Cart) now look visually even.
-  Findings:
-
-- [ ] `/contact` — fill out and submit the form. With the current
-  placeholder settings this is expected to show the red "couldn't send"
-  error (not a bug) — once Resend + the Contact Us email are both fixed
-  per MANUAL_TASKS.md, retest that a real submission succeeds and the
-  email arrives with Reply-To set to the sender's address.
+- [ ] Header nav: My Account and Log In are now circular icons (person-in-
+  circle / arrow-in-circle), matching FAQ's circle silhouette instead of
+  the sparser line-based icons from before — the goal was to even out the
+  visual weight so the Shop↔Account/Login and Login↔Cart gaps don't read
+  as wider than the others. Screenshotted locally and the gaps measured
+  visually even (~43-44px each), but check on your end too, especially on
+  the actual deployed site.
   Findings:
 
 ## Done
+
+- [x] **Round 4 — Contact form + header icon consistency.** Verified via
+  curl: `/contact` renders the form, `/api/contact` correctly rejects
+  missing fields and invalid emails (400). FAQ is now an icon too (header
+  nav is fully icon-only). Submitted the contact form live — working as
+  expected (shows the "couldn't send" error until Resend + the Contact Us
+  email are fixed per MANUAL_TASKS.md).
 
 - [x] **Phase 9 — Non-functional hardening.** Lighthouse (mobile viewport)
   scored 100/100/100 (accessibility/best-practices/SEO) on `/` and a

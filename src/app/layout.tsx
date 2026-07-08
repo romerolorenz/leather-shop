@@ -21,6 +21,27 @@ export const metadata: Metadata = {
   description: "Handcrafted leather goods, made in small batches.",
 };
 
+// Same icon for both the logged-in (My Account) and logged-out (Log In)
+// header nav states — the destination differs, the glyph doesn't.
+function UserIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="10" r="3" />
+      <path d="M7 20.66V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.66" />
+    </svg>
+  );
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -108,19 +129,7 @@ export default async function RootLayout({
                     aria-label="My Account"
                     className="inline-flex"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-5 w-5"
-                    >
-                      <path d="M20 21a8 8 0 0 0-16 0" />
-                      <circle cx="12" cy="8" r="5" />
-                    </svg>
+                    <UserIcon />
                   </Link>
                 ) : (
                   <Link
@@ -128,20 +137,7 @@ export default async function RootLayout({
                     aria-label="Log In"
                     className="inline-flex"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-5 w-5"
-                    >
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
+                    <UserIcon />
                   </Link>
                 )}
                 <CartLink />
