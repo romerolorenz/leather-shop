@@ -5,7 +5,42 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-(none — see Done below)
+- [ ] **Bug: a dropdown-style option with only one value permanently
+  blocks Add to Cart.** Found during manual testing (MANUAL_TESTING.md,
+  "Product options: shop-wide library" checklist). In
+  `src/app/products/[slug]/ProductDetail.tsx`, `selectedOptions` state
+  starts empty (`useState({})`) and a dropdown's `value` reads
+  `selectedOptions[type.name] ?? ""`; it's only populated via the
+  `<select>`'s `onChange`. A native `<select>` never fires `onChange` when
+  it has just one `<option>` — there's no other value to change to — so
+  `selectedOptions[type.name]` stays `undefined` forever,
+  `canAddToCart`'s `every(type => !!selectedOptions[type.name])` check
+  never passes, and Add to Cart stays disabled with no way for the
+  shopper to satisfy it. The `buttons` display style doesn't have this
+  problem (its `onClick` fires regardless of how many values exist).
+  Fix needs to default/seed `selectedOptions` for any dropdown-style
+  option type that has exactly one attached value.
+- [ ] **`/admin/options` breadcrumb reads "Admin / Products / Options"
+  and its "Products" crumb links to `/admin/products`.** Found during
+  manual testing (same checklist as above). The route itself is correct
+  (`src/app/admin/options/page.tsx` is `/admin/options`, not nested under
+  products) — the bug is the page's hardcoded `Breadcrumbs` array (lines
+  ~60-66), which still has a `{ label: "Products", href: "/admin/products"
+  }` crumb in the middle, evidently left over from copying
+  `/admin/products/page.tsx`'s breadcrumb array. Should just be
+  `Admin / Options`.
+- [ ] **`/admin/options` should have one library-wide save instead of a
+  separate save button per option type/value row.** Found during the same
+  manual-testing pass. Currently every type and value row is its own
+  independent `ActionForm` + server action
+  (`updateOptionTypeAction`/`updateOptionValueAction` in
+  `src/app/admin/actions.ts`), each submitting on its own — with N types
+  and M values that's N+M+2 separate forms/round-trips. Matches the
+  pattern already fixed for per-product option *selections* (batched into
+  one "Save options" submit, see IMPROVEMENTS.md Done below /
+  MANUAL_TASKS.md's 0012 entry) — would need the same treatment here:
+  collect edits into client state and submit the whole library in one
+  server action.
 
 ## Done
 
