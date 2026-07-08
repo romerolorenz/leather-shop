@@ -22,8 +22,8 @@ from (
 where sub.product_id = p.id;
 
 alter table product_variants
-  drop column stock_quantity,
-  drop column in_stock;
+  drop column in_stock,
+  drop column stock_quantity;
 
 -- ─── stock functions, keyed on product_id instead of variant_id ───────────
 -- 0002's functions can't be edited in place (already ran against the live
