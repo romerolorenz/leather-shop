@@ -1,10 +1,10 @@
 # Homepage Design Brief
 
-Status: **Draft — awaiting sign-off before building.** Per the CLAUDE.md
-design process, nothing gets built as an artifact until this document is
-agreed. Third attempt at the homepage — the two before this
-("Editorial Filipino" and "Atelier Ledger") were dropped outright, not
-iterated on; this is a from-zero rethink, not a v3 of either.
+Status: **Approved and built.** See
+[docs/DESIGN_LOG.md](../DESIGN_LOG.md) for the published artifact. Third
+attempt at the homepage — the two before this ("Editorial Filipino" and
+"Atelier Ledger") were dropped outright, not iterated on; this was a
+from-zero rethink, not a v3 of either.
 
 ## 1. Mood
 
@@ -66,10 +66,13 @@ effect is visible now, clearly marked in the artifact as temporary
 stand-ins, swapped for the shop's own photography later without a
 layout rebuild.
 
-I'll add a `docs/MANUAL_TASKS.md` item for the real product photoshoot
-when this design is approved (it's a "doesn't block any phase yet"
-item alongside the existing brand-assets entry, since Phase 9 is
-already closed and no phase currently depends on it).
+**Note found during build:** `docs/MANUAL_TASKS.md`'s Done list already
+has "Upload real product photos — done via the admin UI during
+testing" (Phase 9), which contradicts the "no photography exists yet"
+assumption above. This mockup still uses Pexels placeholder photography
+since the actual uploaded images live in Supabase storage and weren't
+pulled in — flagged for the user to confirm whether real photos should
+replace the placeholders when this design gets implemented.
 
 ## 5. Sections (in order)
 

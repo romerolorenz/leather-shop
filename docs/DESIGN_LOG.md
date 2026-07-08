@@ -6,6 +6,21 @@ designing, and write the design doc before building" rule in
 [CLAUDE.md](../CLAUDE.md) — before adding to this list, a design brief
 should already exist under `docs/design/` and be agreed with the user.
 
+- **2026-07-08 — Homepage v3, "Quiet & Confident"**
+  [artifact](https://claude.ai/code/artifact/dbb0209b-fc2d-40cd-bc50-d29f3cb23551) —
+  brief: [docs/design/homepage.md](design/homepage.md). Built from a
+  design-doc-first process (first design to follow it). Near-monochrome
+  palette (white/warm-near-black/warm-grey) with a single oxblood accent
+  used sparingly; Archivo as the sole type family across weights instead
+  of a display/body pairing. Three sections only: full-screen product
+  hero (slow Ken-Burns drift, no carousel chrome), top-3 admin-chosen
+  products, short studio-brief paragraph. Uses free-license Pexels
+  photography as realistic placeholders (embedded as data URIs — the
+  Artifact CSP blocks remote image requests) since no real product
+  photography exists yet; flagged in the brief that a `featured` field
+  doesn't yet exist on `products` (only 2 real seed products exist, a
+  belt was added as a placeholder third item).
+
 ## Dropped
 
 Both prior homepage explorations were dropped at the user's request on
