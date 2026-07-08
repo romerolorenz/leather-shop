@@ -8,6 +8,7 @@ type EmailContent = {
   subject: string;
   text: string;
   html?: string;
+  replyTo?: string;
 };
 
 function formatOrderItems(order: Order): string {
@@ -147,6 +148,41 @@ export function buildOrderConfirmationEmail(
   };
 }
 
+export type ContactMessageInput = {
+  name: string;
+  email: string;
+  message: string;
+};
+
+// Reply-To is set to the shopper's own address so the shop owner can just
+// hit reply in their inbox instead of copy-pasting an email out of the
+// message body.
+export function buildContactMessageEmail(
+  input: ContactMessageInput,
+  toEmail: string
+): EmailContent {
+  const name = escapeHtml(input.name);
+  const email = escapeHtml(input.email);
+  const message = escapeHtml(input.message);
+
+  return {
+    to: toEmail,
+    replyTo: input.email,
+    subject: `New message from ${input.name} (via Contact Us)`,
+    text: [
+      `From: ${input.name} <${input.email}>`,
+      "",
+      input.message,
+    ].join("\n"),
+    html: `
+      <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#171717;">
+        <p style="font-size:14px;color:#52525b;margin:0 0 16px;">From <strong style="color:#171717;">${name}</strong> (${email})</p>
+        <p style="font-size:14px;white-space:pre-wrap;">${message}</p>
+      </div>
+    `,
+  };
+}
+
 async function sendEmail(content: EmailContent, skipLabel: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -184,5 +220,17 @@ export async function sendOrderConfirmationEmail(order: Order) {
   await sendEmail(
     buildOrderConfirmationEmail(order, itemPhotos),
     `order confirmation for order ${order.id}`
+  );
+}
+
+// Unlike the order emails (a side effect of an already-successful order),
+// sending the email IS the point of the contact form — a failure here
+// must propagate so the caller can tell the shopper it didn't go through,
+// not get silently swallowed.
+export async function sendContactMessageEmail(input: ContactMessageInput) {
+  const { contactEmail } = await getSettings();
+  await sendEmail(
+    buildContactMessageEmail(input, contactEmail),
+    `contact message from ${input.email}`
   );
 }

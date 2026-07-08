@@ -1,5 +1,6 @@
 import { getSettings } from "@/lib/settings";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import ContactForm from "./ContactForm";
 
 export const metadata = {
   title: "Contact Us — Leather Shop",
@@ -18,7 +19,7 @@ export default async function ContactPage() {
       </h1>
       <p className="text-zinc-600 dark:text-zinc-400">
         Have a question, or want to order for delivery outside Metro Manila?
-        Reach out through either of these:
+        Send us a message below, or reach out directly:
       </p>
 
       <div className="mt-6 flex flex-col gap-3">
@@ -34,6 +35,8 @@ export default async function ContactPage() {
           Instagram
         </a>
       </div>
+
+      <ContactForm />
     </main>
   );
 }

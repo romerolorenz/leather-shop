@@ -15,9 +15,16 @@ blockers, then items that don't block any phase.
   send to your own account email (`marcolorenzoromero@gmail.com`) — it
   rejected even a `+alias` of that same address. This means **customer
   order-confirmation emails currently cannot reach any real customer**,
-  only you. Code/tests are otherwise done (Phase 6). Verify a domain at
+  only you. Same restriction now also blocks the new `/contact` form (adds
+  a direct-email option alongside mailto/Instagram) — a message to any
+  address but your own will fail with a "couldn't send" error until this
+  is fixed. Code/tests are otherwise done (Phase 6). Verify a domain at
   resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it
   before real customers place orders.
+- [ ] **Doesn't block any phase: update the placeholder Contact Us email.**
+  `/admin/settings`'s "Contact Us email" is still `marco@example.com` (set
+  during Phase 7 testing) — the new `/contact` form sends there, so it
+  needs to be a real inbox you check before the form is useful.
 - [ ] **Doesn't block any phase: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.

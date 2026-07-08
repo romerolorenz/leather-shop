@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildOrderNotificationEmail,
   buildOrderConfirmationEmail,
+  buildContactMessageEmail,
 } from "@/lib/email";
 import type { Order } from "@/lib/orders";
 
@@ -85,5 +86,39 @@ describe("buildOrderConfirmationEmail", () => {
     expect(email.html).not.toContain("<script>");
     expect(email.html).toContain("&lt;script&gt;");
     expect(email.html).not.toContain("<b>evil</b>");
+  });
+});
+
+describe("buildContactMessageEmail", () => {
+  const input = {
+    name: "Juan Dela Cruz",
+    email: "juan@example.com",
+    message: "Do you ship to Cebu?",
+  };
+
+  it("addresses the shop's contact email and sets replyTo to the sender", () => {
+    const email = buildContactMessageEmail(input, "shop@example.com");
+
+    expect(email.to).toBe("shop@example.com");
+    expect(email.replyTo).toBe("juan@example.com");
+    expect(email.subject).toContain("Juan Dela Cruz");
+    expect(email.text).toContain("Juan Dela Cruz <juan@example.com>");
+    expect(email.text).toContain("Do you ship to Cebu?");
+  });
+
+  it("escapes HTML in the name and message", () => {
+    const email = buildContactMessageEmail(
+      {
+        name: "<script>alert(1)</script>",
+        email: "evil@example.com",
+        message: "<b>hi</b>",
+      },
+      "shop@example.com"
+    );
+
+    expect(email.html).not.toContain("<script>");
+    expect(email.html).toContain("&lt;script&gt;");
+    expect(email.html).not.toContain("<b>hi</b>");
+    expect(email.html).toContain("&lt;b&gt;hi&lt;/b&gt;");
   });
 });
