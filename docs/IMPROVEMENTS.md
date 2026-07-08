@@ -5,18 +5,6 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Narrow tooltips to the header navbar only.** Currently `Tooltip`
-  (`src/components/Tooltip.tsx`) is applied broadly — navbar, every
-  `ActionButton` use (admin delete/mark/cancel icons), FAQ move-up/down and
-  the per-item save icon, and the saved-address delete/save icons (see the
-  "Icon-only controls" Done entry below). Manual-testing feedback: "I only
-  want the tooltips on the navbar; let's remove the others." When
-  implemented, remove the `Tooltip` wrapping from `ActionButton`
-  (`src/components/admin/ActionButton.tsx`), the cart's Remove button
-  (`src/app/cart/CartView.tsx`), `src/app/admin/faq/page.tsx`'s
-  move-up/down/save icons, and `src/app/account/addresses/page.tsx`'s
-  delete/save icons — leave `src/app/layout.tsx`'s navbar icons as the only
-  ones tooltipped.
 - [ ] **Product options beyond color: admin-configurable custom choices
   (thread color, size, length, etc.), not just a single flat variant.**
   Today a product's only selectable dimension is `product_variants.label`
@@ -52,6 +40,10 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **Narrow tooltips to the header navbar only.** Removed the `Tooltip`
+  wrapping from `ActionButton`, the cart's Remove button, `admin/faq`'s
+  move-up/down/save icons, and `account/addresses`'s delete/save icons —
+  `src/app/layout.tsx`'s navbar icons are the only ones tooltipped now.
 - [x] **Icon-only controls now show a hover/focus tooltip.** New shared
   `src/components/Tooltip.tsx` (pure CSS, `group/tooltip` + `group-hover`/
   `group-focus-within`, no new dependency) wraps every icon-only control:
