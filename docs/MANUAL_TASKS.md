@@ -59,3 +59,8 @@ blockers, then items that don't block any phase.
 - [x] Mobile-device walkthrough (Phase 9 exit criteria): full browse →
   cart → checkout → place order flow, plus Google login → `/account` →
   `/account/addresses`, both verified working on a real device.
+- [x] Fix local Google login redirecting without creating a session —
+  Supabase's Redirect URLs list needs a wildcard (`http://localhost:3000/**`),
+  not just the exact `/auth/callback` path, since the app's requested
+  `redirectTo` includes a `?next=...` query string that didn't match the
+  non-wildcard entry.
