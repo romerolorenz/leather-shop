@@ -10,6 +10,16 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
+- [ ] **Blocks the product-options rework (IMPROVEMENTS.md, in progress):
+  run `supabase/migrations/0009_product_options.sql`** against the
+  Supabase project — adds `product_option_types`/`product_option_values`/
+  `product_variant_options` tables, migrates every existing variant's
+  label into a "Color" option type + value (lossless, preserves existing
+  variant ids since `order_items` already references them by FK), and
+  snapshots each historical order item's display label onto a new
+  `order_items.variant_label` column before dropping
+  `product_variants.label`. Without it, the admin catalog UI and PDP will
+  error once the code lands.
 - [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
   Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
   send to your own account email (`marcolorenzoromero@gmail.com`) — it

@@ -7,36 +7,9 @@ later work. Not started until explicitly requested — see items below.
 
 - [ ] **Product options beyond color: admin-configurable custom choices
   (thread color, size, length, etc.), not just a single flat variant.**
-  Today a product's only selectable dimension is `product_variants.label`
-  — a single free-text field per row (`supabase/migrations/0001_init.sql`)
-  with one stock/capacity count each. The admin edit page
-  (`src/app/admin/products/[id]/page.tsx`) lets you add/edit/delete these
-  flat labels, and the PDP (`src/app/products/[slug]/ProductDetail.tsx`,
-  ~line 48-49) hardcodes the heading "Color" over a single row of swatch
-  buttons built from that one label list — there's no way to add a second
-  independent choice (e.g. thread color) without hacking it into the same
-  free-text label (e.g. typing "Black / Natural thread" as one variant),
-  which breaks stock tracking per real combination and reads wrong under a
-  "Color" heading. This is actually a gap against the PRD, not new scope —
-  `docs/PRODUCT_REQUIREMENTS.md` §3/§5 and **US-3** already call for
-  "select a color, size, and thread color from fixed dropdown/swatch
-  options," but only the single flat dimension got built.
-  Direction: introduce admin-defined **option types** per product (e.g.
-  "Color", "Thread Color", "Size", "Length"), each with its own ordered
-  list of admin-entered values, and make a **variant** a combination of one
-  value per option type (the standard e-commerce options→variants model).
-  This is a bigger change than the polish items above — touches the data
-  model (new `product_option_types` / `product_option_values` tables, or
-  similar; a migration), `src/lib/admin/catalog.ts` and `src/lib/products.ts`
-  (variant shape and combination logic), the admin product edit UI (define
-  option types + generate/manage variant combinations instead of one flat
-  list), the PDP (a selector group per option type instead of one "Color"
-  swatch row), and the cart item shape (`CartItem.variant` in
-  `src/lib/cart-context.tsx:11-17` is a single string today — would need to
-  become structured, e.g. an array of `{ optionType, value }`, echoed
-  through checkout/order emails which currently just print the flat variant
-  label). Existing products/orders only have the single flat label, so this
-  needs a migration path, not a breaking rewrite of existing data.
+  In progress — see [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md)
+  for the full design (schema, decisions, code touchpoints, implementation
+  checkpoints) written before starting on this.
 
 ## Done
 
