@@ -159,8 +159,14 @@ otherwise have held.
 
 ## Request flow: order expiry (payment hold)
 
-1. Vercel Cron fires on schedule → `GET /api/orders/expire` (with the
-   `CRON_SECRET` bearer token Vercel attaches automatically).
+1. Vercel Cron fires on schedule (`vercel.json`: daily at `0 16 * * *` UTC
+   = midnight GMT+8 — the Hobby plan only allows daily Cron, not hourly;
+   Vercel Cron schedules are always evaluated in UTC) → `GET
+   /api/orders/expire` (with the `CRON_SECRET` bearer token Vercel attaches
+   automatically). This means an order can sit up to ~24h past its actual
+   `order_payment_hold_hours` before being cancelled — acceptable for v1's
+   traffic volume, but worth revisiting on a paid plan if faster expiry
+   matters.
 2. Route reads `order_payment_hold_hours` from `settings` (default 48),
    then queries Supabase for orders where `status = 'pending_payment'`
    and `created_at` is older than that many hours.
