@@ -20,6 +20,9 @@ should already exist under `docs/design/` and be agreed with the user.
   photography exists yet; flagged in the brief that a `featured` field
   doesn't yet exist on `products` (only 2 real seed products exist, a
   belt was added as a placeholder third item).
+  **Implemented in code 2026-07-09** (`src/app/page.tsx`), using real
+  catalog photos instead of the mockup's Pexels placeholders — see the
+  "Implementation notes" section added to the brief.
 
 ## Dropped
 

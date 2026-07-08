@@ -1,10 +1,37 @@
 # Homepage Design Brief
 
-Status: **Approved and built.** See
+Status: **Approved, built as an artifact mockup, and now implemented as
+the real homepage** (`src/app/page.tsx`). See
 [docs/DESIGN_LOG.md](../DESIGN_LOG.md) for the published artifact. Third
 attempt at the homepage — the two before this ("Editorial Filipino" and
 "Atelier Ledger") were dropped outright, not iterated on; this was a
 from-zero rethink, not a v3 of either.
+
+## Implementation notes (2026-07-09)
+
+Built against the live dev catalog rather than the mockup's Pexels
+placeholders — real product photos already existed (uploaded via the
+admin UI during earlier testing), and the catalog had grown to 5 SKUs by
+build time (not the 2 assumed above). Decisions made when building, per
+the user:
+
+- **Featured picks stayed hardcoded** (`HERO_SLUGS`/`FEATURED_SLUGS` in
+  `src/app/page.tsx`) rather than adding a real `featured` column +
+  admin toggle now — matches the still-open US-38 in
+  [docs/USER_STORIES.md](../USER_STORIES.md), which already tracks the
+  admin-toggle work as a separate future item.
+- **Hero crossfade**: Heritage Messenger Bag + Weekender Duffel (the two
+  most visually striking full-screen shots among photographed products).
+  Note: Weekender Duffel is currently `in_stock: false` in the live
+  catalog — still shown since the hero doesn't expose stock state (only
+  the PDP does), but worth reconsidering if it stays sold out long-term.
+- **Top-3 grid**: Weekender Duffel, Card Wallet, Minimalist Cardholder —
+  chosen so the homepage's hero + grid together surface all 4
+  photographed, visible products at least once.
+- The scroll-reveal motion (§6) uses an `IntersectionObserver` client
+  component (`src/components/Reveal.tsx`) rather than CSS
+  scroll-driven animations, for reliable cross-browser behavior
+  (notably Safari/iOS, a meaningful share of the target market).
 
 ## 1. Mood
 
