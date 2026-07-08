@@ -12,93 +12,28 @@ collapsed to a one-line summary below (full history is in git — see the
 phase's commit and any follow-up commits for exactly what was tested and
 fixed).
 
-## Product options: shop-wide library, no variant entity
-
-Verified via automated tests (`tests/admin-catalog-options.test.ts`,
-`tests/orders.test.ts`, `tests/api-orders.test.ts`, `tests/email.test.ts`):
-shop-wide option-type/value CRUD, attach/detach/selection-subset functions,
-per-product independent value subsets, cascade-delete removing an option
-from every product using it, order placement recording
-`order_item_options`, and the composed "Type: Value" display strings all
-work correctly against the real DB — **once migrations `0010` and `0011`
-have both run, in that order** (see MANUAL_TASKS.md; `0011` drops
-`product_variants`/`product_variant_options`/the old per-product
-`product_option_types`/`product_option_values`, so `0010` must already be
-live first). This replaces the "Product options beyond color" checklist
-that used to be here — that one tested the old variant-creation flow, which
-no longer exists. What's left needs a real admin session and mouse, **after
-both migrations have run**.
-
-`supabase/scripts/wipe_test_data.sql` and `supabase/scripts/seed_test_data.sql`
-(run via the Supabase SQL editor, same as migrations) reset the dev DB to a
-clean set of test products for this checklist — five products covering
-independent per-product value subsets on a shared option type, a
-zero-option product, and a sold-out/paused product. Wipe is destructive
-(deletes every product/option/order row); don't run it against anything but
-the dev DB.
-
-- [x] `/admin/options` — create a new option type (e.g. "Thread Color", set
-  to dropdown), add a couple of values, rename one, confirm both persist
-  and the list order matches insertion order.
-  Findings: breadcrumb shows as /admin/products/options should be /admin/options
-  instead of having individual save buttons, saving should be for the whole library
-
-- [x] `/admin/products/<id>` — attach the option type you just created via
-  "Attach existing option…", confirm it shows up with an empty checkbox
-  list ("no values yet" if you haven't added values, or the checkboxes if
-  you have), check a subset, save, and confirm the PDP shows only the
-  checked values.
-  Findings: working
-
-- [x] On a second product, attach the same shared option type and select a
-  *different* subset of values — confirm the two products' PDPs show
-  independent value lists for the same option type.
-  Findings: working
-
-- [x] Use the "Create & attach new" shortcut directly from a product page
-  (not via `/admin/options` first) — confirm it appears in the library too.
-  Findings: working
-
-- [x] On a product with 2+ attached options, check/uncheck values across
-  *multiple* options, then click "Save options" once — confirm all of them
-  saved together (not just the last one touched), and that the PDP shows
-  the updated selection for every option, not just one.
-  Findings: working
-
-- [x] On that same product, use the ↑/↓ buttons to reorder its attached
-  options — confirm the order updates immediately (no separate save step),
-  the boundary buttons (first row's ↑, last row's ↓) are disabled, and the
-  new order is reflected on the PDP (option types render top-to-bottom in
-  this order).
-  Findings: working
-
-- [x] Detach an option from one product — confirm the other product(s)
-  still using the same shared type are unaffected.
-  Findings:
-
-- [x] Delete an option type or value from `/admin/options` — confirm the
-  confirmation copy warns it affects every product using it, and confirm
-  it actually disappears from every product's PDP that had it, not just
-  the one you were looking at.
-  Findings: working
-
-- [x] On a product with 2+ option types, pick every possible combination
-  of values on its PDP — confirm all of them are addable to cart (no
-  "not available" state exists anymore) as long as the product itself is
-  in stock and ordering-enabled.
-  Findings: having a single item in the drop down prevents it from working
-
-- [x] Set a product's stock to 0 in admin — confirm every option
-  combination on its PDP shows "Sold out" uniformly, then set it back.
-  Findings: working
-
-- [x] Add an item to cart, go to checkout, place a real order — confirm
-  the cart/checkout/confirmation email/`/admin/orders`/`/account` all show
-  the correct "Type: Value" display string(s), and the product's stock
-  decrements by the ordered quantity.
-  Findings: working
-
 ## Done
+
+- [x] **Option library fixes — breadcrumb, batched save, single-value
+  dropdown.** All four checks passed clean: `/admin/options` breadcrumb
+  now reads "Admin / Options" (no stray "Products" crumb); editing
+  several type/value rows at once and clicking "Save library" once
+  persists all of them together; "Add value"/"Add option type"/delete
+  still fire immediately without needing "Save library"; a dropdown-style
+  option with exactly one value now enables Add to Cart immediately
+  (pre-selected) and records correctly through checkout.
+- [x] **Product options: shop-wide library, no variant entity.** Full
+  checklist passed against the real DB (post `0010`/`0011` migrations):
+  option type/value CRUD with cascading effect across every product using
+  them, attach/create-and-attach/detach on a product, independent
+  per-product value subsets on a shared type, batched "Save options" +
+  immediate ↑/↓ reorder, every option combination addable to cart, stock-0
+  showing "Sold out" uniformly, and the full cart → checkout →
+  confirmation email → `/admin/orders` → `/account` flow showing correct
+  "Type: Value" strings with stock decrementing correctly. Found two bugs
+  along the way (the `/admin/options` breadcrumb/save-button issues and
+  the single-value-dropdown Add to Cart block) — both fixed, see the entry
+  above.
 
 - [x] **Admin product visibility + thumbnail, batched option save,
   reorder.** All five checks passed clean (photo thumbnail on

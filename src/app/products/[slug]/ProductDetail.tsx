@@ -7,9 +7,22 @@ import { trackEvent } from "@/lib/track-event";
 
 export default function ProductDetail({ product }: { product: Product }) {
   const { addItem } = useCart();
+  // Dropdowns default to their first value here, matching what the browser
+  // already shows visually — otherwise a dropdown with exactly one value
+  // can never fire onChange (there's nothing else to select), so its entry
+  // in this state would stay unset forever and permanently block
+  // canAddToCart with no way for the shopper to satisfy it.
   const [selectedOptions, setSelectedOptions] = useState<
     Record<string, string>
-  >({});
+  >(() => {
+    const initial: Record<string, string> = {};
+    for (const type of product.optionTypes) {
+      if (type.displayStyle === "dropdown" && type.values.length > 0) {
+        initial[type.name] = type.values[0];
+      }
+    }
+    return initial;
+  });
   const [justAdded, setJustAdded] = useState(false);
 
   const canAddToCart =

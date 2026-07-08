@@ -5,44 +5,50 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Bug: a dropdown-style option with only one value permanently
-  blocks Add to Cart.** Found during manual testing (MANUAL_TESTING.md,
-  "Product options: shop-wide library" checklist). In
-  `src/app/products/[slug]/ProductDetail.tsx`, `selectedOptions` state
-  starts empty (`useState({})`) and a dropdown's `value` reads
-  `selectedOptions[type.name] ?? ""`; it's only populated via the
-  `<select>`'s `onChange`. A native `<select>` never fires `onChange` when
-  it has just one `<option>` — there's no other value to change to — so
-  `selectedOptions[type.name]` stays `undefined` forever,
-  `canAddToCart`'s `every(type => !!selectedOptions[type.name])` check
-  never passes, and Add to Cart stays disabled with no way for the
-  shopper to satisfy it. The `buttons` display style doesn't have this
-  problem (its `onClick` fires regardless of how many values exist).
-  Fix needs to default/seed `selectedOptions` for any dropdown-style
-  option type that has exactly one attached value.
-- [ ] **`/admin/options` breadcrumb reads "Admin / Products / Options"
-  and its "Products" crumb links to `/admin/products`.** Found during
-  manual testing (same checklist as above). The route itself is correct
-  (`src/app/admin/options/page.tsx` is `/admin/options`, not nested under
-  products) — the bug is the page's hardcoded `Breadcrumbs` array (lines
-  ~60-66), which still has a `{ label: "Products", href: "/admin/products"
-  }` crumb in the middle, evidently left over from copying
-  `/admin/products/page.tsx`'s breadcrumb array. Should just be
-  `Admin / Options`.
-- [ ] **`/admin/options` should have one library-wide save instead of a
-  separate save button per option type/value row.** Found during the same
-  manual-testing pass. Currently every type and value row is its own
-  independent `ActionForm` + server action
-  (`updateOptionTypeAction`/`updateOptionValueAction` in
-  `src/app/admin/actions.ts`), each submitting on its own — with N types
-  and M values that's N+M+2 separate forms/round-trips. Matches the
-  pattern already fixed for per-product option *selections* (batched into
-  one "Save options" submit, see IMPROVEMENTS.md Done below /
-  MANUAL_TASKS.md's 0012 entry) — would need the same treatment here:
-  collect edits into client state and submit the whole library in one
-  server action.
+(none — see Done below)
 
 ## Done
+
+- [x] **Bug fix: a dropdown-style option with only one value permanently
+  blocked Add to Cart.** Found during manual testing (MANUAL_TESTING.md,
+  "Product options: shop-wide library" checklist). In
+  `src/app/products/[slug]/ProductDetail.tsx`, `selectedOptions` state
+  started empty and only ever got populated via a `<select>`'s
+  `onChange` — which a native `<select>` never fires when it has just one
+  `<option>` (there's no other value to change to), so the required
+  selection could never be satisfied. Fixed by seeding
+  `selectedOptions`'s initial state with each dropdown-style option
+  type's first value (matching what the browser already shows visually
+  by default) instead of starting empty; multi-value dropdowns and the
+  `buttons` display style are unaffected. Verified via a temporary
+  product's server-rendered PDP (the Add to Cart button carried a
+  `disabled` attribute before the fix and did not after, with the
+  dropdown's sole option pre-selected) and confirmed live end-to-end
+  (checkout records the value correctly) — see `MANUAL_TESTING.md`.
+- [x] **Fixed `/admin/options`'s breadcrumb, which read
+  "Admin / Products / Options" with a "Products" crumb linking to
+  `/admin/products`.** The route itself was correct
+  (`src/app/admin/options/page.tsx` is `/admin/options`, not nested under
+  products) — the bug was a stray middle crumb in the page's hardcoded
+  `Breadcrumbs` array, left over from copying `/admin/products/page.tsx`'s
+  array. Now just `Admin / Options`.
+- [x] **`/admin/options` now saves the whole library in one submit
+  instead of a separate save button per option type/value row.** Matches
+  the pattern already used for per-product option selections (`Save
+  options`, see below). All type-name/display-style and value-text
+  inputs now live inside one `ActionForm` (`updateOptionLibraryAction` in
+  `src/app/admin/actions.ts`, bound with every rendered type/value id,
+  same binding style as `updateProductOptionSelectionsAction`); one
+  "Save library" submit updates every changed row in one round trip.
+  Create ("Add value", "Add option type") and delete stay immediate,
+  single-row actions, same as attach/detach/create already are on the
+  per-product Options section — only the *edit* actions were batched.
+  "Add value" couldn't stay an `ActionForm` once nested inside the outer
+  save-library form (nested `<form>` elements are invalid HTML), so it
+  now uses a new `<form>`-free `src/components/admin/InlineAddForm.tsx`
+  (same direct-call-the-action approach as `ActionButton`, just with a
+  text field). Verified live in a real admin session — see
+  `MANUAL_TESTING.md`.
 
 - [x] **Admin → Products: hide a product from the shop entirely, plus a
   batched option-selection save and reorderable options (US-41).**

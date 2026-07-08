@@ -130,21 +130,6 @@ export async function createOptionTypeAction(
   }, "Option type added.");
 }
 
-export async function updateOptionTypeAction(
-  id: string,
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
-  return runAction(async () => {
-    await assertAdmin();
-    const name = String(formData.get("name") ?? "").trim();
-    if (!name) throw new Error("Option type name is required.");
-    await updateOptionType(id, name, parseDisplayStyle(formData));
-    revalidatePath("/admin/options");
-    revalidateStorefront();
-  }, "Option type saved.");
-}
-
 export async function deleteOptionTypeAction(id: string): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
@@ -168,21 +153,6 @@ export async function createOptionValueAction(
   }, "Value added.");
 }
 
-export async function updateOptionValueAction(
-  id: string,
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
-  return runAction(async () => {
-    await assertAdmin();
-    const value = String(formData.get("value") ?? "").trim();
-    if (!value) throw new Error("Value is required.");
-    await updateOptionValue(id, value);
-    revalidatePath("/admin/options");
-    revalidateStorefront();
-  }, "Value saved.");
-}
-
 export async function deleteOptionValueAction(id: string): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
@@ -190,6 +160,37 @@ export async function deleteOptionValueAction(id: string): Promise<ActionResult>
     revalidatePath("/admin/options");
     revalidateStorefront();
   }, "Value deleted.");
+}
+
+// typeIds/valueIds are bound at render time from the library the page
+// already fetched (mirrors updateProductOptionSelectionsAction's
+// productOptionIds bind) — one submit covers every type's name/display
+// style and every value's text, instead of a separate save button per row.
+export async function updateOptionLibraryAction(
+  typeIds: string[],
+  valueIds: string[],
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    for (const typeId of typeIds) {
+      const name = String(formData.get(`name:${typeId}`) ?? "").trim();
+      if (!name) throw new Error("Option type name is required.");
+      const displayStyle: OptionDisplayStyle =
+        formData.get(`displayStyle:${typeId}`) === "dropdown"
+          ? "dropdown"
+          : "buttons";
+      await updateOptionType(typeId, name, displayStyle);
+    }
+    for (const valueId of valueIds) {
+      const value = String(formData.get(`value:${valueId}`) ?? "").trim();
+      if (!value) throw new Error("Value is required.");
+      await updateOptionValue(valueId, value);
+    }
+    revalidatePath("/admin/options");
+    revalidateStorefront();
+  }, "Library saved.");
 }
 
 // ─── attaching shared options to a product (per-product page) ───────────

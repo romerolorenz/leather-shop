@@ -21,6 +21,17 @@ blockers, then items that don't block any phase.
   is fixed. Code/tests are otherwise done (Phase 6). Verify a domain at
   resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it
   before real customers place orders.
+- [ ] **Blocks clean `npm test` runs, not a phase or go-live blocker: the
+  dev DB is missing `classic-bifold-wallet`/`tote-bag`, the seed products
+  `tests/orders.test.ts` and `tests/api-orders.test.ts` depend on.** Both
+  files fail in `beforeAll` with "Seed data missing — run
+  `supabase/migrations/0001_init.sql` first." Confirmed via `git stash`
+  this predates today's option-library fixes — likely leftover from
+  running `supabase/scripts/wipe_test_data.sql`/`seed_test_data.sql`
+  during the options-library manual testing pass (those replace the
+  catalog with a different 5-product set, not `0001_init.sql`'s
+  originals). Re-seed those two products (or re-run `0001_init.sql`'s
+  product seed) against the dev DB so the full suite passes clean again.
 - [ ] **Doesn't block any phase: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.
