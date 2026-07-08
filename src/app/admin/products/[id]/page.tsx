@@ -10,7 +10,6 @@ import {
   updateOptionValueAction,
   deleteOptionValueAction,
   createVariantAction,
-  updateAllVariantsAction,
   deleteVariantAction,
   uploadPhotoAction,
   deletePhotoAction,
@@ -76,12 +75,6 @@ export default async function EditProductPage(
   const addOptionType = createOptionTypeAction.bind(null, product.id);
   const optionTypeIds = product.optionTypes.map((type) => type.id);
   const addVariant = createVariantAction.bind(null, product.id, optionTypeIds);
-  const variantIds = product.variants.map((variant) => variant.id);
-  const updateAllVariants = updateAllVariantsAction.bind(
-    null,
-    product.id,
-    variantIds
-  );
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
@@ -163,6 +156,7 @@ export default async function EditProductPage(
               price: product.priceCentavos / 100,
               leadTimeDays: product.leadTimeDays,
               orderingEnabled: product.orderingEnabled,
+              stockQuantity: product.stockQuantity,
             }}
           />
           <SubmitButton
@@ -214,6 +208,15 @@ export default async function EditProductPage(
                       required
                       className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm font-medium dark:border-white/[.2]"
                     />
+                    <select
+                      name="displayStyle"
+                      defaultValue={type.displayStyle}
+                      aria-label="Display style"
+                      className="rounded-md border border-black/[.15] bg-transparent px-2 py-1.5 text-sm dark:border-white/[.2]"
+                    >
+                      <option value="buttons">Buttons</option>
+                      <option value="dropdown">Dropdown</option>
+                    </select>
                     <SubmitButton
                       ariaLabel="Save option type"
                       className="rounded-md p-1.5 transition-transform hover:bg-black/[.05] active:scale-95 disabled:opacity-50 dark:hover:bg-white/[.1]"
@@ -309,6 +312,15 @@ export default async function EditProductPage(
             required
             className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
           />
+          <select
+            name="displayStyle"
+            defaultValue="buttons"
+            aria-label="Display style"
+            className="rounded-md border border-black/[.15] bg-transparent px-2 py-1.5 text-sm dark:border-white/[.2]"
+          >
+            <option value="buttons">Buttons</option>
+            <option value="dropdown">Dropdown</option>
+          </select>
           <SubmitButton
             pendingLabel="Adding…"
             className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
@@ -320,46 +332,38 @@ export default async function EditProductPage(
 
       <section>
         <h2 className="mb-4 text-sm font-medium">Variants</h2>
+        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+          Each variant is one purchasable combination of option values.
+          Stock is set once for the whole product above, not per variant
+          — a variant&apos;s combination can&apos;t be edited after
+          creation; delete and re-add it instead.
+        </p>
         {product.variants.length > 0 && (
-          <ActionForm action={updateAllVariants} className="mb-6">
-            <ul className="mb-4 flex flex-col gap-3">
-              {product.variants.map((variant) => {
-                const removeVariant = deleteVariantAction.bind(
-                  null,
-                  variant.id,
-                  product.id
-                );
-                return (
-                  <li key={variant.id} className="flex items-center gap-2">
-                    <span className="flex-1 text-sm">{variant.label}</span>
-                    <input
-                      name={`stock:${variant.id}`}
-                      type="number"
-                      min="0"
-                      defaultValue={variant.stockQuantity}
-                      aria-label="Stock quantity"
-                      required
-                      className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-                    />
-                    <ActionButton
-                      action={removeVariant}
-                      confirmMessage="Delete this variant?"
-                      ariaLabel="Delete variant"
-                      className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
-                    >
-                      <TrashIcon />
-                    </ActionButton>
-                  </li>
-                );
-              })}
-            </ul>
-            <SubmitButton
-              pendingLabel="Saving…"
-              className="rounded-full border border-black/[.15] px-4 py-2 text-sm disabled:opacity-50 dark:border-white/[.2]"
-            >
-              Save all variants
-            </SubmitButton>
-          </ActionForm>
+          <ul className="mb-6 flex flex-col gap-2">
+            {product.variants.map((variant) => {
+              const removeVariant = deleteVariantAction.bind(
+                null,
+                variant.id,
+                product.id
+              );
+              return (
+                <li
+                  key={variant.id}
+                  className="flex items-center gap-2 rounded-md border border-black/[.08] px-3 py-2 dark:border-white/[.145]"
+                >
+                  <span className="flex-1 text-sm">{variant.label}</span>
+                  <ActionButton
+                    action={removeVariant}
+                    confirmMessage="Delete this variant?"
+                    ariaLabel="Delete variant"
+                    className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                  >
+                    <TrashIcon />
+                  </ActionButton>
+                </li>
+              );
+            })}
+          </ul>
         )}
         {product.variants.length === 0 && (
           <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">No variants yet.</p>
@@ -389,15 +393,6 @@ export default async function EditProductPage(
                 ))}
               </select>
             ))}
-            <input
-              name="stockQuantity"
-              type="number"
-              min="0"
-              defaultValue={0}
-              aria-label="Stock quantity"
-              required
-              className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-            />
             <SubmitButton
               pendingLabel="Adding…"
               className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"

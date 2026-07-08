@@ -47,11 +47,11 @@ afterEach(async () => {
     if (orderRow && orderRow.status !== "cancelled") {
       const { data: items } = await supabase
         .from("order_items")
-        .select("variant_id, quantity")
+        .select("product_id, quantity")
         .eq("order_id", orderId);
       for (const item of items ?? []) {
-        await supabase.rpc("restore_variant_stock", {
-          p_variant_id: item.variant_id,
+        await supabase.rpc("restore_product_stock", {
+          p_product_id: item.product_id,
           p_quantity: item.quantity,
         });
       }
@@ -89,9 +89,9 @@ describe("createOrder", () => {
     const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
     const supabase = getSupabaseServerClient();
     const { data: before } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", variant.id)
+      .eq("id", wallet.id)
       .single();
 
     const order = await createOrder(
@@ -110,9 +110,9 @@ describe("createOrder", () => {
     cleanupOrderIds.push(order.id);
 
     const { data: after } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", variant.id)
+      .eq("id", wallet.id)
       .single();
 
     expect(after!.stock_quantity).toBe(before!.stock_quantity - 1);
@@ -157,9 +157,9 @@ describe("createOrder", () => {
 
     const supabase = getSupabaseServerClient();
     const { data: before } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", walletVariant.id)
+      .eq("id", wallet.id)
       .single();
 
     await expect(
@@ -178,8 +178,8 @@ describe("createOrder", () => {
             slug: tote.slug,
             name: tote.name,
             variantLabel: toteVariant.label,
-            // Comfortably exceeds seeded stock (5) without overflowing the
-            // integer subtotal column the way 9999 would.
+            // Comfortably exceeds seeded product-level capacity (5) without
+            // overflowing the integer subtotal column the way 9999 would.
             quantity: 50,
             priceCentavos: tote.priceCentavos,
             productId: tote.id,
@@ -190,9 +190,9 @@ describe("createOrder", () => {
     ).rejects.toThrow(InsufficientStockError);
 
     const { data: after } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", walletVariant.id)
+      .eq("id", wallet.id)
       .single();
 
     expect(after!.stock_quantity).toBe(before!.stock_quantity);
@@ -219,18 +219,18 @@ describe("cancelOrderAndRestoreStock", () => {
 
     const supabase = getSupabaseServerClient();
     const { data: decremented } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", variant.id)
+      .eq("id", wallet.id)
       .single();
 
     const wasCancelled = await cancelOrderAndRestoreStock(order.id);
     expect(wasCancelled).toBe(true);
 
     const { data: restored } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", variant.id)
+      .eq("id", wallet.id)
       .single();
     expect(restored!.stock_quantity).toBe(decremented!.stock_quantity + 1);
 
@@ -266,18 +266,18 @@ describe("cancelOrderAndRestoreStock", () => {
       .eq("id", order.id);
 
     const { data: beforeCancel } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", variant.id)
+      .eq("id", wallet.id)
       .single();
 
     const wasCancelled = await cancelOrderAndRestoreStock(order.id);
     expect(wasCancelled).toBe(false);
 
     const { data: afterCancel } = await supabase
-      .from("product_variants")
+      .from("products")
       .select("stock_quantity")
-      .eq("id", variant.id)
+      .eq("id", wallet.id)
       .single();
     expect(afterCancel!.stock_quantity).toBe(beforeCancel!.stock_quantity);
   });

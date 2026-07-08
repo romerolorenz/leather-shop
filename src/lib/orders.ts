@@ -98,17 +98,17 @@ export async function createOrder(input: NewOrder): Promise<Order> {
     throw itemsErr;
   }
 
-  const decremented: { variantId: string; quantity: number }[] = [];
+  const decremented: { productId: string; quantity: number }[] = [];
   for (const item of input.items) {
-    const { error } = await supabase.rpc("decrement_variant_stock", {
-      p_variant_id: item.variantId,
+    const { error } = await supabase.rpc("decrement_product_stock", {
+      p_product_id: item.productId,
       p_quantity: item.quantity,
     });
 
     if (error) {
       for (const done of decremented) {
-        await supabase.rpc("restore_variant_stock", {
-          p_variant_id: done.variantId,
+        await supabase.rpc("restore_product_stock", {
+          p_product_id: done.productId,
           p_quantity: done.quantity,
         });
       }
@@ -116,7 +116,7 @@ export async function createOrder(input: NewOrder): Promise<Order> {
       throw new InsufficientStockError(item.name, item.variantLabel);
     }
 
-    decremented.push({ variantId: item.variantId, quantity: item.quantity });
+    decremented.push({ productId: item.productId, quantity: item.quantity });
   }
 
   return {
@@ -158,14 +158,14 @@ export async function cancelOrderAndRestoreStock(
 
   const { data: items, error: itemsErr } = await supabase
     .from("order_items")
-    .select("variant_id, quantity")
+    .select("product_id, quantity")
     .eq("order_id", orderId);
 
   if (itemsErr) throw itemsErr;
 
   for (const item of items) {
-    const { error } = await supabase.rpc("restore_variant_stock", {
-      p_variant_id: item.variant_id,
+    const { error } = await supabase.rpc("restore_product_stock", {
+      p_product_id: item.product_id,
       p_quantity: item.quantity,
     });
     if (error) throw error;

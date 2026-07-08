@@ -6,10 +6,13 @@ export type AdminProductOptionValue = {
   position: number;
 };
 
+export type OptionDisplayStyle = "buttons" | "dropdown";
+
 export type AdminProductOptionType = {
   id: string;
   name: string;
   position: number;
+  displayStyle: OptionDisplayStyle;
   values: AdminProductOptionValue[];
 };
 
@@ -18,7 +21,6 @@ export type AdminProductOptionType = {
 export type AdminProductVariant = {
   id: string;
   label: string;
-  stockQuantity: number;
   optionValueIds: string[];
 };
 
@@ -37,16 +39,17 @@ export type AdminProduct = {
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
+  stockQuantity: number;
   photos: AdminProductPhoto[];
   optionTypes: AdminProductOptionType[];
   variants: AdminProductVariant[];
 };
 
 const ADMIN_PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, " +
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, stock_quantity, " +
   "product_photos(id, url, position), " +
-  "product_option_types(id, name, position, product_option_values(id, value, position)), " +
-  "product_variants(id, stock_quantity, product_variant_options(option_value_id))";
+  "product_option_types(id, name, position, display_style, product_option_values(id, value, position)), " +
+  "product_variants(id, product_variant_options(option_value_id))";
 
 type AdminProductRow = {
   id: string;
@@ -57,16 +60,17 @@ type AdminProductRow = {
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
+  stock_quantity: number;
   product_photos: { id: string; url: string; position: number }[];
   product_option_types: {
     id: string;
     name: string;
     position: number;
+    display_style: OptionDisplayStyle;
     product_option_values: { id: string; value: string; position: number }[];
   }[];
   product_variants: {
     id: string;
-    stock_quantity: number;
     product_variant_options: { option_value_id: string }[];
   }[];
 };
@@ -78,6 +82,7 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
       id: t.id,
       name: t.name,
       position: t.position,
+      displayStyle: t.display_style,
       values: [...t.product_option_values].sort(
         (a, b) => a.position - b.position
       ),
@@ -107,7 +112,6 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     return {
       id: v.id,
       label,
-      stockQuantity: v.stock_quantity,
       optionValueIds,
     };
   });
@@ -121,6 +125,7 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
+    stockQuantity: row.stock_quantity,
     photos: [...row.product_photos].sort((a, b) => a.position - b.position),
     optionTypes,
     variants,
@@ -168,6 +173,7 @@ export type ProductInput = {
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
+  stockQuantity: number;
 };
 
 export async function createProduct(
@@ -184,6 +190,7 @@ export async function createProduct(
       price_centavos: input.priceCentavos,
       lead_time_days: input.leadTimeDays,
       ordering_enabled: input.orderingEnabled,
+      stock_quantity: input.stockQuantity,
     })
     .select("id")
     .single();
@@ -206,6 +213,7 @@ export async function updateProduct(
       price_centavos: input.priceCentavos,
       lead_time_days: input.leadTimeDays,
       ordering_enabled: input.orderingEnabled,
+      stock_quantity: input.stockQuantity,
     })
     .eq("id", id);
 
@@ -252,7 +260,8 @@ export async function deleteProductPhoto(photoId: string): Promise<void> {
 
 export async function createOptionType(
   productId: string,
-  name: string
+  name: string,
+  displayStyle: OptionDisplayStyle
 ): Promise<{ id: string }> {
   const supabase = getSupabaseServerClient();
 
@@ -269,7 +278,12 @@ export async function createOptionType(
 
   const { data, error } = await supabase
     .from("product_option_types")
-    .insert({ product_id: productId, name, position: nextPosition })
+    .insert({
+      product_id: productId,
+      name,
+      position: nextPosition,
+      display_style: displayStyle,
+    })
     .select("id")
     .single();
 
@@ -279,12 +293,13 @@ export async function createOptionType(
 
 export async function updateOptionType(
   id: string,
-  name: string
+  name: string,
+  displayStyle: OptionDisplayStyle
 ): Promise<void> {
   const supabase = getSupabaseServerClient();
   const { error } = await supabase
     .from("product_option_types")
-    .update({ name })
+    .update({ name, display_style: displayStyle })
     .eq("id", id);
 
   if (error) throw error;
@@ -357,13 +372,13 @@ export class DuplicateVariantError extends Error {
   }
 }
 
-// A variant's combination is fixed at creation — only stock_quantity is
-// editable afterward (see updateVariantStock). To change the combination,
-// delete and re-add.
+// A variant's combination is fixed at creation — nothing about it is
+// editable afterward. To change the combination, delete and re-add. Stock
+// is a single per-product capacity number (see ProductInput.stockQuantity),
+// not a per-variant field.
 export async function createVariant(
   productId: string,
-  optionValueIds: string[],
-  stockQuantity: number
+  optionValueIds: string[]
 ): Promise<{ id: string }> {
   const supabase = getSupabaseServerClient();
 
@@ -389,7 +404,7 @@ export async function createVariant(
 
   const { data: variant, error: insertErr } = await supabase
     .from("product_variants")
-    .insert({ product_id: productId, stock_quantity: stockQuantity })
+    .insert({ product_id: productId })
     .select("id")
     .single();
 
@@ -408,19 +423,6 @@ export async function createVariant(
   }
 
   return { id: variant.id };
-}
-
-export async function updateVariantStock(
-  variantId: string,
-  stockQuantity: number
-): Promise<void> {
-  const supabase = getSupabaseServerClient();
-  const { error } = await supabase
-    .from("product_variants")
-    .update({ stock_quantity: stockQuantity })
-    .eq("id", variantId);
-
-  if (error) throw error;
 }
 
 export async function deleteVariant(variantId: string): Promise<void> {

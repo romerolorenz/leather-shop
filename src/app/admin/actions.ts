@@ -13,11 +13,11 @@ import {
   updateOptionValue,
   deleteOptionValue,
   createVariant,
-  updateVariantStock,
   deleteVariant,
   addProductPhotos,
   deleteProductPhoto,
   type ProductInput,
+  type OptionDisplayStyle,
 } from "@/lib/admin/catalog";
 import {
   markOrderPaid,
@@ -60,7 +60,13 @@ function parseProductInput(formData: FormData): ProductInput {
     priceCentavos: Math.round(Number(formData.get("price")) * 100),
     leadTimeDays: Number(formData.get("leadTimeDays")),
     orderingEnabled: formData.get("orderingEnabled") === "on",
+    stockQuantity: Number(formData.get("stockQuantity")),
   };
+}
+
+function parseDisplayStyle(formData: FormData): OptionDisplayStyle {
+  const value = String(formData.get("displayStyle") ?? "");
+  return value === "dropdown" ? "dropdown" : "buttons";
 }
 
 function revalidateStorefront() {
@@ -113,8 +119,9 @@ export async function createOptionTypeAction(
     await assertAdmin();
     const name = String(formData.get("name") ?? "").trim();
     if (!name) throw new Error("Option type name is required.");
-    await createOptionType(productId, name);
+    await createOptionType(productId, name, parseDisplayStyle(formData));
     revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
   }, "Option type added.");
 }
 
@@ -128,8 +135,9 @@ export async function updateOptionTypeAction(
     await assertAdmin();
     const name = String(formData.get("name") ?? "").trim();
     if (!name) throw new Error("Option type name is required.");
-    await updateOptionType(id, name);
+    await updateOptionType(id, name, parseDisplayStyle(formData));
     revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
   }, "Option type saved.");
 }
 
@@ -203,9 +211,8 @@ export async function createVariantAction(
       if (!value) throw new Error("Select a value for every option.");
       return value;
     });
-    const stockQuantity = Number(formData.get("stockQuantity"));
 
-    await createVariant(productId, optionValueIds, stockQuantity);
+    await createVariant(productId, optionValueIds);
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
   }, "Variant added.");
@@ -221,26 +228,6 @@ export async function deleteVariantAction(
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
   }, "Variant deleted.");
-}
-
-// A variant's combination is immutable after creation — this batch-saves
-// only stock_quantity across every row in one submit. variantIds is bound
-// at render time from the variant list the page already fetched.
-export async function updateAllVariantsAction(
-  productId: string,
-  variantIds: string[],
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
-  return runAction(async () => {
-    await assertAdmin();
-    for (const variantId of variantIds) {
-      const stockQuantity = Number(formData.get(`stock:${variantId}`));
-      await updateVariantStock(variantId, stockQuantity);
-    }
-    revalidatePath(`/admin/products/${productId}`);
-    revalidateStorefront();
-  }, "Variants saved.");
 }
 
 export async function uploadPhotoAction(

@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     const variant = product.variants.find((v) => v.id === requested.variantId);
-    if (!variant?.inStock || !product.orderingEnabled) {
+    if (!variant || !product.inStock || !product.orderingEnabled) {
       return NextResponse.json(
         {
           error: `${product.name}${variant ? ` (${variant.label})` : ""} is unavailable.`,

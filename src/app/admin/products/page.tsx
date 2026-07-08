@@ -23,10 +23,6 @@ export default async function AdminProductsPage() {
 
       <ul className="divide-y divide-black/[.08] dark:divide-white/[.145]">
         {products.map((product) => {
-          const totalStock = product.variants.reduce(
-            (sum, v) => sum + v.stockQuantity,
-            0
-          );
           return (
             <li key={product.id} className="py-4">
               <Link
@@ -39,7 +35,7 @@ export default async function AdminProductsPage() {
                     {product.category} · {formatPrice(product.priceCentavos)}{" "}
                     · {product.variants.length} variant
                     {product.variants.length === 1 ? "" : "s"} · stock:{" "}
-                    {totalStock}
+                    {product.stockQuantity}
                   </p>
                 </div>
                 {!product.orderingEnabled && (

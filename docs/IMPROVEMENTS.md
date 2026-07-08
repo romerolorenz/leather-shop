@@ -15,19 +15,20 @@ Nothing outstanding right now — see Done below.
   design. Admin defines option types per product (Color, Thread Color,
   Size, ...) each with its own ordered value list
   (`product_option_types`/`product_option_values`, migration
-  `0009_product_options.sql`); a variant is a combination of one value per
-  type (`product_variant_options`), immutable after creation — only stock
-  is editable inline afterward. The PDP renders one swatch group per
-  option type instead of a hardcoded "Color" heading. Existing variants/
+  `0009_product_options.sql`), each displayed on the PDP as either swatch
+  buttons or a dropdown (`display_style`, admin's choice per option
+  type — US-39, migration `0010_product_level_stock.sql`); a variant is a
+  combination of one value per type (`product_variant_options`), immutable
+  after creation. Stock is a single production-capacity number per
+  *product* (`products.stock_quantity`), not per variant/option
+  combination — all v1 products are made-to-order, so every option
+  combination is orderable or sold out together
+  (`decrement_product_stock`/`restore_product_stock`). Existing variants/
   orders migrated losslessly (variant ids preserved, order display
-  snapshotted onto a new `order_items.variant_label` column). Built on a
-  separate `feat/product-options` branch, not yet merged to `develop`.
-  **Course correction needed before merge:** the business model was
-  clarified after this shipped — all v1 products are made-to-order, and
-  stock should be one capacity number per *product*, not per variant/
-  option combination. See the "Course correction" section at the top of
-  `PRODUCT_OPTIONS_DESIGN.md` for the exact schema/code changes and a new
-  checkpoint 0. Don't merge this branch to `develop` until that lands.
+  snapshotted onto `order_items.variant_label`; each product's existing
+  per-variant stock summed into its new single capacity number). Built on
+  a separate `feat/product-options` branch — run migration `0010` before
+  merging to `develop` (see MANUAL_TASKS.md).
 - [x] **Narrow tooltips to the header navbar only.** Removed the `Tooltip`
   wrapping from `ActionButton`, the cart's Remove button, `admin/faq`'s
   move-up/down/save icons, and `account/addresses`'s delete/save icons —

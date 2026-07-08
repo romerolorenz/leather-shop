@@ -15,21 +15,23 @@ fixed).
 ## Product options beyond color
 
 Verified via curl + automated tests (`tests/admin-catalog-options.test.ts`,
-`npm test` all 38 passing): option-type/value CRUD, variant creation with
-duplicate-combination rejection, stock-only batch save, and the composed
-label all work correctly against the real DB. Migration verified live
-(existing wallet/tote variants correctly migrated to a "Color" option type,
+`tests/orders.test.ts`, `tests/api-orders.test.ts`): option-type/value CRUD
+(including `displayStyle`), variant creation with duplicate-combination
+rejection, product-level stock decrement/restore/sold-out, and the composed
+label all work correctly against the real DB (once migration `0010` has
+run — see MANUAL_TASKS.md). Migration `0009` verified live (existing
+wallet/tote variants correctly migrated to a "Color" option type,
 historical order display intact). The wallet PDP renders the "Color"
 heading with all three values live. What's left needs a real admin session
 and mouse — this is a new feature (not a fix), so the full flow needs a
-first pass:
+first pass, **after migration `0010` has been run**:
 
-- [ ] `/admin/products/<id>` — add a second option type (e.g. "Thread
-  Color") with a couple of values, then create a variant by picking one
-  value from each type's dropdown + a stock count. Confirm the new
-  variant's row shows the composed label (e.g. "Black / Natural") as
-  read-only text, and the stock is editable inline via "Save all
-  variants."
+- [ ] `/admin/products/<id>` — set the product's stock (capacity) field in
+  the Product details section, add a second option type (e.g. "Thread
+  Color", displayed as a dropdown) with a couple of values, then create a
+  variant by picking one value from each type's dropdown. Confirm the new
+  variant shows as a read-only combo row (no stock field) with a delete
+  button.
   Findings:
 
 - [ ] Try creating a variant with the exact same combination as an
@@ -45,15 +47,21 @@ first pass:
 
 - [ ] On the product page (a product with 2+ option types), pick a
   combination that doesn't have a variant — confirm "Not available in
-  this combination" shows and Add to Cart is disabled. Pick a combination
-  that does exist but is out of stock — confirm Add to Cart is still
-  disabled appropriately.
+  this combination" shows and Add to Cart is disabled. Set the option
+  type you added to "dropdown" display style in admin and confirm it
+  renders as a `<select>` on the PDP instead of buttons.
+  Findings:
+
+- [ ] Set a product's stock to 0 in admin — confirm every option
+  combination on its PDP shows "Sold out" uniformly (not just one
+  color/size), then set it back.
   Findings:
 
 - [ ] Add an item to cart, go to checkout, place a real order — confirm
   the cart/checkout/confirmation email all show the correct composed
-  variant label, and the order shows up correctly in `/admin/orders` and
-  `/account`.
+  variant label, the product's stock decrements by the ordered quantity
+  (not a per-variant count), and the order shows up correctly in
+  `/admin/orders` and `/account`.
   Findings:
 
 ## Done

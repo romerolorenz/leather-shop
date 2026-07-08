@@ -10,16 +10,18 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [ ] **Don't merge `feat/product-options` to `develop` yet.** It ships
-  the "Product options beyond color" feature fully (see
-  `IMPROVEMENTS.md`), but under a per-variant stock model that the
-  business has since corrected — stock should be one capacity number per
-  *product*, not per option combination (color/size/thread each having
-  their own count). See the "Course correction" section at the top of
-  `docs/PRODUCT_OPTIONS_DESIGN.md` for exactly what needs to change
-  (new migration, renamed stock functions, admin UI/lib rework). Merging
-  before that correction lands would ship the wrong stock model to
-  production.
+- [ ] **Run `supabase/migrations/0010_product_level_stock.sql` against
+  it, then merge `feat/product-options` to `develop`.** This is the
+  course-correction migration described in `docs/PRODUCT_OPTIONS_DESIGN.md`
+  — moves `stock_quantity`/`in_stock` from `product_variants` to
+  `products` (summing each product's existing per-variant stock into one
+  capacity number, so nothing already set is lost), replaces
+  `decrement_variant_stock`/`restore_variant_stock` with
+  `decrement_product_stock`/`restore_product_stock`, and adds
+  `display_style` to `product_option_types` (admin picks buttons or
+  dropdown per option type — US-39). Code is already reworked to match on
+  the `feat/product-options` branch; don't merge until this migration has
+  run and been verified live.
 - [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
   Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
   send to your own account email (`marcolorenzoromero@gmail.com`) — it

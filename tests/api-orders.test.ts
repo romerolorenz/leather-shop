@@ -35,11 +35,11 @@ afterAll(async () => {
   for (const orderId of createdOrderIds) {
     const { data: items } = await supabase
       .from("order_items")
-      .select("variant_id, quantity")
+      .select("product_id, quantity")
       .eq("order_id", orderId);
     for (const item of items ?? []) {
-      await supabase.rpc("restore_variant_stock", {
-        p_variant_id: item.variant_id,
+      await supabase.rpc("restore_product_stock", {
+        p_product_id: item.product_id,
         p_quantity: item.quantity,
       });
     }
@@ -73,16 +73,36 @@ describe("POST /api/orders", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rejects a sold-out variant", async () => {
-    const soldOutVariant = tote.variants.find((v) => v.label === "Black")!;
-    const res = await POST(
-      makeRequest({
-        customer: { name: "Test", email: "t@example.com", phone: "123" },
-        shippingAddress: { street: "1 St", city: "Pasig" },
-        items: [{ slug: "tote-bag", variantId: soldOutVariant.id, quantity: 1 }],
-      })
-    );
-    expect(res.status).toBe(400);
+  it("rejects an order when the product is sold out (capacity is product-level, not per variant)", async () => {
+    const toteVariant = tote.variants.find((v) => v.label === "Black")!;
+    const supabase = getSupabaseServerClient();
+
+    const { data: before } = await supabase
+      .from("products")
+      .select("stock_quantity")
+      .eq("id", tote.id)
+      .single();
+
+    await supabase
+      .from("products")
+      .update({ stock_quantity: 0 })
+      .eq("id", tote.id);
+
+    try {
+      const res = await POST(
+        makeRequest({
+          customer: { name: "Test", email: "t@example.com", phone: "123" },
+          shippingAddress: { street: "1 St", city: "Pasig" },
+          items: [{ slug: "tote-bag", variantId: toteVariant.id, quantity: 1 }],
+        })
+      );
+      expect(res.status).toBe(400);
+    } finally {
+      await supabase
+        .from("products")
+        .update({ stock_quantity: before!.stock_quantity })
+        .eq("id", tote.id);
+    }
   });
 
   it("creates a valid order and prices it server-side", async () => {

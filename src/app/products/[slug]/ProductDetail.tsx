@@ -9,12 +9,7 @@ export default function ProductDetail({ product }: { product: Product }) {
   const { addItem } = useCart();
   const [selectedOptions, setSelectedOptions] = useState<
     Record<string, string>
-  >(() => {
-    const defaultVariant =
-      product.variants.find((variant) => variant.inStock) ??
-      product.variants[0];
-    return defaultVariant?.options ?? {};
-  });
+  >(() => product.variants[0]?.options ?? {});
   const [justAdded, setJustAdded] = useState(false);
 
   const selectedVariant = product.variants.find((variant) =>
@@ -24,7 +19,7 @@ export default function ProductDetail({ product }: { product: Product }) {
   );
   const noMatchingVariant = product.variants.length > 0 && !selectedVariant;
   const canAddToCart =
-    product.orderingEnabled && !!selectedVariant?.inStock;
+    product.orderingEnabled && product.inStock && !!selectedVariant;
 
   function handleAddToCart() {
     if (!canAddToCart || !selectedVariant) return;
@@ -55,33 +50,58 @@ export default function ProductDetail({ product }: { product: Product }) {
         {product.description}
       </p>
 
-      {product.optionTypes.map((type) => (
-        <div key={type.id} className="mt-6">
-          <h2 className="text-sm font-medium">{type.name}</h2>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {type.values.map((value) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={selectedOptions[type.name] === value}
-                onClick={() =>
-                  setSelectedOptions((prev) => ({
-                    ...prev,
-                    [type.name]: value,
-                  }))
-                }
-                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  selectedOptions[type.name] === value
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-black/[.15] hover:border-foreground dark:border-white/[.2]"
-                }`}
-              >
-                {value}
-              </button>
-            ))}
+      {product.optionTypes.map((type) =>
+        type.displayStyle === "dropdown" ? (
+          <div key={type.id} className="mt-6">
+            <label className="text-sm font-medium" htmlFor={`option-${type.id}`}>
+              {type.name}
+            </label>
+            <select
+              id={`option-${type.id}`}
+              value={selectedOptions[type.name] ?? ""}
+              onChange={(e) =>
+                setSelectedOptions((prev) => ({
+                  ...prev,
+                  [type.name]: e.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm dark:border-white/[.2]"
+            >
+              {type.values.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-      ))}
+        ) : (
+          <div key={type.id} className="mt-6">
+            <h2 className="text-sm font-medium">{type.name}</h2>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {type.values.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={selectedOptions[type.name] === value}
+                  onClick={() =>
+                    setSelectedOptions((prev) => ({
+                      ...prev,
+                      [type.name]: value,
+                    }))
+                  }
+                  className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                    selectedOptions[type.name] === value
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-black/[.15] hover:border-foreground dark:border-white/[.2]"
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      )}
 
       {noMatchingVariant && (
         <p className="mt-4 text-sm text-red-600">
@@ -100,9 +120,11 @@ export default function ProductDetail({ product }: { product: Product }) {
       >
         {!product.orderingEnabled
           ? "Currently unavailable"
-          : justAdded
-            ? "Added ✓"
-            : "Add to cart"}
+          : !product.inStock
+            ? "Sold out"
+            : justAdded
+              ? "Added ✓"
+              : "Add to cart"}
       </button>
     </div>
   );

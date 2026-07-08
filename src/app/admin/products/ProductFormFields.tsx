@@ -5,6 +5,7 @@ type Defaults = {
   price?: number;
   leadTimeDays?: number;
   orderingEnabled?: boolean;
+  stockQuantity?: number;
 };
 
 export function ProductFormFields({
@@ -80,6 +81,26 @@ export function ProductFormFields({
           defaultValue={defaultValues.leadTimeDays ?? 0}
           className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
         />
+      </div>
+      <div>
+        <label className="text-sm font-medium" htmlFor="stockQuantity">
+          Stock (production capacity)
+        </label>
+        <input
+          id="stockQuantity"
+          name="stockQuantity"
+          type="number"
+          step="1"
+          min="0"
+          required
+          defaultValue={defaultValues.stockQuantity ?? 0}
+          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+        />
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          One capacity number for the whole product — the same regardless of
+          which option combination a customer picks. Never shown to
+          customers.
+        </p>
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input

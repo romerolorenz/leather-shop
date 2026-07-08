@@ -1,8 +1,11 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+export type OptionDisplayStyle = "buttons" | "dropdown";
+
 export type ProductOptionType = {
   id: string;
   name: string;
+  displayStyle: OptionDisplayStyle;
   values: string[];
 };
 
@@ -10,7 +13,6 @@ export type ProductVariant = {
   id: string;
   label: string;
   options: Record<string, string>; // option type name -> chosen value
-  inStock: boolean;
 };
 
 export type Product = {
@@ -21,6 +23,9 @@ export type Product = {
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
+  // A single per-product capacity number, not per option combination — see
+  // PRD §5. Every option combination is orderable or sold out together.
+  inStock: boolean;
   optionTypes: ProductOptionType[];
   variants: ProductVariant[];
   description: string;
@@ -28,10 +33,10 @@ export type Product = {
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, " +
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, in_stock, " +
   "product_photos(url, position), " +
-  "product_option_types(id, name, position, product_option_values(id, value, position)), " +
-  "product_variants(id, in_stock, product_variant_options(option_value_id))";
+  "product_option_types(id, name, position, display_style, product_option_values(id, value, position)), " +
+  "product_variants(id, product_variant_options(option_value_id))";
 
 type ProductRow = {
   id: string;
@@ -42,16 +47,17 @@ type ProductRow = {
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
+  in_stock: boolean;
   product_photos: { url: string; position: number }[];
   product_option_types: {
     id: string;
     name: string;
     position: number;
+    display_style: OptionDisplayStyle;
     product_option_values: { id: string; value: string; position: number }[];
   }[];
   product_variants: {
     id: string;
-    in_stock: boolean;
     product_variant_options: { option_value_id: string }[];
   }[];
 };
@@ -64,6 +70,7 @@ function mapRow(row: ProductRow): Product {
   const optionTypes: ProductOptionType[] = sortedTypes.map((t) => ({
     id: t.id,
     name: t.name,
+    displayStyle: t.display_style,
     values: [...t.product_option_values]
       .sort((a, b) => a.position - b.position)
       .map((v) => v.value),
@@ -96,7 +103,6 @@ function mapRow(row: ProductRow): Product {
       id: v.id,
       label: resolved.map((x) => x.value).join(" / "),
       options: Object.fromEntries(resolved.map((x) => [x.typeName, x.value])),
-      inStock: v.in_stock,
     };
   });
 
@@ -108,6 +114,7 @@ function mapRow(row: ProductRow): Product {
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
+    inStock: row.in_stock,
     description: row.description,
     photos: [...row.product_photos]
       .sort((a, b) => a.position - b.position)

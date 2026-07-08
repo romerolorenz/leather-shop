@@ -54,8 +54,8 @@ Single codebase, both roles:
     the configured hold duration from the `settings` table (default 48
     hours — admin-editable, not a code constant), finds orders still
     `pending_payment` past that many hours since `created_at`, flips them
-    to `cancelled`, and restores their `order_items`' stock quantities via
-    the `restore_variant_stock` Postgres function. `GET`, not `POST`,
+    to `cancelled`, and restores each item's product-level stock via
+    the `restore_product_stock` Postgres function. `GET`, not `POST`,
     because that's what Vercel Cron actually sends. Not otherwise
     user-facing — requires a `CRON_SECRET` bearer token, which Vercel
     attaches automatically once the env var is set; any request without a
@@ -112,21 +112,27 @@ restructuring the checkout UI or the data model.
 ```
 products
   id, slug, name, description, category, price_centavos,
-  lead_time_days, ordering_enabled, created_at
+  lead_time_days, ordering_enabled, created_at,
+  stock_quantity (a single production-capacity number for the whole
+  product — all v1 products are made-to-order, so it's the same
+  regardless of which option combination a customer picks; not per
+  variant — see PRODUCT_OPTIONS_DESIGN.md's "Course correction"),
+  in_stock (derived: stock_quantity > 0)
 
 product_option_types
   id, product_id (fk), name (e.g. "Color", "Thread Color", "Size"),
-  position — admin-defined per product (see PRODUCT_OPTIONS_DESIGN.md)
+  position, display_style ("buttons" | "dropdown", admin-chosen per
+  option type — US-39) — admin-defined per product
+  (see PRODUCT_OPTIONS_DESIGN.md)
 
 product_option_values
   id, option_type_id (fk), value (e.g. "Black"), position
 
 product_variants
-  id, product_id (fk),
-  stock_quantity (in-stock: real count / made-to-order: capacity threshold),
-  in_stock (derived: stock_quantity > 0)
+  id, product_id (fk)
   — label is no longer a column; it's composed live from
-  product_variant_options for display, one value per option type
+  product_variant_options for display, one value per option type. No
+  stock of its own — a variant is purely an option combination.
 
 product_variant_options
   variant_id (fk), option_value_id (fk) — a variant is the combination of
@@ -167,9 +173,9 @@ otherwise have held.
    info.
 3. API route: re-fetches each product/variant from Supabase (never trusts
    client-submitted prices), checks Metro-Manila-only city and stock/
-   ordering-enabled, decrements `stock_quantity` at this point (not at
-   payment confirmation — see PRD §5 for why), writes `orders` +
-   `order_items` rows.
+   ordering-enabled, decrements the product's `stock_quantity` at this
+   point (not at payment confirmation — see PRD §5 for why), writes
+   `orders` + `order_items` rows.
 4. API route: fires both Resend emails.
 5. Browser: shows order confirmation with the order id; cart is cleared.
 6. Shop owner: gets the email, later confirms payment and updates order
@@ -189,8 +195,8 @@ otherwise have held.
    then queries Supabase for orders where `status = 'pending_payment'`
    and `created_at` is older than that many hours.
 3. For each match: sets `status = 'cancelled'`, and for each of its
-   `order_items`, adds the quantity back onto the corresponding
-   `product_variants.stock_quantity`.
+   `order_items`, adds the quantity back onto its product's
+   `stock_quantity`.
 4. No email/notification implied by this flow in the PRD — just the status
    change and stock restore. (Admin sees the cancelled status next time
    they check `/admin`.)

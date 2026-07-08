@@ -8,6 +8,10 @@ building them (see [ARCHITECTURE.md](./ARCHITECTURE.md),
 
 ## Course correction (read this first)
 
+**Status: implemented in code** (migration `0010_product_level_stock.sql`
+written, not yet run against the live DB — see `MANUAL_TASKS.md`; don't
+merge `feat/product-options` to `develop` until it has).
+
 The business model was clarified after most of this design's original
 version had already shipped: **all v1 products are made-to-order** (no
 separate ready-made/in-stock catalog type — see
@@ -266,61 +270,62 @@ per-variant regardless of how many option dimensions compose it.
 
 ## Implementation checkpoints (own commit each)
 
-**All of checkpoints 1-7 are already done** — the entire original
-(per-variant-stock) design shipped in one commit
-(`5a370d3 feat: product options beyond color`) on this branch
-(`feat/product-options`), including tests and docs, per
-`IMPROVEMENTS.md`'s Done entry for this item. **Not yet merged to
-`develop`.** That's exactly why the course correction should land now,
-before merge — merging first would ship the wrong (per-variant) stock
-model to `develop`/production, then need an immediate follow-up fix.
+**All of checkpoints 0-7 are done** on this branch (`feat/product-options`).
+**Not yet merged to `develop`** — blocked only on running migration
+`0010_product_level_stock.sql` against the live DB and verifying it (see
+`MANUAL_TASKS.md`), since every prior migration in this project has needed
+a human to run it via the Supabase SQL editor.
 
-0. **Course-correction migration + rework** (new work, do before merging
-   this branch to `develop`):
-   - New migration (e.g. `0010_product_level_stock.sql`): add
-     `stock_quantity`/`in_stock` to `products`; drop both from
-     `product_variants`.
-   - Rename/rework `decrement_variant_stock`/`restore_variant_stock` (0002)
-     to `decrement_product_stock`/`restore_product_stock`, keyed on
+0. **Course-correction migration + rework.** **Done** (code). Migration
+   `0010_product_level_stock.sql` written, not yet run live:
+   - Adds `stock_quantity`/`in_stock` to `products` (backfilled by summing
+     each product's existing per-variant `stock_quantity`, so nothing
+     already set is lost); drops both columns from `product_variants`.
+   - Drops `decrement_variant_stock`/`restore_variant_stock` (0002, can't
+     be edited in place — already ran) and replaces them with
+     `decrement_product_stock`/`restore_product_stock`, keyed on
      `product_id`.
-   - Rework `src/lib/admin/catalog.ts` (`createVariant` loses
-     `stockQuantity`; new `updateProductStock`), `src/app/admin/actions.ts`,
-     and `src/app/admin/products/[id]/page.tsx` (stock field moves to
-     product-details section) per the correction section.
-   - Rework `src/lib/orders.ts` call sites (order placement, manual
-     cancel, payment-hold expiry — all already using `variantId` per
-     checkpoint 5) to resolve `variantId` → `productId` before calling the
-     renamed RPC functions.
-   - `src/app/products/[slug]/ProductDetail.tsx` already composes
-     `optionTypes` per checkpoint 4 — availability just needs to read off
-     the product's own status instead of the selected variant's, which
-     actually simplifies what's there today (no combination-specific
-     "sold out" branch needed).
-   - Update the 25 `variantId`/`optionType` references already in
-     `tests/*.ts` (checkpoint 6) that assume per-variant stock; add
-     coverage for product-level decrement/restore.
-   - Live-DB verification that the migration doesn't lose the
-     `stock_quantity` values already set on existing variants (sum/max them
-     up to the product level, or re-enter manually — decide before writing
-     the migration).
-1. Migration + live-DB verification. **Done** (`0009`, per-variant
-   version — see correction).
+   - Adds `display_style` to `product_option_types` (the "New scope"
+     section above — buttons vs dropdown, admin's choice per type).
+   - `src/lib/admin/catalog.ts`: `createVariant` lost its `stockQuantity`
+     param entirely; `updateVariantStock` removed — stock is now part of
+     `ProductInput`, edited via the existing `createProduct`/`updateProduct`.
+     `createOptionType`/`updateOptionType` gained a `displayStyle` param.
+   - `src/app/admin/actions.ts`/`src/app/admin/products/[id]/page.tsx`:
+     stock field moved to the product-details section
+     (`ProductFormFields`); the Variants section is now a read-only combo
+     list + delete only (no per-row stock input, no batch-save form —
+     `updateAllVariantsAction` removed); Options section gained a
+     buttons/dropdown select per option type.
+   - `src/lib/orders.ts`: `createOrder`/`cancelOrderAndRestoreStock` now
+     call the renamed RPCs keyed on each item's `productId` instead of
+     `variantId`. `src/app/api/orders/route.ts` validates via
+     `product.inStock` instead of `variant.inStock`.
+   - `src/app/products/[slug]/ProductDetail.tsx`: `canAddToCart` reads
+     `product.inStock` (single fact for the whole product); option types
+     with `displayStyle: "dropdown"` render a `<select>` instead of the
+     button row; added a distinct "Sold out" button label.
+   - `tests/orders.test.ts`, `tests/api-orders.test.ts`,
+     `tests/admin-catalog-options.test.ts` reworked to key stock
+     assertions off `products`/`product_id` instead of
+     `product_variants`/`variant_id`; the "sold-out variant" test now
+     temporarily zeroes the product's `stock_quantity` (capacity is
+     product-wide, not per variant) instead of relying on a
+     pre-sold-out seed variant.
+1. Migration + live-DB verification. **Done** (`0009`, plus `0010` above
+   pending the live run).
 2. Admin lib layer (option-type/value CRUD, reworked variant CRUD) +
-   Server Actions. **Done**, needs the checkpoint 0 rework above.
-3. Admin UI (Options section, reworked Variants section). **Done**, needs
-   the checkpoint 0 rework above.
-4. Public `products.ts` + PDP rework. **Done**, needs the checkpoint 0
-   simplification above (drop the per-combination availability logic).
-5. Cart/checkout/orders/email rename + rework. **Done**
-   (`variantId`/`variantLabel` already threaded through
-   `cart-context.tsx`, `orders.ts`, etc.), needs the checkpoint 0 rework
-   above for the actual stock calls.
-6. Tests. **Done** under the old model, needs updating per checkpoint 0.
+   Server Actions. **Done**, including the checkpoint 0 rework.
+3. Admin UI (Options section, reworked Variants section). **Done**,
+   including the checkpoint 0 rework.
+4. Public `products.ts` + PDP rework. **Done**, including the checkpoint 0
+   simplification (no per-combination availability logic — a single
+   product-level fact).
+5. Cart/checkout/orders/email rename + rework. **Done**, including the
+   checkpoint 0 rework for the actual stock calls.
+6. Tests. **Done**, updated per checkpoint 0.
 7. Docs (`ARCHITECTURE.md`, `IMPROVEMENTS.md`, `MANUAL_TASKS.md`,
-   `MANUAL_TESTING.md`). **Done** under the old model — `ARCHITECTURE.md`'s
-   data model section needs updating for product-level stock once
-   checkpoint 0 lands; `IMPROVEMENTS.md`'s Done entry for this item should
-   get a note pointing at the correction until checkpoint 0 ships too.
+   `MANUAL_TESTING.md`). **Done**, updated per checkpoint 0.
 
 ## Verification
 
