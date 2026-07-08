@@ -12,6 +12,24 @@ collapsed to a one-line summary below (full history is in git — see the
 phase's commit and any follow-up commits for exactly what was tested and
 fixed).
 
+## Outstanding
+
+- [ ] **Homepage v3 implementation.** Verified so far via Playwright
+  screenshots (desktop light/dark, mobile, real-scroll captures) — layout,
+  content, and both color schemes look correct. Still needs a human in a
+  real browser for what screenshots can't show:
+  - [ ] Hero crossfade/Ken Burns actually loops smoothly over a full cycle
+    (~18s) without a visible jump or flash between the two images.
+  - [ ] `prefers-reduced-motion: reduce` (OS-level setting) shows a fully
+    static hero — no crossfade, no zoom.
+  - [ ] Real mobile device: hero text is legible over the photo, tap
+    targets ("Shop the Collection", product cards, FAQ link) are easy to
+    hit, scroll-reveal on the featured grid/studio paragraph feels right
+    (not too early/late, no jank).
+  - [ ] Product card hover (image scale) and link hover/underline states
+    on desktop.
+  - Findings:
+
 ## Done
 
 - [x] **Option library fixes — breadcrumb, batched save, single-value

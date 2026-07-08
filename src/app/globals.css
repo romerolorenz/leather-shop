@@ -41,3 +41,84 @@ body {
     transform: scale(0.97);
   }
 }
+
+/* Homepage hero: two product photos crossfade with a slow Ken Burns
+   drift, looping forever. Applied to both the images and their matching
+   overlay copy so text and photo stay in sync. */
+@keyframes homepage-hero-fade-a {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  50%,
+  90% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes homepage-hero-fade-b {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  50%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes homepage-hero-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+.homepage-hero-a {
+  animation:
+    homepage-hero-fade-a 18s ease-in-out infinite,
+    homepage-hero-kenburns 36s ease-in-out infinite alternate;
+}
+
+.homepage-hero-b {
+  opacity: 0;
+  animation:
+    homepage-hero-fade-b 18s ease-in-out infinite,
+    homepage-hero-kenburns 36s ease-in-out infinite alternate-reverse;
+}
+
+.homepage-hero-copy-a {
+  animation: homepage-hero-fade-a 18s ease-in-out infinite;
+}
+
+.homepage-hero-copy-b {
+  opacity: 0;
+  animation: homepage-hero-fade-b 18s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-hero-a,
+  .homepage-hero-b,
+  .homepage-hero-copy-a,
+  .homepage-hero-copy-b {
+    animation: none;
+  }
+
+  .homepage-hero-a,
+  .homepage-hero-copy-a {
+    opacity: 1;
+  }
+
+  .homepage-hero-b,
+  .homepage-hero-copy-b {
+    opacity: 0;
+  }
+}
