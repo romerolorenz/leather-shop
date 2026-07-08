@@ -12,7 +12,8 @@ export type CartItem = {
   slug: string;
   name: string;
   priceCentavos: number;
-  variant: string;
+  variantId: string;
+  variantLabel: string;
   quantity: number;
   // Optional: items already in a shopper's localStorage cart from before
   // this field existed won't have it — render must fall back gracefully.
@@ -22,8 +23,8 @@ export type CartItem = {
 type CartContextValue = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (slug: string, variant: string) => void;
-  setQuantity: (slug: string, variant: string, quantity: number) => void;
+  removeItem: (slug: string, variantId: string) => void;
+  setQuantity: (slug: string, variantId: string, quantity: number) => void;
   clear: () => void;
   totalItems: number;
   totalCentavos: number;
@@ -61,11 +62,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   function addItem(item: Omit<CartItem, "quantity">, quantity = 1) {
     setItems((prev) => {
       const existing = prev.find(
-        (i) => i.slug === item.slug && i.variant === item.variant
+        (i) => i.slug === item.slug && i.variantId === item.variantId
       );
       if (existing) {
         return prev.map((i) =>
-          i.slug === item.slug && i.variant === item.variant
+          i.slug === item.slug && i.variantId === item.variantId
             ? { ...i, quantity: i.quantity + quantity }
             : i
         );
@@ -74,20 +75,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function removeItem(slug: string, variant: string) {
+  function removeItem(slug: string, variantId: string) {
     setItems((prev) =>
-      prev.filter((i) => !(i.slug === slug && i.variant === variant))
+      prev.filter((i) => !(i.slug === slug && i.variantId === variantId))
     );
   }
 
-  function setQuantity(slug: string, variant: string, quantity: number) {
+  function setQuantity(slug: string, variantId: string, quantity: number) {
     if (quantity < 1) {
-      removeItem(slug, variant);
+      removeItem(slug, variantId);
       return;
     }
     setItems((prev) =>
       prev.map((i) =>
-        i.slug === slug && i.variant === variant ? { ...i, quantity } : i
+        i.slug === slug && i.variantId === variantId ? { ...i, quantity } : i
       )
     );
   }

@@ -15,7 +15,7 @@ import { logEvent } from "@/lib/events";
 type OrderRequestBody = {
   customer?: { name?: string; email?: string; phone?: string };
   shippingAddress?: { street?: string; city?: string };
-  items?: { slug?: string; variant?: string; quantity?: number }[];
+  items?: { slug?: string; variantId?: string; quantity?: number }[];
 };
 
 export async function POST(request: Request) {
@@ -53,19 +53,19 @@ export async function POST(request: Request) {
       : undefined;
     const quantity = requested.quantity ?? 0;
 
-    if (!product || !requested.variant || quantity < 1) {
+    if (!product || !requested.variantId || quantity < 1) {
       return NextResponse.json(
         { error: "One or more cart items are invalid." },
         { status: 400 }
       );
     }
 
-    const variant = product.variants.find(
-      (v) => v.label === requested.variant
-    );
+    const variant = product.variants.find((v) => v.id === requested.variantId);
     if (!variant?.inStock || !product.orderingEnabled) {
       return NextResponse.json(
-        { error: `${product.name} (${requested.variant}) is unavailable.` },
+        {
+          error: `${product.name}${variant ? ` (${variant.label})` : ""} is unavailable.`,
+        },
         { status: 400 }
       );
     }
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     orderItems.push({
       slug: product.slug,
       name: product.name,
-      variant: variant.label,
+      variantLabel: variant.label,
       quantity,
       priceCentavos: product.priceCentavos,
       productId: product.id,

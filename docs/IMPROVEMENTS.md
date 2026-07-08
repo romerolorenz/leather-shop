@@ -5,14 +5,23 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Product options beyond color: admin-configurable custom choices
-  (thread color, size, length, etc.), not just a single flat variant.**
-  In progress — see [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md)
-  for the full design (schema, decisions, code touchpoints, implementation
-  checkpoints) written before starting on this.
+Nothing outstanding right now — see Done below.
 
 ## Done
 
+- [x] **Product options beyond color: admin-configurable custom choices
+  (thread color, size, length, etc.), not just a single flat variant.**
+  See [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md) for the full
+  design. Admin defines option types per product (Color, Thread Color,
+  Size, ...) each with its own ordered value list
+  (`product_option_types`/`product_option_values`, migration
+  `0009_product_options.sql`); a variant is a combination of one value per
+  type (`product_variant_options`), immutable after creation — only stock
+  is editable inline afterward. The PDP renders one swatch group per
+  option type instead of a hardcoded "Color" heading. Existing variants/
+  orders migrated losslessly (variant ids preserved, order display
+  snapshotted onto a new `order_items.variant_label` column). Built on a
+  separate `feat/product-options` branch, not yet merged to `develop`.
 - [x] **Narrow tooltips to the header navbar only.** Removed the `Tooltip`
   wrapping from `ActionButton`, the cart's Remove button, `admin/faq`'s
   move-up/down/save icons, and `account/addresses`'s delete/save icons —

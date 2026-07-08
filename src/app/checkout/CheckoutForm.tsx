@@ -83,7 +83,7 @@ export default function CheckoutForm({
           },
           items: items.map((item) => ({
             slug: item.slug,
-            variant: item.variant,
+            variantId: item.variantId,
             quantity: item.quantity,
           })),
         }),
@@ -268,11 +268,11 @@ export default function CheckoutForm({
           <ul className="mt-2 divide-y divide-black/[.08] dark:divide-white/[.145]">
             {items.map((item) => (
               <li
-                key={`${item.slug}-${item.variant}`}
+                key={`${item.slug}-${item.variantId}`}
                 className="flex justify-between py-2 text-sm"
               >
                 <span>
-                  {item.quantity}x {item.name} ({item.variant})
+                  {item.quantity}x {item.name} ({item.variantLabel})
                 </span>
                 <span>
                   {formatPrice(item.priceCentavos * item.quantity)}

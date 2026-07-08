@@ -4,7 +4,7 @@ import { getProductBySlug } from "@/lib/products";
 export type OrderItem = {
   slug: string;
   name: string;
-  variant: string;
+  variantLabel: string;
   quantity: number;
   priceCentavos: number;
 };
@@ -47,9 +47,9 @@ export type NewOrder = {
 export class InsufficientStockError extends Error {
   constructor(
     public productName: string,
-    public variant: string
+    public variantLabel: string
   ) {
-    super(`${productName} (${variant}) no longer has enough stock.`);
+    super(`${productName} (${variantLabel}) no longer has enough stock.`);
     this.name = "InsufficientStockError";
   }
 }
@@ -87,6 +87,7 @@ export async function createOrder(input: NewOrder): Promise<Order> {
       order_id: orderRow.id,
       product_id: item.productId,
       variant_id: item.variantId,
+      variant_label: item.variantLabel,
       quantity: item.quantity,
       unit_price_centavos: item.priceCentavos,
     }))
@@ -112,7 +113,7 @@ export async function createOrder(input: NewOrder): Promise<Order> {
         });
       }
       await supabase.from("orders").delete().eq("id", orderRow.id);
-      throw new InsufficientStockError(item.name, item.variant);
+      throw new InsufficientStockError(item.name, item.variantLabel);
     }
 
     decremented.push({ variantId: item.variantId, quantity: item.quantity });
@@ -205,8 +206,8 @@ type OrderRow = {
   order_items: {
     quantity: number;
     unit_price_centavos: number;
+    variant_label: string;
     products: { slug: string; name: string } | null;
-    product_variants: { label: string } | null;
   }[];
 };
 
@@ -227,7 +228,7 @@ function mapOrderRow(row: OrderRow): Order {
     items: row.order_items.map((item) => ({
       slug: item.products?.slug ?? "",
       name: item.products?.name ?? "(deleted product)",
-      variant: item.product_variants?.label ?? "(deleted variant)",
+      variantLabel: item.variant_label,
       quantity: item.quantity,
       priceCentavos: item.unit_price_centavos,
     })),
@@ -238,7 +239,7 @@ function mapOrderRow(row: OrderRow): Order {
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, total_centavos, order_items(quantity, unit_price_centavos, products(slug, name), product_variants(label))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, total_centavos, order_items(quantity, unit_price_centavos, variant_label, products(slug, name))";
 
 export async function listOrdersForAdmin(): Promise<Order[]> {
   const supabase = getSupabaseServerClient();

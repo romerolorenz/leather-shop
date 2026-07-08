@@ -3,7 +3,13 @@ import Image from "next/image";
 import { getProductForAdmin } from "@/lib/admin/catalog";
 import {
   updateProductAction,
-  addVariantAction,
+  createOptionTypeAction,
+  updateOptionTypeAction,
+  deleteOptionTypeAction,
+  createOptionValueAction,
+  updateOptionValueAction,
+  deleteOptionValueAction,
+  createVariantAction,
   updateAllVariantsAction,
   deleteVariantAction,
   uploadPhotoAction,
@@ -36,6 +42,25 @@ function TrashIcon() {
   );
 }
 
+function SaveIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+    >
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+      <path d="M17 21v-8H7v8" />
+      <path d="M7 3v5h8" />
+    </svg>
+  );
+}
+
 export default async function EditProductPage(
   props: PageProps<"/admin/products/[id]">
 ) {
@@ -48,7 +73,9 @@ export default async function EditProductPage(
 
   const updateAction = updateProductAction.bind(null, product.id);
   const uploadPhoto = uploadPhotoAction.bind(null, product.id);
-  const addVariant = addVariantAction.bind(null, product.id);
+  const addOptionType = createOptionTypeAction.bind(null, product.id);
+  const optionTypeIds = product.optionTypes.map((type) => type.id);
+  const addVariant = createVariantAction.bind(null, product.id, optionTypeIds);
   const variantIds = product.variants.map((variant) => variant.id);
   const updateAllVariants = updateAllVariantsAction.bind(
     null,
@@ -147,6 +174,150 @@ export default async function EditProductPage(
         </ActionForm>
       </section>
 
+      <section className="mb-10">
+        <h2 className="mb-4 text-sm font-medium">Options</h2>
+        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+          Define the choices shoppers pick from (e.g. Color, Thread Color,
+          Size) before creating variants below.
+        </p>
+        <ul className="mb-6 flex flex-col gap-4">
+          {product.optionTypes.map((type) => {
+            const updateType = updateOptionTypeAction.bind(
+              null,
+              type.id,
+              product.id
+            );
+            const removeType = deleteOptionTypeAction.bind(
+              null,
+              type.id,
+              product.id
+            );
+            const addValue = createOptionValueAction.bind(
+              null,
+              type.id,
+              product.id
+            );
+            return (
+              <li
+                key={type.id}
+                className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
+              >
+                <div className="flex items-center gap-2">
+                  <ActionForm
+                    action={updateType}
+                    className="flex flex-1 items-center gap-2"
+                  >
+                    <input
+                      name="name"
+                      defaultValue={type.name}
+                      aria-label="Option type name"
+                      required
+                      className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm font-medium dark:border-white/[.2]"
+                    />
+                    <SubmitButton
+                      ariaLabel="Save option type"
+                      className="rounded-md p-1.5 transition-transform hover:bg-black/[.05] active:scale-95 disabled:opacity-50 dark:hover:bg-white/[.1]"
+                    >
+                      <SaveIcon />
+                    </SubmitButton>
+                  </ActionForm>
+                  <ActionButton
+                    action={removeType}
+                    confirmMessage="Delete this option type? This removes it from any variants using it."
+                    ariaLabel="Delete option type"
+                    className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                  >
+                    <TrashIcon />
+                  </ActionButton>
+                </div>
+
+                <ul className="mt-3 flex flex-col gap-2 pl-4">
+                  {type.values.map((value) => {
+                    const updateValue = updateOptionValueAction.bind(
+                      null,
+                      value.id,
+                      product.id
+                    );
+                    const removeValue = deleteOptionValueAction.bind(
+                      null,
+                      value.id,
+                      product.id
+                    );
+                    return (
+                      <li key={value.id} className="flex items-center gap-2">
+                        <ActionForm
+                          action={updateValue}
+                          className="flex flex-1 items-center gap-2"
+                        >
+                          <input
+                            name="value"
+                            defaultValue={value.value}
+                            aria-label="Option value"
+                            required
+                            className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1 text-sm dark:border-white/[.2]"
+                          />
+                          <SubmitButton
+                            ariaLabel="Save value"
+                            className="rounded-md p-1 transition-transform hover:bg-black/[.05] active:scale-95 disabled:opacity-50 dark:hover:bg-white/[.1]"
+                          >
+                            <SaveIcon />
+                          </SubmitButton>
+                        </ActionForm>
+                        <ActionButton
+                          action={removeValue}
+                          confirmMessage="Delete this value?"
+                          ariaLabel="Delete value"
+                          className="rounded-md p-1 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                        >
+                          <TrashIcon />
+                        </ActionButton>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <ActionForm
+                  action={addValue}
+                  className="mt-2 flex items-center gap-2 pl-4"
+                >
+                  <input
+                    name="value"
+                    placeholder="e.g. Natural Thread"
+                    required
+                    className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1 text-sm dark:border-white/[.2]"
+                  />
+                  <SubmitButton
+                    pendingLabel="Adding…"
+                    className="whitespace-nowrap rounded-full border border-black/[.15] px-3 py-1 text-xs disabled:opacity-50 dark:border-white/[.2]"
+                  >
+                    Add value
+                  </SubmitButton>
+                </ActionForm>
+              </li>
+            );
+          })}
+        </ul>
+        {product.optionTypes.length === 0 && (
+          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+            No option types yet.
+          </p>
+        )}
+
+        <ActionForm action={addOptionType} className="flex items-center gap-2">
+          <input
+            name="name"
+            placeholder="e.g. Thread Color"
+            required
+            className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
+          />
+          <SubmitButton
+            pendingLabel="Adding…"
+            className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
+          >
+            Add option type
+          </SubmitButton>
+        </ActionForm>
+      </section>
+
       <section>
         <h2 className="mb-4 text-sm font-medium">Variants</h2>
         {product.variants.length > 0 && (
@@ -160,13 +331,7 @@ export default async function EditProductPage(
                 );
                 return (
                   <li key={variant.id} className="flex items-center gap-2">
-                    <input
-                      name={`label:${variant.id}`}
-                      defaultValue={variant.label}
-                      aria-label="Variant label"
-                      required
-                      className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-                    />
+                    <span className="flex-1 text-sm">{variant.label}</span>
                     <input
                       name={`stock:${variant.id}`}
                       type="number"
@@ -200,29 +365,51 @@ export default async function EditProductPage(
           <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">No variants yet.</p>
         )}
 
-        <ActionForm action={addVariant} className="flex items-center gap-2">
-          <input
-            name="label"
-            placeholder="e.g. Black"
-            required
-            className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-          />
-          <input
-            name="stockQuantity"
-            type="number"
-            min="0"
-            defaultValue={0}
-            aria-label="Stock quantity"
-            required
-            className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-          />
-          <SubmitButton
-            pendingLabel="Adding…"
-            className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
+        {product.optionTypes.length > 0 ? (
+          <ActionForm
+            action={addVariant}
+            className="flex flex-wrap items-center gap-2"
           >
-            Add variant
-          </SubmitButton>
-        </ActionForm>
+            {product.optionTypes.map((type) => (
+              <select
+                key={type.id}
+                name={`optionValue:${type.id}`}
+                required
+                defaultValue=""
+                aria-label={type.name}
+                className="rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
+              >
+                <option value="" disabled>
+                  {type.name}
+                </option>
+                {type.values.map((value) => (
+                  <option key={value.id} value={value.id}>
+                    {value.value}
+                  </option>
+                ))}
+              </select>
+            ))}
+            <input
+              name="stockQuantity"
+              type="number"
+              min="0"
+              defaultValue={0}
+              aria-label="Stock quantity"
+              required
+              className="w-24 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
+            />
+            <SubmitButton
+              pendingLabel="Adding…"
+              className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
+            >
+              Add variant
+            </SubmitButton>
+          </ActionForm>
+        ) : (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Add at least one option type above before creating variants.
+          </p>
+        )}
       </section>
     </main>
   );

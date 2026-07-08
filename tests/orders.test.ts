@@ -99,7 +99,7 @@ describe("createOrder", () => {
         {
           slug: wallet.slug,
           name: wallet.name,
-          variant: variant.label,
+          variantLabel: variant.label,
           quantity: 1,
           priceCentavos: wallet.priceCentavos,
           productId: wallet.id,
@@ -129,7 +129,7 @@ describe("createOrder", () => {
           {
             slug: wallet.slug,
             name: wallet.name,
-            variant: variant.label,
+            variantLabel: variant.label,
             quantity: 9999,
             priceCentavos: wallet.priceCentavos,
             productId: wallet.id,
@@ -168,7 +168,7 @@ describe("createOrder", () => {
           {
             slug: wallet.slug,
             name: wallet.name,
-            variant: walletVariant.label,
+            variantLabel: walletVariant.label,
             quantity: 1,
             priceCentavos: wallet.priceCentavos,
             productId: wallet.id,
@@ -177,7 +177,7 @@ describe("createOrder", () => {
           {
             slug: tote.slug,
             name: tote.name,
-            variant: toteVariant.label,
+            variantLabel: toteVariant.label,
             // Comfortably exceeds seeded stock (5) without overflowing the
             // integer subtotal column the way 9999 would.
             quantity: 50,
@@ -207,7 +207,7 @@ describe("cancelOrderAndRestoreStock", () => {
         {
           slug: wallet.slug,
           name: wallet.name,
-          variant: variant.label,
+          variantLabel: variant.label,
           quantity: 1,
           priceCentavos: wallet.priceCentavos,
           productId: wallet.id,
@@ -249,7 +249,7 @@ describe("cancelOrderAndRestoreStock", () => {
         {
           slug: wallet.slug,
           name: wallet.name,
-          variant: variant.label,
+          variantLabel: variant.label,
           quantity: 1,
           priceCentavos: wallet.priceCentavos,
           productId: wallet.id,
@@ -291,7 +291,7 @@ describe("getExpiredPendingOrderIds", () => {
         {
           slug: wallet.slug,
           name: wallet.name,
-          variant: variant.label,
+          variantLabel: variant.label,
           quantity: 1,
           priceCentavos: wallet.priceCentavos,
           productId: wallet.id,
@@ -319,7 +319,7 @@ describe("listOrdersForCustomer", () => {
     const item = {
       slug: wallet.slug,
       name: wallet.name,
-      variant: variant.label,
+      variantLabel: variant.label,
       quantity: 1,
       priceCentavos: wallet.priceCentavos,
       productId: wallet.id,

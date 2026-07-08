@@ -42,7 +42,7 @@ function OrderCard({ order }: { order: Order }) {
           </p>
           <p className="mt-2 text-sm">
             {order.items
-              .map((item) => `${item.quantity}x ${item.name} (${item.variant})`)
+              .map((item) => `${item.quantity}x ${item.name} (${item.variantLabel})`)
               .join(", ")}
           </p>
         </div>

@@ -15,7 +15,7 @@ function formatOrderItems(order: Order): string {
   return order.items
     .map(
       (item) =>
-        `${item.quantity}x ${item.name} (${item.variant}) — ${formatPrice(
+        `${item.quantity}x ${item.name} (${item.variantLabel}) — ${formatPrice(
           item.priceCentavos * item.quantity
         )}`
     )
@@ -70,7 +70,7 @@ export function buildOrderConfirmationEmail(
     .map((item) => {
       const photoUrl = itemPhotos[item.slug];
       const name = escapeHtml(item.name);
-      const variant = escapeHtml(item.variant);
+      const variant = escapeHtml(item.variantLabel);
       const lineTotal = formatPrice(item.priceCentavos * item.quantity);
 
       const photoCell = photoUrl

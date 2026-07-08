@@ -42,7 +42,7 @@ export default function CartView({
       <ul className="divide-y divide-black/[.08] dark:divide-white/[.145]">
         {items.map((item) => (
           <li
-            key={`${item.slug}-${item.variant}`}
+            key={`${item.slug}-${item.variantId}`}
             className="flex items-center justify-between gap-4 py-4"
           >
             <div className="flex items-center gap-3">
@@ -59,7 +59,7 @@ export default function CartView({
               )}
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variant}</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variantLabel}</p>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   {formatPrice(item.priceCentavos)}
                 </p>
@@ -71,7 +71,7 @@ export default function CartView({
                   type="button"
                   aria-label="Decrease quantity"
                   onClick={() =>
-                    setQuantity(item.slug, item.variant, item.quantity - 1)
+                    setQuantity(item.slug, item.variantId, item.quantity - 1)
                   }
                   className="px-3 py-1"
                 >
@@ -84,7 +84,7 @@ export default function CartView({
                   type="button"
                   aria-label="Increase quantity"
                   onClick={() =>
-                    setQuantity(item.slug, item.variant, item.quantity + 1)
+                    setQuantity(item.slug, item.variantId, item.quantity + 1)
                   }
                   className="px-3 py-1"
                 >
@@ -93,7 +93,7 @@ export default function CartView({
               </div>
               <button
                 type="button"
-                onClick={() => removeItem(item.slug, item.variant)}
+                onClick={() => removeItem(item.slug, item.variantId)}
                 aria-label="Remove item"
                 className="rounded-md p-1.5 text-zinc-500 dark:text-zinc-400 transition-transform hover:bg-red-600/10 hover:text-red-600 active:scale-95"
               >

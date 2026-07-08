@@ -20,7 +20,7 @@ const order: Order = {
     {
       slug: "classic-bifold-wallet",
       name: "Classic Bifold Wallet",
-      variant: "Chestnut Brown",
+      variantLabel: "Chestnut Brown",
       quantity: 2,
       priceCentavos: 189900,
     },

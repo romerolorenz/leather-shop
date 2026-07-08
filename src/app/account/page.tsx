@@ -61,7 +61,7 @@ function OrderCard({
                 <p className="text-sm">
                   {item.quantity}x {item.name}
                 </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variant}</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variantLabel}</p>
               </div>
             </li>
           );

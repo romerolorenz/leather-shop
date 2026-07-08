@@ -12,6 +12,50 @@ collapsed to a one-line summary below (full history is in git — see the
 phase's commit and any follow-up commits for exactly what was tested and
 fixed).
 
+## Product options beyond color
+
+Verified via curl + automated tests (`tests/admin-catalog-options.test.ts`,
+`npm test` all 38 passing): option-type/value CRUD, variant creation with
+duplicate-combination rejection, stock-only batch save, and the composed
+label all work correctly against the real DB. Migration verified live
+(existing wallet/tote variants correctly migrated to a "Color" option type,
+historical order display intact). The wallet PDP renders the "Color"
+heading with all three values live. What's left needs a real admin session
+and mouse — this is a new feature (not a fix), so the full flow needs a
+first pass:
+
+- [ ] `/admin/products/<id>` — add a second option type (e.g. "Thread
+  Color") with a couple of values, then create a variant by picking one
+  value from each type's dropdown + a stock count. Confirm the new
+  variant's row shows the composed label (e.g. "Black / Natural") as
+  read-only text, and the stock is editable inline via "Save all
+  variants."
+  Findings:
+
+- [ ] Try creating a variant with the exact same combination as an
+  existing one — confirm it shows an error toast ("A variant with this
+  exact combination already exists") instead of silently duplicating.
+  Findings:
+
+- [ ] Delete an option type or value that's used by an existing variant —
+  confirm the confirm-dialog warning is clear, and check what the
+  variant's label looks like afterward (the removed dimension should just
+  drop out of the composed label).
+  Findings:
+
+- [ ] On the product page (a product with 2+ option types), pick a
+  combination that doesn't have a variant — confirm "Not available in
+  this combination" shows and Add to Cart is disabled. Pick a combination
+  that does exist but is out of stock — confirm Add to Cart is still
+  disabled appropriately.
+  Findings:
+
+- [ ] Add an item to cart, go to checkout, place a real order — confirm
+  the cart/checkout/confirmation email all show the correct composed
+  variant label, and the order shows up correctly in `/admin/orders` and
+  `/account`.
+  Findings:
+
 ## Done
 
 - [x] **Round 6 — Tooltips, admin save toasts, Contact Us icons.** Header

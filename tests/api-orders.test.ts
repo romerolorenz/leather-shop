@@ -1,8 +1,26 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/orders/route";
+import { getProductBySlug, type Product } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const createdOrderIds: string[] = [];
+
+let wallet: Product;
+let tote: Product;
+
+beforeAll(async () => {
+  const [w, t] = await Promise.all([
+    getProductBySlug("classic-bifold-wallet"),
+    getProductBySlug("tote-bag"),
+  ]);
+  if (!w || !t) {
+    throw new Error(
+      "Seed data missing — run supabase/migrations/0001_init.sql first."
+    );
+  }
+  wallet = w;
+  tote = t;
+});
 
 function makeRequest(body: unknown) {
   return new Request("http://localhost/api/orders", {
@@ -31,12 +49,13 @@ afterAll(async () => {
 
 describe("POST /api/orders", () => {
   it("rejects a non-Metro-Manila city", async () => {
+    const walletVariant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: { street: "1 St", city: "Cebu City" },
         items: [
-          { slug: "classic-bifold-wallet", variant: "Chestnut Brown", quantity: 1 },
+          { slug: "classic-bifold-wallet", variantId: walletVariant.id, quantity: 1 },
         ],
       })
     );
@@ -55,23 +74,25 @@ describe("POST /api/orders", () => {
   });
 
   it("rejects a sold-out variant", async () => {
+    const soldOutVariant = tote.variants.find((v) => v.label === "Black")!;
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: { street: "1 St", city: "Pasig" },
-        items: [{ slug: "tote-bag", variant: "Black", quantity: 1 }],
+        items: [{ slug: "tote-bag", variantId: soldOutVariant.id, quantity: 1 }],
       })
     );
     expect(res.status).toBe(400);
   });
 
   it("creates a valid order and prices it server-side", async () => {
+    const walletVariant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "vitest-api@example.com", phone: "123" },
         shippingAddress: { street: "1 St", city: "Pasig" },
         items: [
-          { slug: "classic-bifold-wallet", variant: "Chestnut Brown", quantity: 1 },
+          { slug: "classic-bifold-wallet", variantId: walletVariant.id, quantity: 1 },
         ],
       })
     );

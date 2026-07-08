@@ -6,8 +6,14 @@ import { assertAdmin } from "@/lib/admin/auth";
 import {
   createProduct,
   updateProduct,
-  addVariant,
-  updateVariant,
+  createOptionType,
+  updateOptionType,
+  deleteOptionType,
+  createOptionValue,
+  updateOptionValue,
+  deleteOptionValue,
+  createVariant,
+  updateVariantStock,
   deleteVariant,
   addProductPhotos,
   deleteProductPhoto,
@@ -98,18 +104,108 @@ export async function updateProductAction(
   }, "Product saved.");
 }
 
-export async function addVariantAction(
+export async function createOptionTypeAction(
   productId: string,
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const label = String(formData.get("label") ?? "").trim();
-    const stockQuantity = Number(formData.get("stockQuantity"));
-    if (!label) throw new Error("Variant label is required.");
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) throw new Error("Option type name is required.");
+    await createOptionType(productId, name);
+    revalidatePath(`/admin/products/${productId}`);
+  }, "Option type added.");
+}
 
-    await addVariant(productId, label, stockQuantity);
+export async function updateOptionTypeAction(
+  id: string,
+  productId: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) throw new Error("Option type name is required.");
+    await updateOptionType(id, name);
+    revalidatePath(`/admin/products/${productId}`);
+  }, "Option type saved.");
+}
+
+export async function deleteOptionTypeAction(
+  id: string,
+  productId: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteOptionType(id);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Option type deleted.");
+}
+
+export async function createOptionValueAction(
+  optionTypeId: string,
+  productId: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const value = String(formData.get("value") ?? "").trim();
+    if (!value) throw new Error("Value is required.");
+    await createOptionValue(optionTypeId, value);
+    revalidatePath(`/admin/products/${productId}`);
+  }, "Value added.");
+}
+
+export async function updateOptionValueAction(
+  id: string,
+  productId: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const value = String(formData.get("value") ?? "").trim();
+    if (!value) throw new Error("Value is required.");
+    await updateOptionValue(id, value);
+    revalidatePath(`/admin/products/${productId}`);
+  }, "Value saved.");
+}
+
+export async function deleteOptionValueAction(
+  id: string,
+  productId: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteOptionValue(id);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Value deleted.");
+}
+
+// optionTypeIds is bound at render time from the product's option-type
+// list the page already fetched — one select per type, named
+// `optionValue:{typeId}`, so this reads exactly one chosen value per type.
+export async function createVariantAction(
+  productId: string,
+  optionTypeIds: string[],
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const optionValueIds = optionTypeIds.map((typeId) => {
+      const value = String(formData.get(`optionValue:${typeId}`) ?? "").trim();
+      if (!value) throw new Error("Select a value for every option.");
+      return value;
+    });
+    const stockQuantity = Number(formData.get("stockQuantity"));
+
+    await createVariant(productId, optionValueIds, stockQuantity);
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
   }, "Variant added.");
@@ -127,10 +223,9 @@ export async function deleteVariantAction(
   }, "Variant deleted.");
 }
 
-// Saves every variant's label/stock in one submit instead of one form per
-// row — variantIds is bound at render time from the variant list the page
-// already fetched, so this only ever touches variants that belong to
-// productId.
+// A variant's combination is immutable after creation — this batch-saves
+// only stock_quantity across every row in one submit. variantIds is bound
+// at render time from the variant list the page already fetched.
 export async function updateAllVariantsAction(
   productId: string,
   variantIds: string[],
@@ -140,10 +235,8 @@ export async function updateAllVariantsAction(
   return runAction(async () => {
     await assertAdmin();
     for (const variantId of variantIds) {
-      const label = String(formData.get(`label:${variantId}`) ?? "").trim();
       const stockQuantity = Number(formData.get(`stock:${variantId}`));
-      if (!label) throw new Error("Variant label is required.");
-      await updateVariant(variantId, label, stockQuantity);
+      await updateVariantStock(variantId, stockQuantity);
     }
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();

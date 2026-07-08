@@ -114,10 +114,25 @@ products
   id, slug, name, description, category, price_centavos,
   lead_time_days, ordering_enabled, created_at
 
+product_option_types
+  id, product_id (fk), name (e.g. "Color", "Thread Color", "Size"),
+  position — admin-defined per product (see PRODUCT_OPTIONS_DESIGN.md)
+
+product_option_values
+  id, option_type_id (fk), value (e.g. "Black"), position
+
 product_variants
-  id, product_id (fk), label (e.g. "Chestnut Brown"),
+  id, product_id (fk),
   stock_quantity (in-stock: real count / made-to-order: capacity threshold),
   in_stock (derived: stock_quantity > 0)
+  — label is no longer a column; it's composed live from
+  product_variant_options for display, one value per option type
+
+product_variant_options
+  variant_id (fk), option_value_id (fk) — a variant is the combination of
+  rows here, one per option type; no DB constraint enforces "one value per
+  type" or "no duplicate combination," both checked in app code
+  (src/lib/admin/catalog.ts)
 
 orders
   id, status ("pending_payment" | "paid" | "shipped" | "cancelled" | ...),
@@ -127,6 +142,9 @@ orders
 
 order_items
   id, order_id (fk), product_id (fk), variant_id (fk),
+  variant_label (snapshot at order time — a later option-value rename/
+  delete shouldn't rewrite historical order display, same reasoning as
+  unit_price_centavos below),
   quantity, unit_price_centavos (snapshot at order time)
 
 settings
@@ -205,6 +223,7 @@ otherwise have held.
 | FAQ / Contact / Privacy | Admin-editable FAQ (`faq_items` table), static Contact/Privacy pages, linked from header + footer | ✅ done (Phase 7) |
 | Customer accounts | Order history + saved addresses, scoped to the logged-in customer's email | ✅ done (Phase 8) — `/account` (order history, grouped by status) and `/account/addresses` (CRUD, default address); checkout pre-fills from a saved address when logged in |
 | Non-functional hardening | Event logging, SEO, accessibility, mobile QA (PRD §8) | ✅ done (Phase 9) — structured funnel-event logging (`add_to_cart`/`checkout_started`/`order_placed`) via `POST /api/events` + direct server-side logging; `sitemap.xml`/`robots.txt`; Lighthouse 100/100/100 (accessibility/best-practices/SEO) on mobile viewport for indexable pages. Mobile-device walkthrough (post-deploy) verified working |
+| Product options | Admin-defined option types per product (Color, Thread Color, Size, ...), each with its own ordered value list; a variant = one value per type (PRD §3/§5, US-3) | ✅ done — see [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md). Replaces the old single flat `product_variants.label` dimension; existing variant ids/orders preserved via migration `0009_product_options.sql` |
 
 Remaining work is Phase 10 (v2: PayMongo online payments) — explicitly
 out of scope for v1 launch.
