@@ -4,6 +4,15 @@ Derived from [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) (PRD
 section references in brackets). Two roles: **Shopper** (customer) and
 **Admin** (shop owner).
 
+## Home Page
+
+**US-37**: As a Shopper, I want to see a small, curated set of featured
+products on the homepage, so that I can quickly discover what's worth
+looking at without browsing the full catalog first. [§6]
+- Admin-curated, not automatic/algorithmic (e.g. not "best sellers" or
+  "newest") — see US-38.
+- Shows at most 3 products.
+
 ## Browsing & Catalog
 
 **US-1**: As a Shopper, I want to browse products by category and filter
@@ -126,6 +135,18 @@ last unit of an item hostage indefinitely under the manual-payment flow.
 (shorter if I need inventory to free up faster, longer if customers need
 more time to pay), so that I'm not stuck with a hardcoded 48 hours that
 doesn't fit how the shop actually runs. [§6, §7]
+
+**US-38**: As an Admin, I want to mark up to 3 products as "featured," so
+that I control what first-time homepage visitors see without needing a
+developer. [§6]
+- Max of 3 — the UI should stop me from featuring a 4th until I unfeature
+  one, rather than silently allowing more than the homepage is designed
+  to show.
+- Open question, not yet decided: if a featured product later gets
+  paused or goes fully sold out, does it stay featured and show as
+  unavailable on the homepage (consistent with how paused/sold-out
+  products behave on category pages per US-5), or does it get dropped
+  from the featured set automatically? Decide before implementing.
 
 ## Admin — Order Management
 
