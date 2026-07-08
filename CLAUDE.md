@@ -65,13 +65,22 @@ tasks/testing) live in [docs/](./docs/), not the repo root.
   identified. Distinct from MANUAL_TASKS.md — that file is for one-off
   external setup (accounts, credentials); this one is for repeatable
   verification steps and their results.
-- **Ask before designing.** Before building any UI/artifact design (a page,
-  flow, or mockup), ask what it's for and the creative direction/vibe
-  wanted — mood, references, palette leanings, anything to avoid — and
-  discuss options rather than jumping straight to a finished build.
-  Calibrate to what's actually needed; don't over-design a simple ask.
+- **Ask before designing, and write the design doc before building.**
+  Before building any UI/artifact design (a page, flow, or mockup), ask
+  what it's for and the creative direction/vibe wanted — mood, references,
+  palette leanings, anything to avoid. Then, **before writing any code or
+  publishing an artifact**, write a design document at
+  `docs/design/<page-or-flow>.md` covering look/feel, color and type
+  direction, and the page's sections/features — and get it agreed with
+  the user first. Don't skip straight from the vibe discussion to a
+  finished build.
 - **Every design artifact gets logged in DESIGN_LOG.md.** Whenever a
   design/mockup is published (e.g. via the Artifact tool), add an entry to
   [docs/DESIGN_LOG.md](./docs/DESIGN_LOG.md) — date, name, link, and a
   short description of the concept — in the same turn it's published, so
-  designs from one session are visible in the next.
+  designs from one session are visible in the next. Link back to the
+  `docs/design/` brief it was built from.
+- **Don't read `docs/completed/` into context unless asked.** That
+  directory holds archived/finished docs kept for the record, not active
+  reference material. Skip it during normal exploration and context
+  gathering; only open files there if the user explicitly asks for them.
