@@ -10,7 +10,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await props.params;
   const product = await getProductBySlug(slug);
-  if (!product) return {};
+  if (!product || !product.visible) return {};
 
   return {
     title: `${product.name} — Leather Shop`,
@@ -24,7 +24,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
   const { slug } = await props.params;
   const product = await getProductBySlug(slug);
 
-  if (!product) {
+  if (!product || !product.visible) {
     notFound();
   }
 

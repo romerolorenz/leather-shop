@@ -5,6 +5,7 @@ type Defaults = {
   price?: number;
   leadTimeDays?: number;
   orderingEnabled?: boolean;
+  visible?: boolean;
   stockQuantity?: number;
 };
 
@@ -110,6 +111,21 @@ export function ProductFormFields({
         />
         Ordering enabled
       </label>
+      <div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="visible"
+            defaultChecked={defaultValues.visible ?? true}
+          />
+          Visible in shop
+        </label>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Unchecking this hides the product from the shop listing and
+          search entirely (its page 404s) — different from disabling
+          ordering, which still lists it as unavailable.
+        </p>
+      </div>
     </>
   );
 }

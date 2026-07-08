@@ -15,6 +15,7 @@ import {
   attachOptionToProduct,
   updateProductOptionSelection,
   detachOptionFromProduct,
+  moveProductOption,
   addProductPhotos,
   deleteProductPhoto,
   type ProductInput,
@@ -61,6 +62,7 @@ function parseProductInput(formData: FormData): ProductInput {
     priceCentavos: Math.round(Number(formData.get("price")) * 100),
     leadTimeDays: Number(formData.get("leadTimeDays")),
     orderingEnabled: formData.get("orderingEnabled") === "on",
+    visible: formData.get("visible") === "on",
     stockQuantity: Number(formData.get("stockQuantity")),
   };
 }
@@ -226,21 +228,26 @@ export async function createOptionTypeAndAttachAction(
   }, "Option type created and attached.");
 }
 
-// valueIds is every checked `valueIds` checkbox in the selection form —
-// replaces the product's full selected-value set for this option.
-export async function updateProductOptionSelectionAction(
-  productOptionId: string,
+// productOptionIds is bound at render time from the product's attached-
+// options list the page already fetched (mirrors createVariantAction's old
+// optionTypeIds bind) — one checkbox group per option, named
+// `valueIds:{productOptionId}`, so this reads and saves every attached
+// option's selection in a single submit instead of one form per option.
+export async function updateProductOptionSelectionsAction(
   productId: string,
+  productOptionIds: string[],
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const valueIds = formData.getAll("valueIds").map(String);
-    await updateProductOptionSelection(productOptionId, valueIds);
+    for (const productOptionId of productOptionIds) {
+      const valueIds = formData.getAll(`valueIds:${productOptionId}`).map(String);
+      await updateProductOptionSelection(productOptionId, valueIds);
+    }
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
-  }, "Selection saved.");
+  }, "Options saved.");
 }
 
 export async function detachOptionAction(
@@ -253,6 +260,23 @@ export async function detachOptionAction(
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
   }, "Option detached.");
+}
+
+// Returns ActionResult (unlike moveFaqItemAction's void return) because
+// this button lives inside the "Save options" batch form — it has to go
+// through ActionButton rather than a nested <form>, and ActionButton's
+// action prop requires an ActionResult to toast.
+export async function moveProductOptionAction(
+  productOptionId: string,
+  productId: string,
+  direction: "up" | "down"
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await moveProductOption(productId, productOptionId, direction);
+    revalidatePath(`/admin/products/${productId}`);
+    revalidateStorefront();
+  }, "Reordered.");
 }
 
 export async function uploadPhotoAction(

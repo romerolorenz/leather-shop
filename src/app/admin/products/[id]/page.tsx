@@ -6,8 +6,9 @@ import {
   updateProductAction,
   attachOptionAction,
   createOptionTypeAndAttachAction,
-  updateProductOptionSelectionAction,
+  updateProductOptionSelectionsAction,
   detachOptionAction,
+  moveProductOptionAction,
   uploadPhotoAction,
   deletePhotoAction,
 } from "../../actions";
@@ -57,6 +58,12 @@ export default async function EditProductPage(
   const createAndAttach = createOptionTypeAndAttachAction.bind(null, product.id);
   const attachedTypeIds = new Set(product.options.map((o) => o.optionTypeId));
   const availableTypes = optionTypes.filter((t) => !attachedTypeIds.has(t.id));
+  const productOptionIds = product.options.map((o) => o.productOptionId);
+  const saveAllSelections = updateProductOptionSelectionsAction.bind(
+    null,
+    product.id,
+    productOptionIds
+  );
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
@@ -138,6 +145,7 @@ export default async function EditProductPage(
               price: product.priceCentavos / 100,
               leadTimeDays: product.leadTimeDays,
               orderingEnabled: product.orderingEnabled,
+              visible: product.visible,
               stockQuantity: product.stockQuantity,
             }}
           />
@@ -161,81 +169,110 @@ export default async function EditProductPage(
           Attach a shared option (defined once on the option library page)
           and pick which of its values this product offers. Any combination
           of a product&apos;s own option values is orderable — no separate
-          variant step.
+          variant step. The order below is the order option types are shown
+          in on the product page.
         </p>
 
-        <ul className="mb-6 flex flex-col gap-4">
-          {product.options.map((option) => {
-            const updateSelection = updateProductOptionSelectionAction.bind(
-              null,
-              option.productOptionId,
-              product.id
-            );
-            const detach = detachOptionAction.bind(
-              null,
-              option.productOptionId,
-              product.id
-            );
-            return (
-              <li
-                key={option.productOptionId}
-                className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium">
-                    {option.name}{" "}
-                    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
-                      ({option.displayStyle})
-                    </span>
-                  </span>
-                  <ActionButton
-                    action={detach}
-                    confirmMessage="Detach this option from the product? Other products using it are unaffected."
-                    ariaLabel="Detach option"
-                    className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+        {product.options.length > 0 && (
+          <ActionForm action={saveAllSelections} className="mb-6">
+            <ul className="mb-4 flex flex-col gap-4">
+              {product.options.map((option, index) => {
+                const moveUp = moveProductOptionAction.bind(
+                  null,
+                  option.productOptionId,
+                  product.id,
+                  "up"
+                );
+                const moveDown = moveProductOptionAction.bind(
+                  null,
+                  option.productOptionId,
+                  product.id,
+                  "down"
+                );
+                const detach = detachOptionAction.bind(
+                  null,
+                  option.productOptionId,
+                  product.id
+                );
+                return (
+                  <li
+                    key={option.productOptionId}
+                    className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
                   >
-                    <TrashIcon />
-                  </ActionButton>
-                </div>
-
-                {option.allValues.length === 0 ? (
-                  <p className="mt-2 pl-4 text-xs text-zinc-500 dark:text-zinc-400">
-                    This option has no values yet — add some on the option
-                    library page.
-                  </p>
-                ) : (
-                  <ActionForm
-                    action={updateSelection}
-                    className="mt-2 flex flex-col gap-2 pl-4"
-                  >
-                    {option.allValues.map((value) => (
-                      <label
-                        key={value.id}
-                        className="flex items-center gap-2 text-sm"
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <ActionButton
+                            action={moveUp}
+                            disabled={index === 0}
+                            ariaLabel="Move up"
+                            className="rounded-md border border-black/[.15] px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[.2]"
+                          >
+                            ↑
+                          </ActionButton>
+                          <ActionButton
+                            action={moveDown}
+                            disabled={index === product.options.length - 1}
+                            ariaLabel="Move down"
+                            className="rounded-md border border-black/[.15] px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[.2]"
+                          >
+                            ↓
+                          </ActionButton>
+                        </div>
+                        <span className="text-sm font-medium">
+                          {option.name}{" "}
+                          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                            ({option.displayStyle})
+                          </span>
+                        </span>
+                      </div>
+                      <ActionButton
+                        action={detach}
+                        confirmMessage="Detach this option from the product? Other products using it are unaffected."
+                        ariaLabel="Detach option"
+                        className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
                       >
-                        <input
-                          type="checkbox"
-                          name="valueIds"
-                          value={value.id}
-                          defaultChecked={option.selectedValueIds.includes(
-                            value.id
-                          )}
-                        />
-                        {value.value}
-                      </label>
-                    ))}
-                    <SubmitButton
-                      pendingLabel="Saving…"
-                      className="mt-1 self-start whitespace-nowrap rounded-full border border-black/[.15] px-3 py-1 text-xs disabled:opacity-50 dark:border-white/[.2]"
-                    >
-                      Save selection
-                    </SubmitButton>
-                  </ActionForm>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                        <TrashIcon />
+                      </ActionButton>
+                    </div>
+
+                    {option.allValues.length === 0 ? (
+                      <p className="mt-2 pl-4 text-xs text-zinc-500 dark:text-zinc-400">
+                        This option has no values yet — add some on the
+                        option library page.
+                      </p>
+                    ) : (
+                      <div className="mt-2 flex flex-col gap-2 pl-4">
+                        {option.allValues.map((value) => (
+                          <label
+                            key={value.id}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              name={`valueIds:${option.productOptionId}`}
+                              value={value.id}
+                              defaultChecked={option.selectedValueIds.includes(
+                                value.id
+                              )}
+                            />
+                            {value.value}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <SubmitButton
+              pendingLabel="Saving…"
+              className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
+            >
+              Save options
+            </SubmitButton>
+          </ActionForm>
+        )}
         {product.options.length === 0 && (
           <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
             No options attached yet.

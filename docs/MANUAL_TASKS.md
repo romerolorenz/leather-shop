@@ -10,7 +10,14 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [ ] **Run `supabase/migrations/0010_product_level_stock.sql` then
+- [ ] **Run `supabase/migrations/0012_product_visibility.sql` against the
+  live DB.** Adds `products.visible` (default `true`, so nothing already
+  live changes state) — powers the new admin "Visible in shop" toggle on
+  `/admin/products/<id>`. Until this runs, saving a product with that
+  checkbox unchecked will fail (`column products.visible does not exist`),
+  and `tests/products.test.ts`/`tests/admin-catalog-options.test.ts`'s
+  product-input tests will fail the same way.
+- [x] **Run `supabase/migrations/0010_product_level_stock.sql` then
   `supabase/migrations/0011_option_library_and_order_item_options.sql`
   against the live DB, in that order, then merge `feat/product-options`
   to `develop`.** Both are written but neither has run live yet. `0011`
@@ -47,11 +54,11 @@ blockers, then items that don't block any phase.
   is fixed. Code/tests are otherwise done (Phase 6). Verify a domain at
   resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it
   before real customers place orders.
-- [ ] **Doesn't block any phase: update the placeholder Contact Us email.**
+- [x] **Doesn't block any phase: update the placeholder Contact Us email.**
   `/admin/settings`'s "Contact Us email" is still `marco@example.com` (set
   during Phase 7 testing) — the new `/contact` form sends there, so it
   needs to be a real inbox you check before the form is useful.
-- [ ] **Doesn't block any phase: set the real Instagram handle.**
+- [x] **Doesn't block any phase: set the real Instagram handle.**
   `/admin/settings`'s new "Contact Us Instagram handle" field is still the
   placeholder `@yourshop` (migration `0008_contact_instagram_handle.sql`
   is run — this is just setting the real value) — update it via

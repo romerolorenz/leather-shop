@@ -103,14 +103,15 @@ with merged_types as (
     pot.name,
     -- Majority display_style per name (possible to differ across products
     -- after migration 0010 made it per-product); ties broken by min(id)
-    -- for determinism. Flagged in MANUAL_TASKS.md as a post-migration
-    -- "verify option display styles still look right" check.
+    -- for determinism (cast to text — uuid has no min/max aggregate).
+    -- Flagged in MANUAL_TASKS.md as a post-migration "verify option
+    -- display styles still look right" check.
     (
       select pot2.display_style
       from product_option_types pot2
       where pot2.name = pot.name
       group by pot2.display_style
-      order by count(*) desc, min(pot2.id)
+      order by count(*) desc, min(pot2.id::text)
       limit 1
     )
   from product_option_types pot

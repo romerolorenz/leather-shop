@@ -123,6 +123,12 @@ customers see accurate made-to-order expectations. [§5, §6]
 (e.g. to pause it), so that I can stop taking orders I can't fulfill in
 time, independent of stock count. [§5, §6]
 
+**US-41**: As an Admin, I want to hide a product from the shop entirely
+(listing, search, direct link), so that I can stage a product before
+launch or retire one without deleting it and losing its order history —
+distinct from pausing ordering, which still shows the product as
+unavailable rather than removing it. [§5, §6]
+
 **US-23**: As an Admin, I want to set a single production-capacity number
 per product (not per color/size/thread combination) that customers never
 see, so that the storefront automatically shows "sold out" once I'm at

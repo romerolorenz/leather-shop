@@ -15,12 +15,18 @@ export function ActionButton({
   confirmMessage,
   ariaLabel,
   className,
+  disabled,
   children,
 }: {
   action: () => Promise<ActionResult>;
   confirmMessage?: string;
   ariaLabel?: string;
   className?: string;
+  // For actions that are a no-op at a boundary (e.g. "move up" on the
+  // first row) — same disabled treatment as the plain <button disabled>
+  // the FAQ page's move buttons use, just exposed here too since this
+  // component can't use a <form> (see the note above).
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   const { showToast } = useToast();
@@ -43,7 +49,7 @@ export function ActionButton({
     <button
       type="button"
       aria-label={ariaLabel}
-      disabled={pending}
+      disabled={pending || disabled}
       onClick={handleClick}
       className={className}
     >

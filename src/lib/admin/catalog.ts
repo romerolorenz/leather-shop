@@ -39,13 +39,17 @@ export type AdminProduct = {
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
+  // Distinct from orderingEnabled: hides the product from the storefront
+  // entirely (listing, sitemap, direct PDP access) rather than showing it
+  // as unavailable — see supabase/migrations/0012_product_visibility.sql.
+  visible: boolean;
   stockQuantity: number;
   photos: AdminProductPhoto[];
   options: AdminProductOption[];
 };
 
 const ADMIN_PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, stock_quantity, " +
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, " +
   "product_photos(id, url, position), " +
   "product_options(id, position, option_types(id, name, display_style, option_values(id, value, position)), product_option_selections(option_value_id))";
 
@@ -58,6 +62,7 @@ type AdminProductRow = {
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
+  visible: boolean;
   stock_quantity: number;
   product_photos: { id: string; url: string; position: number }[];
   product_options: {
@@ -99,6 +104,7 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
+    visible: row.visible,
     stockQuantity: row.stock_quantity,
     photos: [...row.product_photos].sort((a, b) => a.position - b.position),
     options,
@@ -146,6 +152,7 @@ export type ProductInput = {
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
+  visible: boolean;
   stockQuantity: number;
 };
 
@@ -163,6 +170,7 @@ export async function createProduct(
       price_centavos: input.priceCentavos,
       lead_time_days: input.leadTimeDays,
       ordering_enabled: input.orderingEnabled,
+      visible: input.visible,
       stock_quantity: input.stockQuantity,
     })
     .select("id")
@@ -186,6 +194,7 @@ export async function updateProduct(
       price_centavos: input.priceCentavos,
       lead_time_days: input.leadTimeDays,
       ordering_enabled: input.orderingEnabled,
+      visible: input.visible,
       stock_quantity: input.stockQuantity,
     })
     .eq("id", id);
@@ -434,4 +443,41 @@ export async function detachOptionFromProduct(
     .eq("id", productOptionId);
 
   if (error) throw error;
+}
+
+// Swaps this product's attached option with its neighbor — same
+// swap-adjacent-position approach as moveFaqItem (src/lib/admin/faq.ts).
+// Scoped to productId's own product_options rows, not shop-wide.
+export async function moveProductOption(
+  productId: string,
+  productOptionId: string,
+  direction: "up" | "down"
+): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  const { data: options, error } = await supabase
+    .from("product_options")
+    .select("id, position")
+    .eq("product_id", productId)
+    .order("position", { ascending: true });
+
+  if (error) throw error;
+
+  const index = options.findIndex((o) => o.id === productOptionId);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapIndex < 0 || swapIndex >= options.length) return;
+
+  const current = options[index];
+  const swap = options[swapIndex];
+
+  const { error: currentErr } = await supabase
+    .from("product_options")
+    .update({ position: swap.position })
+    .eq("id", current.id);
+  if (currentErr) throw currentErr;
+
+  const { error: swapErr } = await supabase
+    .from("product_options")
+    .update({ position: current.position })
+    .eq("id", swap.id);
+  if (swapErr) throw swapErr;
 }

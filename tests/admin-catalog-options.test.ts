@@ -11,6 +11,7 @@ import {
   attachOptionToProduct,
   updateProductOptionSelection,
   detachOptionFromProduct,
+  moveProductOption,
   getProductForAdmin,
   type ProductInput,
 } from "@/lib/admin/catalog";
@@ -29,6 +30,7 @@ const baseInput: ProductInput = {
   priceCentavos: 10000,
   leadTimeDays: 1,
   orderingEnabled: true,
+  visible: true,
   stockQuantity: 5,
 };
 
@@ -154,6 +156,60 @@ describe("attaching a shared option to a product", () => {
     expect(new Set(secondOption.selectedValueIds)).toEqual(
       new Set([naturalId, darkId])
     );
+  });
+});
+
+describe("moveProductOption", () => {
+  it("reorders a product's attached options and no-ops at the boundary", async () => {
+    // Isolated scratch product (not the shared `productId`, which by this
+    // point in the file may already have other options attached from
+    // earlier tests) — this test needs full control over exactly which
+    // options are attached and in what order.
+    const { id: reorderProductId } = await createProduct({
+      ...baseInput,
+      name: "Vitest Scratch Product 3",
+    });
+    scratchProductIds.push(reorderProductId);
+
+    const { id: styleTypeId } = await createOptionType(
+      "Vitest Style",
+      "buttons"
+    );
+    scratchOptionTypeIds.push(styleTypeId);
+    const { id: eraTypeId } = await createOptionType("Vitest Era", "buttons");
+    scratchOptionTypeIds.push(eraTypeId);
+
+    const { productOptionId: styleOptionId } = await attachOptionToProduct(
+      reorderProductId,
+      styleTypeId,
+      []
+    );
+    const { productOptionId: eraOptionId } = await attachOptionToProduct(
+      reorderProductId,
+      eraTypeId,
+      []
+    );
+
+    let product = await getProductForAdmin(reorderProductId);
+    expect(product!.options.map((o) => o.productOptionId)).toEqual([
+      styleOptionId,
+      eraOptionId,
+    ]);
+
+    await moveProductOption(reorderProductId, eraOptionId, "up");
+    product = await getProductForAdmin(reorderProductId);
+    expect(product!.options.map((o) => o.productOptionId)).toEqual([
+      eraOptionId,
+      styleOptionId,
+    ]);
+
+    // era is now first — moving it up again is a no-op.
+    await moveProductOption(reorderProductId, eraOptionId, "up");
+    product = await getProductForAdmin(reorderProductId);
+    expect(product!.options.map((o) => o.productOptionId)).toEqual([
+      eraOptionId,
+      styleOptionId,
+    ]);
   });
 });
 

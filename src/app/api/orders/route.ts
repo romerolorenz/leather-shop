@@ -57,7 +57,10 @@ export async function POST(request: Request) {
       : undefined;
     const quantity = requested.quantity ?? 0;
 
-    if (!product || quantity < 1) {
+    // A hidden product is treated the same as a nonexistent one here —
+    // it's not listed anywhere a shopper could have legitimately gotten
+    // this slug from.
+    if (!product || !product.visible || quantity < 1) {
       return NextResponse.json(
         { error: "One or more cart items are invalid." },
         { status: 400 }

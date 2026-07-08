@@ -147,6 +147,9 @@ finalized and swapped in later without a structural rebuild.
 - Add/edit products, options, photos, prices, stock status.
 - Set/edit per-product lead time, and toggle ordering on/off per product
   (e.g. to pause a product when wait time is too long).
+- **Hide a product from the shop entirely** (listing, search, direct
+  link) — separate from pausing ordering above, for staging an unfinished
+  product or retiring one without deleting it (US-41).
 - View and manage incoming orders (mark shipped, fulfilled, etc.).
 - Basic sales overview (orders, revenue) — not a full analytics suite.
 - **Edit FAQ content** — the FAQ page (§6, Storefront) is admin-editable,

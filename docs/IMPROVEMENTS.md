@@ -9,6 +9,24 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **Admin → Products: hide a product from the shop entirely, plus a
+  batched option-selection save and reorderable options (US-41).**
+  `products.visible` (migration `0012_product_visibility.sql`, default
+  true) — a new "Visible in shop" checkbox on the product form; unchecking
+  it excludes the product from `getProducts()` (listing + sitemap) and
+  404s its PDP directly, but `getProductBySlug()` still resolves it
+  (order history/photos for past orders of a since-hidden product still
+  render). Distinct from the existing "Ordering enabled" pause, which
+  still lists the product as unavailable. Also: the product page's Options
+  section now saves every attached option's value selection in one submit
+  (`updateProductOptionSelectionsAction`) instead of one form per option,
+  and gained ↑/↓ reorder buttons (`moveProductOption`, same swap-adjacent-
+  position approach as `moveFaqItem`) — both routed through `ActionButton`
+  rather than a nested `<form>`, since they live inside the batch-save
+  form.
+- [x] **Admin → Products list: show each product's photo thumbnail.**
+  `/admin/products` now renders the first product photo (or a placeholder
+  box) beside each row, matching the cart/PDP thumbnail pattern.
 - [x] **Drop the variant entity — any combination of a product's option
   values should be orderable, no admin-created variant row required.**
   See [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md)'s "Second

@@ -17,6 +17,12 @@ export type Product = {
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
+  // Distinct from orderingEnabled — hidden entirely from the storefront
+  // rather than shown as unavailable. getProducts() already filters these
+  // out; getProductBySlug() doesn't (order history needs to resolve a
+  // since-hidden product), so callers reachable by direct slug (the PDP,
+  // checkout) must check this themselves.
+  visible: boolean;
   // A single per-product capacity number, not per option combination — see
   // PRD §5. Every option combination is orderable or sold out together.
   inStock: boolean;
@@ -26,7 +32,7 @@ export type Product = {
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, in_stock, " +
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, " +
   "product_photos(url, position), " +
   "product_options(position, option_types(id, name, display_style), product_option_selections(option_values(value, position)))";
 
@@ -39,6 +45,7 @@ type ProductRow = {
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
+  visible: boolean;
   in_stock: boolean;
   product_photos: { url: string; position: number }[];
   product_options: {
@@ -80,6 +87,7 @@ function mapRow(row: ProductRow): Product {
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
+    visible: row.visible,
     inStock: row.in_stock,
     description: row.description,
     photos: [...row.product_photos]
@@ -89,17 +97,24 @@ function mapRow(row: ProductRow): Product {
   };
 }
 
+// Listing/sitemap use — hidden products are excluded outright, not shown
+// as unavailable.
 export async function getProducts(): Promise<Product[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
+    .eq("visible", true)
     .order("created_at", { ascending: true });
 
   if (error) throw error;
   return (data as unknown as ProductRow[]).map(mapRow);
 }
 
+// Deliberately not filtered by visible — order history (getOrderItemPhotos
+// in src/lib/orders.ts) needs to resolve a since-hidden product's photo.
+// Callers reachable by direct slug from a customer (the PDP, checkout)
+// must check product.visible themselves.
 export async function getProductBySlug(
   slug: string
 ): Promise<Product | undefined> {

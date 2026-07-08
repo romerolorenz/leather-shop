@@ -106,7 +106,14 @@ products
   product — all v1 products are made-to-order, so it's the same
   regardless of which option combination a customer picks; not per
   variant — see PRODUCT_OPTIONS_DESIGN.md's "Course correction"),
-  in_stock (derived: stock_quantity > 0)
+  in_stock (derived: stock_quantity > 0),
+  visible (migration `0012_product_visibility.sql`, default true — admin
+  toggle to hide a product from the shop listing/sitemap/search entirely,
+  its PDP 404s; distinct from ordering_enabled, which still lists the
+  product but shows it as unavailable. getProducts() filters to
+  visible=true; getProductBySlug() deliberately doesn't, since order
+  history needs to resolve a since-hidden product's photo — the PDP and
+  checkout route check product.visible themselves)
 
 option_types
   id, name (e.g. "Color", "Thread Color", "Size" — unique, shop-wide),
