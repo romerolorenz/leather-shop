@@ -22,6 +22,12 @@ Nothing outstanding right now — see Done below.
   orders migrated losslessly (variant ids preserved, order display
   snapshotted onto a new `order_items.variant_label` column). Built on a
   separate `feat/product-options` branch, not yet merged to `develop`.
+  **Course correction needed before merge:** the business model was
+  clarified after this shipped — all v1 products are made-to-order, and
+  stock should be one capacity number per *product*, not per variant/
+  option combination. See the "Course correction" section at the top of
+  `PRODUCT_OPTIONS_DESIGN.md` for the exact schema/code changes and a new
+  checkpoint 0. Don't merge this branch to `develop` until that lands.
 - [x] **Narrow tooltips to the header navbar only.** Removed the `Tooltip`
   wrapping from `ActionButton`, the cart's Remove button, `admin/faq`'s
   move-up/down/save icons, and `account/addresses`'s delete/save icons —

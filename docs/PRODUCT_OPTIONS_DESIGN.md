@@ -6,6 +6,107 @@ project's own rule of documenting non-trivial architecture changes ahead of
 building them (see [ARCHITECTURE.md](./ARCHITECTURE.md),
 [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)).
 
+## Course correction (read this first)
+
+The business model was clarified after most of this design's original
+version had already shipped: **all v1 products are made-to-order** (no
+separate ready-made/in-stock catalog type — see
+[PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) §5), and **stock is
+tracked as one capacity number per product, not per variant/option
+combination.** Regardless of which color/size/thread a customer picks, it
+draws from the same product-level count.
+
+This reverses a decision the original version of this doc made
+deliberately (`product_variants.stock_quantity`, one count per option
+combination). **That version already shipped**, not just as a design:
+- Migration `0009_product_options.sql` is live (per `MANUAL_TASKS.md`) and
+  kept `stock_quantity`/`in_stock` on `product_variants`.
+- `src/lib/admin/catalog.ts`'s `createVariant`/`updateVariantStock` take a
+  per-variant `stockQuantity`.
+- `src/app/admin/actions.ts`'s `createVariantAction`/`updateAllVariantsAction`
+  (or equivalent) collect a `stockQuantity` field per variant row.
+- `src/app/admin/products/[id]/page.tsx` renders a stock input per variant
+  row.
+- `src/lib/orders.ts` calls `decrement_variant_stock`/`restore_variant_stock`
+  (from `0002_stock_functions.sql`) keyed on `variant_id`.
+
+So implementing this correction is **not** a fresh build — it's a rework of
+already-shipped schema and code, and it needs a **new forward migration**
+(e.g. `0010_...`) rather than editing `0009` in place, since `0009` already
+ran against the live database (this project never amends a migration that's
+already been applied — see the project rule in `CLAUDE.md` and how every
+prior schema change got its own numbered file). The rest of this doc below
+is the **original** per-variant-stock version, left as historical design
+record; the sections below it that are affected by this correction are
+marked inline. Read this section's summary as the current source of truth
+for the stock model; treat the rest as superseded where they conflict.
+
+**What changes under the correction:**
+- New migration: add `stock_quantity`/`in_stock` (generated, same pattern
+  as today) to `products`; drop those two columns from `product_variants`
+  (keep `id`, `product_id` there — a variant is now purely an option
+  combination, no stock of its own).
+- `decrement_variant_stock`/`restore_variant_stock` (0002) become
+  `decrement_product_stock`/`restore_product_stock`, keyed on `product_id`
+  instead of `variant_id`. Update every call site in `src/lib/orders.ts`
+  (order placement, manual cancel, payment-hold expiry) to resolve
+  `variantId` → `productId` first (via the variant's existing FK) and pass
+  that.
+- `createVariant`/`updateVariantStock` in `src/lib/admin/catalog.ts` lose
+  their `stockQuantity` parameter entirely — a variant is created from
+  option-value picks only. New `updateProductStock(productId, quantity)`
+  (or fold into the existing product-update action) replaces it.
+- Admin UI (`src/app/admin/products/[id]/page.tsx`): stock input moves from
+  the per-variant row up to the product-details section (one field, next
+  to price/lead time), and disappears from each variant row entirely.
+- PDP (`src/app/products/[slug]/ProductDetail.tsx`): availability
+  ("sold out") is a single product-level fact now, not something that can
+  differ per swatch combination — this **deletes the need for** design
+  decision 3 below ("no per-swatch cross-dimension stock awareness" /
+  "not available in this combination" message). Once a product is sold
+  out, every option combination is uniformly unavailable; Add to Cart just
+  disables based on the product's own status, same as today's
+  `!orderingEnabled` check.
+- `docs/USER_STORIES.md` US-23/24/25/25b already updated to "capacity per
+  product, not per variant" language — no further story changes needed.
+
+## New scope: admin-configurable option display style
+
+Not a correction — additional scope on top of what shipped. Today the PDP
+(`src/app/products/[slug]/ProductDetail.tsx`, checkpoint 4) renders every
+option type identically: a row of pill/swatch buttons, regardless of type
+or how many values it has. [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md)
+§5 separately claims thread color is specifically "presented as a
+**dropdown**" — that was never actually built as a special case, and
+hardcoding it to thread-color-only was the wrong level of generality
+anyway. New requirement: **the admin picks a display style (buttons or
+dropdown) per option type**, not hardcoded by name and not just for
+thread color — e.g. swatch buttons for a handful of colors, a dropdown for
+a long size or length list.
+
+**Schema addition** (fold into the same pre-merge migration as the stock
+correction above, or its own — implementer's call): add a
+`display_style text not null default 'buttons' check (display_style in
+('buttons', 'dropdown'))` column to `product_option_types`.
+
+**Code touchpoints:**
+- `src/lib/admin/catalog.ts` — `createOptionType`/`updateOptionType` gain a
+  `displayStyle` param; `getProductForAdmin`/`getProductBySlug` (in
+  `src/lib/products.ts`) return it on each `optionTypes` entry.
+- Admin UI (`src/app/admin/products/[id]/page.tsx`'s Options section) —
+  add a radio/select for display style when creating or editing an option
+  type.
+- PDP (`src/app/products/[slug]/ProductDetail.tsx` ~line 58-84) — branch
+  per `type.displayStyle`: keep the existing button-row markup for
+  `'buttons'`, add a `<select>` (single `onChange` setting
+  `selectedOptions[type.name]`) for `'dropdown'`. Same underlying
+  `selectedOptions`/`selectedVariant` matching logic either way — this is
+  a rendering choice only, not a data-model change to variants.
+- PRD §5's thread-color-specific "presented as a dropdown" line should be
+  generalized to "admin chooses a display style per option type" once this
+  ships — thread color isn't special-cased in code, it just typically gets
+  set to dropdown by the admin.
+
 ## Why
 
 Today a product variant is a single flat dimension: `product_variants.label`
@@ -67,9 +168,19 @@ already guarantees no dedup is needed). `product_variants` keeps only
 `id, product_id, stock_quantity, in_stock (generated)` — `label` is
 dropped.
 
+> **Superseded by the course correction above.** This is what migration
+> `0009` actually shipped. The forward-fix migration moves
+> `stock_quantity`/`in_stock` off `product_variants` and onto `products`
+> instead — see the correction section for the exact column/function
+> changes needed.
+
 `decrement_variant_stock`/`restore_variant_stock` (0002) need **no
 changes** — both still key off a single `variant_id` row; stock stays
 per-variant regardless of how many option dimensions compose it.
+
+> **Superseded.** These now need to become `decrement_product_stock`/
+> `restore_product_stock`, keyed on `product_id` — see the correction
+> section above for exact call-site changes in `src/lib/orders.ts`.
 
 ## Design decisions
 
@@ -77,18 +188,20 @@ per-variant regardless of how many option dimensions compose it.
    combination"** — `product_variant_options` can't express that as a
    simple constraint. Enforced in app code instead. Fine at this scale
    (a handful of products, a few option types each).
-2. **Variant combinations are immutable after creation** — only
-   `stock_quantity` is editable inline afterward. To change a combination,
-   delete and re-add. Avoids collision-handling complexity for in-place
-   combination edits.
-3. **No per-swatch cross-dimension stock awareness** — a single-dimension
-   color swatch can be unambiguously disabled when out of stock; with N
-   dimensions, whether "Black" should be disabled depends on what's
-   selected for the other dimensions too. Simplification: never disable
-   individual swatches; once all dimensions are picked, if no matching
-   variant exists or it's out of stock, show an inline "not available in
-   this combination" message and disable Add to Cart (same pattern as
-   today's `!orderingEnabled` state).
+2. **Variant combinations are immutable after creation.** To change a
+   combination, delete and re-add. Avoids collision-handling complexity
+   for in-place combination edits. (Originally also covered
+   `stock_quantity` being the one mutable field — moot now that stock
+   isn't on the variant at all; nothing about a variant is editable
+   in-place post-correction except which product it belongs to.)
+3. ~~**No per-swatch cross-dimension stock awareness**~~ — **superseded,
+   and no longer needed.** This whole problem (whether "Black" should be
+   disabled depending on what's picked for other dimensions, or showing a
+   "not available in this combination" message) only existed because
+   stock was per-variant. With stock per-product, availability is a
+   single fact for the whole product — every option combination is
+   either all orderable or all sold out together. No swatch-disabling
+   logic needed at all.
 4. **Manual variant creation, not auto-generated combinations** — admin
    defines option types + values, then explicitly creates each variant by
    picking one value per type from dropdowns + a stock count. Rejected
@@ -106,17 +219,29 @@ per-variant regardless of how many option dimensions compose it.
 
 - **`src/lib/admin/catalog.ts`** — new option-type/value CRUD
   (`createOptionType`, `updateOptionType`, `deleteOptionType`,
-  `createOptionValue`, `updateOptionValue`, `deleteOptionValue`), reworked
-  variant CRUD (`createVariant(productId, optionValueIds, stockQuantity)`
-  replaces label-based `addVariant`; `updateVariantStock` replaces
-  `updateVariant`). `getProductForAdmin` returns `optionTypes` + each
-  variant's composed `label`/`optionValueIds`.
+  `createOptionValue`, `updateOptionValue`, `deleteOptionValue`, all
+  already shipped and unaffected by the correction), reworked variant CRUD
+  (`createVariant(productId, optionValueIds, stockQuantity)` replaces
+  label-based `addVariant`; `updateVariantStock` replaces `updateVariant`).
+  `getProductForAdmin` returns `optionTypes` + each variant's composed
+  `label`/`optionValueIds`.
+  > **Superseded:** `createVariant` drops the `stockQuantity` param
+  > entirely (variant = option picks only); `updateVariantStock` goes
+  > away, replaced by a product-level `updateProductStock(productId,
+  > quantity)`. Both already exist today with the old per-variant
+  > signature — see the correction section above.
 - **`src/app/admin/actions.ts`** — new Server Actions following the
   existing `runAction()`/`ActionResult` pattern.
+  > `createVariantAction`/`updateAllVariantsAction` (already shipped) need
+  > their `stockQuantity` handling removed/moved per the correction.
 - **`src/app/admin/products/[id]/page.tsx`** — new "Options" section
-  (list-CRUD matching the existing FAQ-item pattern), reworked "Variants"
-  section (read-only option values + editable stock per row; "Add variant"
-  becomes one `<select>` per option type instead of a label input).
+  (list-CRUD matching the existing FAQ-item pattern, already shipped),
+  reworked "Variants" section (read-only option values + editable stock
+  per row; "Add variant" becomes one `<select>` per option type instead of
+  a label input).
+  > **Superseded:** the per-row stock input moves up to a single field in
+  > the product-details section per the correction — variant rows show
+  > only their option combination, no stock input.
 - **`src/lib/products.ts`** — `Product` gains `optionTypes:
   { id, name, values: string[] }[]`; `ProductVariant` gains `options:
   Record<string, string>` (replaces bare `label` as the selection key,
@@ -141,20 +266,61 @@ per-variant regardless of how many option dimensions compose it.
 
 ## Implementation checkpoints (own commit each)
 
-1. Migration + live-DB verification.
+**All of checkpoints 1-7 are already done** — the entire original
+(per-variant-stock) design shipped in one commit
+(`5a370d3 feat: product options beyond color`) on this branch
+(`feat/product-options`), including tests and docs, per
+`IMPROVEMENTS.md`'s Done entry for this item. **Not yet merged to
+`develop`.** That's exactly why the course correction should land now,
+before merge — merging first would ship the wrong (per-variant) stock
+model to `develop`/production, then need an immediate follow-up fix.
+
+0. **Course-correction migration + rework** (new work, do before merging
+   this branch to `develop`):
+   - New migration (e.g. `0010_product_level_stock.sql`): add
+     `stock_quantity`/`in_stock` to `products`; drop both from
+     `product_variants`.
+   - Rename/rework `decrement_variant_stock`/`restore_variant_stock` (0002)
+     to `decrement_product_stock`/`restore_product_stock`, keyed on
+     `product_id`.
+   - Rework `src/lib/admin/catalog.ts` (`createVariant` loses
+     `stockQuantity`; new `updateProductStock`), `src/app/admin/actions.ts`,
+     and `src/app/admin/products/[id]/page.tsx` (stock field moves to
+     product-details section) per the correction section.
+   - Rework `src/lib/orders.ts` call sites (order placement, manual
+     cancel, payment-hold expiry — all already using `variantId` per
+     checkpoint 5) to resolve `variantId` → `productId` before calling the
+     renamed RPC functions.
+   - `src/app/products/[slug]/ProductDetail.tsx` already composes
+     `optionTypes` per checkpoint 4 — availability just needs to read off
+     the product's own status instead of the selected variant's, which
+     actually simplifies what's there today (no combination-specific
+     "sold out" branch needed).
+   - Update the 25 `variantId`/`optionType` references already in
+     `tests/*.ts` (checkpoint 6) that assume per-variant stock; add
+     coverage for product-level decrement/restore.
+   - Live-DB verification that the migration doesn't lose the
+     `stock_quantity` values already set on existing variants (sum/max them
+     up to the product level, or re-enter manually — decide before writing
+     the migration).
+1. Migration + live-DB verification. **Done** (`0009`, per-variant
+   version — see correction).
 2. Admin lib layer (option-type/value CRUD, reworked variant CRUD) +
-   Server Actions.
-3. Admin UI (Options section, reworked Variants section).
-4. Public `products.ts` + PDP rework.
-5. Cart/checkout/orders/email rename + rework.
-6. Tests: update existing fixtures (`tests/orders.test.ts`,
-   `tests/api-orders.test.ts`, `tests/email.test.ts`) to the new
-   `variantId`/`variantLabel` shape; new tests for option-type/value CRUD
-   and duplicate-combination rejection.
-7. Docs: this file stays as the design record; `ARCHITECTURE.md`'s data
-   model section gets the new tables; `IMPROVEMENTS.md` entry moves to
-   Done; `MANUAL_TASKS.md`/`MANUAL_TESTING.md` get the migration-run and
-   browser-verification checklist items.
+   Server Actions. **Done**, needs the checkpoint 0 rework above.
+3. Admin UI (Options section, reworked Variants section). **Done**, needs
+   the checkpoint 0 rework above.
+4. Public `products.ts` + PDP rework. **Done**, needs the checkpoint 0
+   simplification above (drop the per-combination availability logic).
+5. Cart/checkout/orders/email rename + rework. **Done**
+   (`variantId`/`variantLabel` already threaded through
+   `cart-context.tsx`, `orders.ts`, etc.), needs the checkpoint 0 rework
+   above for the actual stock calls.
+6. Tests. **Done** under the old model, needs updating per checkpoint 0.
+7. Docs (`ARCHITECTURE.md`, `IMPROVEMENTS.md`, `MANUAL_TASKS.md`,
+   `MANUAL_TESTING.md`). **Done** under the old model — `ARCHITECTURE.md`'s
+   data model section needs updating for product-level stock once
+   checkpoint 0 lands; `IMPROVEMENTS.md`'s Done entry for this item should
+   get a note pointing at the correction until checkpoint 0 ships too.
 
 ## Verification
 

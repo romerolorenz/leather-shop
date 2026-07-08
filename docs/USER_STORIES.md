@@ -16,9 +16,9 @@ looking at without browsing the full catalog first. [§6]
 ## Browsing & Catalog
 
 **US-1**: As a Shopper, I want to browse products by category and filter
-by price/in-stock status, so that I can find what I'm looking for quickly.
+by price/availability, so that I can find what I'm looking for quickly.
 - Category listing pages exist for each product category [§5, §6].
-- Filters: category, price, in-stock. [§6]
+- Filters: category, price, availability (not sold out). [§6]
 
 **US-2**: As a Shopper, I want to see a product's photos, description,
 materials, and care instructions, so that I can judge quality before
@@ -103,6 +103,13 @@ account, so that I don't need to manage a separate password.
 price, photos, variants), so that I can manage the catalog myself without
 a developer. [§2, §6]
 
+**US-39**: As an Admin, I want to choose whether each option type (Color,
+Thread Color, Size, ...) displays as swatch buttons or a dropdown on the
+product page, so that I can pick whatever presentation fits — buttons for
+a handful of colors, a dropdown for a long size or length list — instead
+of one style being forced on every option regardless of how many choices
+it has. [§5, §6]
+
 **US-21**: As an Admin, I want to set a per-product lead time, so that
 customers see accurate made-to-order expectations. [§5, §6]
 
@@ -110,26 +117,28 @@ customers see accurate made-to-order expectations. [§5, §6]
 (e.g. to pause it), so that I can stop taking orders I can't fulfill in
 time, independent of stock count. [§5, §6]
 
-**US-23**: As an Admin, I want to set a stock quantity (a real count for
-in-stock items, a capacity threshold for made-to-order items) that
-customers never see, so that the storefront automatically shows
-"sold out" once I'm at capacity, without me manually flipping a switch
-every time. [§5]
+**US-23**: As an Admin, I want to set a single production-capacity number
+per product (not per color/size/thread combination) that customers never
+see, so that the storefront automatically shows "sold out" once I'm at
+capacity, without me manually flipping a switch every time or tracking
+capacity separately per option combination. [§5]
 
-**US-24**: As an Admin, I want stock to decrement automatically when an
-order is placed (not when payment clears), so that I don't oversell the
-last unit during the manual-payment window. [§5]
+**US-24**: As an Admin, I want a product's capacity count to decrement
+automatically when an order is placed (not when payment clears), and to
+apply the same regardless of which option combination the customer chose,
+so that I don't overcommit my production queue during the manual-payment
+window. [§5]
 
-**US-25**: As an Admin, I want to manually cancel an order and restore its
-stock before the payment hold expires (e.g. a customer asks to cancel via
-Contact Us), so that I'm not stuck waiting on the automatic expiry for a
-cancellation I already know about. [§5]
+**US-25**: As an Admin, I want to manually cancel an order and restore the
+product's capacity before the payment hold expires (e.g. a customer asks
+to cancel via Contact Us), so that I'm not stuck waiting on the automatic
+expiry for a cancellation I already know about. [§5]
 
 **US-25b**: As an Admin, I want an order that isn't confirmed paid within
-the payment-hold window (default 48 hours) to auto-cancel and have its
-stock automatically restored, so that a non-paying customer can't hold the
-last unit of an item hostage indefinitely under the manual-payment flow.
-[§5, §6]
+the payment-hold window (default 48 hours) to auto-cancel and have the
+product's capacity automatically restored, so that a non-paying customer
+can't hold the last production slot hostage indefinitely under the
+manual-payment flow. [§5, §6]
 
 **US-25c**: As an Admin, I want to change the payment-hold duration myself
 (shorter if I need inventory to free up faster, longer if customers need
