@@ -10,24 +10,6 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [x] Push the repo to GitHub — done (`https://github.com/romerolorenz/leather-shop`, private, `develop` branch).
-- [ ] **Blocks Phase 9 (non-functional hardening, in progress) exit
-  criteria, also needed to go live: deploy to Vercel.** Import the GitHub
-  repo into a new Vercel project, and set all the `.env.local` variables
-  (Supabase, Resend, `CRON_SECRET`) in the Vercel project's environment
-  variable settings — they don't carry over automatically. This is also
-  what makes `vercel.json`'s Cron entry for `/api/orders/expire` actually
-  start firing (it's already correct code, just not running anywhere
-  yet) — schedule is `0 16 * * *` UTC (= midnight GMT+8, daily), since the
-  Hobby plan only allows daily Cron. Also set `NEXT_PUBLIC_SITE_URL` to
-  the real production domain (Phase 9) — it defaults to
-  `http://localhost:3000`, which would otherwise ship into the live
-  sitemap/robots.txt. Also add the production domain to Supabase's
-  Authentication → URL Configuration (Site URL + Redirect URLs), or
-  Google login will fail in production. Once deployed: do the
-  mobile-device walkthrough in MANUAL_TESTING.md's Phase 9 section (real
-  device, not a resized desktop window) — that's the last piece of Phase
-  9's exit criteria.
 - [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
   Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
   send to your own account email (`marcolorenzoromero@gmail.com`) — it
@@ -63,3 +45,10 @@ blockers, then items that don't block any phase.
 - [x] Upload real product photos — done via the admin UI during testing.
 - [x] Run `supabase/migrations/0006_faq_and_contact.sql` against it.
 - [x] Run `supabase/migrations/0007_customer_addresses.sql` against it.
+- [x] Push the repo to GitHub (`https://github.com/romerolorenz/leather-shop`, private, `develop` branch).
+- [x] Deploy to Vercel — env vars set, `NEXT_PUBLIC_SITE_URL` pointed at
+  the production domain, Supabase Auth redirect URLs updated, Cron job
+  live on the daily schedule.
+- [x] Mobile-device walkthrough (Phase 9 exit criteria): full browse →
+  cart → checkout → place order flow, plus Google login → `/account` →
+  `/account/addresses`, both verified working on a real device.
