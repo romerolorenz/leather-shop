@@ -37,7 +37,7 @@ something that can't be fulfilled. [§5]
 
 ## Cart
 
-**US-6**: As a Shopper, I want to add a product (with my selected variant)
+**US-6**: As a Shopper, I want to add a product (with my selected options)
 to my cart, so that I can buy more than one item per checkout. [§6]
 
 **US-7**: As a Shopper, I want to view my cart, adjust quantities, and
@@ -100,7 +100,7 @@ account, so that I don't need to manage a separate password.
 ## Admin — Catalog Management
 
 **US-20**: As an Admin, I want to add and edit products (name, description,
-price, photos, variants), so that I can manage the catalog myself without
+price, photos, options), so that I can manage the catalog myself without
 a developer. [§2, §6]
 
 **US-39**: As an Admin, I want to choose whether each option type (Color,
@@ -109,6 +109,12 @@ product page, so that I can pick whatever presentation fits — buttons for
 a handful of colors, a dropdown for a long size or length list — instead
 of one style being forced on every option regardless of how many choices
 it has. [§5, §6]
+
+**US-40**: As an Admin, I want to define an option type (e.g. Color: Blue,
+Red, Green) once and attach it to any product, choosing which of its
+values that particular product actually offers, so that I don't have to
+recreate the same option list by hand on every product that shares it.
+[§5, §6]
 
 **US-21**: As an Admin, I want to set a per-product lead time, so that
 customers see accurate made-to-order expectations. [§5, §6]
@@ -190,12 +196,6 @@ resolve (including out-of-area delivery). [§6]
 **US-32**: As a Shopper, I want a Privacy Policy page describing what data
 is collected and how it's used, so that I know how my information is
 handled before I log in with Google or check out. [§6]
-
-## Payments (v2, not v1)
-
-**US-33**: As a Shopper, I want to pay online via GCash/Maya at checkout
-(instead of paying manually after ordering), so that I can complete my
-purchase in one step. [§6 — v2 upgrade, not required for v1 launch]
 
 ## Non-functional (cross-cutting, not tied to one role)
 

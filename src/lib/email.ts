@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { formatPrice } from "@/lib/products";
-import { getOrderItemPhotos, type Order } from "@/lib/orders";
+import { getOrderItemPhotos, formatItemOptions, type Order } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
 
 type EmailContent = {
@@ -13,12 +13,12 @@ type EmailContent = {
 
 function formatOrderItems(order: Order): string {
   return order.items
-    .map(
-      (item) =>
-        `${item.quantity}x ${item.name} (${item.variantLabel}) — ${formatPrice(
-          item.priceCentavos * item.quantity
-        )}`
-    )
+    .map((item) => {
+      const options = formatItemOptions(item.options);
+      return `${item.quantity}x ${item.name}${
+        options ? ` (${options})` : ""
+      } — ${formatPrice(item.priceCentavos * item.quantity)}`;
+    })
     .join("\n");
 }
 
@@ -70,7 +70,7 @@ export function buildOrderConfirmationEmail(
     .map((item) => {
       const photoUrl = itemPhotos[item.slug];
       const name = escapeHtml(item.name);
-      const variant = escapeHtml(item.variantLabel);
+      const options = escapeHtml(formatItemOptions(item.options));
       const lineTotal = formatPrice(item.priceCentavos * item.quantity);
 
       const photoCell = photoUrl
@@ -80,7 +80,7 @@ export function buildOrderConfirmationEmail(
       return `
         <tr>
           <td style="padding:8px 12px 8px 0;">${photoCell}</td>
-          <td style="padding:8px 0;font-size:14px;color:#171717;">${item.quantity}x ${name} (${variant})</td>
+          <td style="padding:8px 0;font-size:14px;color:#171717;">${item.quantity}x ${name}${options ? ` (${options})` : ""}</td>
           <td style="padding:8px 0;font-size:14px;color:#171717;text-align:right;white-space:nowrap;">${lineTotal}</td>
         </tr>`;
     })

@@ -1,4 +1,9 @@
-import { listOrdersForAdmin, type Order, type OrderStatus } from "@/lib/orders";
+import {
+  listOrdersForAdmin,
+  formatItemOptions,
+  type Order,
+  type OrderStatus,
+} from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
 import {
   markOrderPaidAction,
@@ -42,7 +47,10 @@ function OrderCard({ order }: { order: Order }) {
           </p>
           <p className="mt-2 text-sm">
             {order.items
-              .map((item) => `${item.quantity}x ${item.name} (${item.variantLabel})`)
+              .map((item) => {
+                const options = formatItemOptions(item.options);
+                return `${item.quantity}x ${item.name}${options ? ` (${options})` : ""}`;
+              })
               .join(", ")}
           </p>
         </div>

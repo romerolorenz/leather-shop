@@ -1,16 +1,13 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { getProductForAdmin } from "@/lib/admin/catalog";
+import { getProductForAdmin, listOptionTypes } from "@/lib/admin/catalog";
 import {
   updateProductAction,
-  createOptionTypeAction,
-  updateOptionTypeAction,
-  deleteOptionTypeAction,
-  createOptionValueAction,
-  updateOptionValueAction,
-  deleteOptionValueAction,
-  createVariantAction,
-  deleteVariantAction,
+  attachOptionAction,
+  createOptionTypeAndAttachAction,
+  updateProductOptionSelectionAction,
+  detachOptionAction,
   uploadPhotoAction,
   deletePhotoAction,
 } from "../../actions";
@@ -41,30 +38,14 @@ function TrashIcon() {
   );
 }
 
-function SaveIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-4 w-4"
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-      <path d="M17 21v-8H7v8" />
-      <path d="M7 3v5h8" />
-    </svg>
-  );
-}
-
 export default async function EditProductPage(
   props: PageProps<"/admin/products/[id]">
 ) {
   const { id } = await props.params;
-  const product = await getProductForAdmin(id);
+  const [product, optionTypes] = await Promise.all([
+    getProductForAdmin(id),
+    listOptionTypes(),
+  ]);
 
   if (!product) {
     notFound();
@@ -72,9 +53,10 @@ export default async function EditProductPage(
 
   const updateAction = updateProductAction.bind(null, product.id);
   const uploadPhoto = uploadPhotoAction.bind(null, product.id);
-  const addOptionType = createOptionTypeAction.bind(null, product.id);
-  const optionTypeIds = product.optionTypes.map((type) => type.id);
-  const addVariant = createVariantAction.bind(null, product.id, optionTypeIds);
+  const attachOption = attachOptionAction.bind(null, product.id);
+  const createAndAttach = createOptionTypeAndAttachAction.bind(null, product.id);
+  const attachedTypeIds = new Set(product.options.map((o) => o.optionTypeId));
+  const availableTypes = optionTypes.filter((t) => !attachedTypeIds.has(t.id));
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
@@ -168,243 +150,156 @@ export default async function EditProductPage(
         </ActionForm>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-sm font-medium">Options</h2>
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-medium">Options</h2>
+          <Link href="/admin/options" className="text-sm underline">
+            Manage option library
+          </Link>
+        </div>
         <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-          Define the choices shoppers pick from (e.g. Color, Thread Color,
-          Size) before creating variants below.
+          Attach a shared option (defined once on the option library page)
+          and pick which of its values this product offers. Any combination
+          of a product&apos;s own option values is orderable — no separate
+          variant step.
         </p>
+
         <ul className="mb-6 flex flex-col gap-4">
-          {product.optionTypes.map((type) => {
-            const updateType = updateOptionTypeAction.bind(
+          {product.options.map((option) => {
+            const updateSelection = updateProductOptionSelectionAction.bind(
               null,
-              type.id,
+              option.productOptionId,
               product.id
             );
-            const removeType = deleteOptionTypeAction.bind(
+            const detach = detachOptionAction.bind(
               null,
-              type.id,
-              product.id
-            );
-            const addValue = createOptionValueAction.bind(
-              null,
-              type.id,
+              option.productOptionId,
               product.id
             );
             return (
               <li
-                key={type.id}
+                key={option.productOptionId}
                 className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
               >
-                <div className="flex items-center gap-2">
-                  <ActionForm
-                    action={updateType}
-                    className="flex flex-1 items-center gap-2"
-                  >
-                    <input
-                      name="name"
-                      defaultValue={type.name}
-                      aria-label="Option type name"
-                      required
-                      className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm font-medium dark:border-white/[.2]"
-                    />
-                    <select
-                      name="displayStyle"
-                      defaultValue={type.displayStyle}
-                      aria-label="Display style"
-                      className="rounded-md border border-black/[.15] bg-transparent px-2 py-1.5 text-sm dark:border-white/[.2]"
-                    >
-                      <option value="buttons">Buttons</option>
-                      <option value="dropdown">Dropdown</option>
-                    </select>
-                    <SubmitButton
-                      ariaLabel="Save option type"
-                      className="rounded-md p-1.5 transition-transform hover:bg-black/[.05] active:scale-95 disabled:opacity-50 dark:hover:bg-white/[.1]"
-                    >
-                      <SaveIcon />
-                    </SubmitButton>
-                  </ActionForm>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">
+                    {option.name}{" "}
+                    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                      ({option.displayStyle})
+                    </span>
+                  </span>
                   <ActionButton
-                    action={removeType}
-                    confirmMessage="Delete this option type? This removes it from any variants using it."
-                    ariaLabel="Delete option type"
+                    action={detach}
+                    confirmMessage="Detach this option from the product? Other products using it are unaffected."
+                    ariaLabel="Detach option"
                     className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
                   >
                     <TrashIcon />
                   </ActionButton>
                 </div>
 
-                <ul className="mt-3 flex flex-col gap-2 pl-4">
-                  {type.values.map((value) => {
-                    const updateValue = updateOptionValueAction.bind(
-                      null,
-                      value.id,
-                      product.id
-                    );
-                    const removeValue = deleteOptionValueAction.bind(
-                      null,
-                      value.id,
-                      product.id
-                    );
-                    return (
-                      <li key={value.id} className="flex items-center gap-2">
-                        <ActionForm
-                          action={updateValue}
-                          className="flex flex-1 items-center gap-2"
-                        >
-                          <input
-                            name="value"
-                            defaultValue={value.value}
-                            aria-label="Option value"
-                            required
-                            className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1 text-sm dark:border-white/[.2]"
-                          />
-                          <SubmitButton
-                            ariaLabel="Save value"
-                            className="rounded-md p-1 transition-transform hover:bg-black/[.05] active:scale-95 disabled:opacity-50 dark:hover:bg-white/[.1]"
-                          >
-                            <SaveIcon />
-                          </SubmitButton>
-                        </ActionForm>
-                        <ActionButton
-                          action={removeValue}
-                          confirmMessage="Delete this value?"
-                          ariaLabel="Delete value"
-                          className="rounded-md p-1 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
-                        >
-                          <TrashIcon />
-                        </ActionButton>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <ActionForm
-                  action={addValue}
-                  className="mt-2 flex items-center gap-2 pl-4"
-                >
-                  <input
-                    name="value"
-                    placeholder="e.g. Natural Thread"
-                    required
-                    className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1 text-sm dark:border-white/[.2]"
-                  />
-                  <SubmitButton
-                    pendingLabel="Adding…"
-                    className="whitespace-nowrap rounded-full border border-black/[.15] px-3 py-1 text-xs disabled:opacity-50 dark:border-white/[.2]"
+                {option.allValues.length === 0 ? (
+                  <p className="mt-2 pl-4 text-xs text-zinc-500 dark:text-zinc-400">
+                    This option has no values yet — add some on the option
+                    library page.
+                  </p>
+                ) : (
+                  <ActionForm
+                    action={updateSelection}
+                    className="mt-2 flex flex-col gap-2 pl-4"
                   >
-                    Add value
-                  </SubmitButton>
-                </ActionForm>
+                    {option.allValues.map((value) => (
+                      <label
+                        key={value.id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          name="valueIds"
+                          value={value.id}
+                          defaultChecked={option.selectedValueIds.includes(
+                            value.id
+                          )}
+                        />
+                        {value.value}
+                      </label>
+                    ))}
+                    <SubmitButton
+                      pendingLabel="Saving…"
+                      className="mt-1 self-start whitespace-nowrap rounded-full border border-black/[.15] px-3 py-1 text-xs disabled:opacity-50 dark:border-white/[.2]"
+                    >
+                      Save selection
+                    </SubmitButton>
+                  </ActionForm>
+                )}
               </li>
             );
           })}
         </ul>
-        {product.optionTypes.length === 0 && (
+        {product.options.length === 0 && (
           <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
-            No option types yet.
+            No options attached yet.
           </p>
         )}
 
-        <ActionForm action={addOptionType} className="flex items-center gap-2">
-          <input
-            name="name"
-            placeholder="e.g. Thread Color"
-            required
-            className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-          />
-          <select
-            name="displayStyle"
-            defaultValue="buttons"
-            aria-label="Display style"
-            className="rounded-md border border-black/[.15] bg-transparent px-2 py-1.5 text-sm dark:border-white/[.2]"
-          >
-            <option value="buttons">Buttons</option>
-            <option value="dropdown">Dropdown</option>
-          </select>
-          <SubmitButton
-            pendingLabel="Adding…"
-            className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
-          >
-            Add option type
-          </SubmitButton>
-        </ActionForm>
-      </section>
-
-      <section>
-        <h2 className="mb-4 text-sm font-medium">Variants</h2>
-        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-          Each variant is one purchasable combination of option values.
-          Stock is set once for the whole product above, not per variant
-          — a variant&apos;s combination can&apos;t be edited after
-          creation; delete and re-add it instead.
-        </p>
-        {product.variants.length > 0 && (
-          <ul className="mb-6 flex flex-col gap-2">
-            {product.variants.map((variant) => {
-              const removeVariant = deleteVariantAction.bind(
-                null,
-                variant.id,
-                product.id
-              );
-              return (
-                <li
-                  key={variant.id}
-                  className="flex items-center gap-2 rounded-md border border-black/[.08] px-3 py-2 dark:border-white/[.145]"
-                >
-                  <span className="flex-1 text-sm">{variant.label}</span>
-                  <ActionButton
-                    action={removeVariant}
-                    confirmMessage="Delete this variant?"
-                    ariaLabel="Delete variant"
-                    className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
-                  >
-                    <TrashIcon />
-                  </ActionButton>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {product.variants.length === 0 && (
-          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">No variants yet.</p>
-        )}
-
-        {product.optionTypes.length > 0 ? (
-          <ActionForm
-            action={addVariant}
-            className="flex flex-wrap items-center gap-2"
-          >
-            {product.optionTypes.map((type) => (
+        <div className="flex flex-col gap-3">
+          {availableTypes.length > 0 && (
+            <ActionForm
+              action={attachOption}
+              className="flex items-center gap-2"
+            >
               <select
-                key={type.id}
-                name={`optionValue:${type.id}`}
+                name="optionTypeId"
                 required
                 defaultValue=""
-                aria-label={type.name}
-                className="rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
+                aria-label="Option to attach"
+                className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
               >
                 <option value="" disabled>
-                  {type.name}
+                  Attach existing option…
                 </option>
-                {type.values.map((value) => (
-                  <option key={value.id} value={value.id}>
-                    {value.value}
+                {availableTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
                   </option>
                 ))}
               </select>
-            ))}
+              <SubmitButton
+                pendingLabel="Attaching…"
+                className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
+              >
+                Attach
+              </SubmitButton>
+            </ActionForm>
+          )}
+
+          <ActionForm
+            action={createAndAttach}
+            className="flex items-center gap-2"
+          >
+            <input
+              name="name"
+              placeholder="e.g. Thread Color"
+              required
+              className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
+            />
+            <select
+              name="displayStyle"
+              defaultValue="buttons"
+              aria-label="Display style"
+              className="rounded-md border border-black/[.15] bg-transparent px-2 py-1.5 text-sm dark:border-white/[.2]"
+            >
+              <option value="buttons">Buttons</option>
+              <option value="dropdown">Dropdown</option>
+            </select>
             <SubmitButton
-              pendingLabel="Adding…"
+              pendingLabel="Creating…"
               className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
             >
-              Add variant
+              Create &amp; attach new
             </SubmitButton>
           </ActionForm>
-        ) : (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Add at least one option type above before creating variants.
-          </p>
-        )}
+        </div>
       </section>
     </main>
   );

@@ -5,10 +5,31 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-Nothing outstanding right now — see Done below.
+(none — see Done below)
 
 ## Done
 
+- [x] **Drop the variant entity — any combination of a product's option
+  values should be orderable, no admin-created variant row required.**
+  See [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md)'s "Second
+  course correction" section. `product_variants`/`product_variant_options`
+  are gone (migration `0011_option_library_and_order_item_options.sql`,
+  not yet run against the live DB — see MANUAL_TASKS.md); selected options
+  are recorded on the order directly (`order_item_options`, snapshotted)
+  instead of via a `variant_id` FK. The PDP's "not available in this
+  combination" state is gone — any combination of a product's own option
+  values is addable to cart as long as the product itself is in stock and
+  ordering-enabled.
+- [x] **Shop-wide reusable option library — define an option type once
+  (e.g. Color: Blue, Red, Green) and attach it to any product.** See
+  [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md)'s "Third course
+  correction" section (US-40). `product_option_types`/`product_option_values`
+  became shop-wide (`option_types`/`option_values`, same migration `0011`
+  as above — both share the same underlying tables so they share one
+  migration); each product attaches a type and picks a subset of its
+  values (`product_options`/`product_option_selections`) via a new
+  `/admin/options` library page plus a reworked Options section on the
+  product page. `display_style` is a global setting on the option type.
 - [x] **Product options beyond color: admin-configurable custom choices
   (thread color, size, length, etc.), not just a single flat variant.**
   See [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md) for the full

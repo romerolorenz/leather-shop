@@ -6,6 +6,7 @@ import {
   listOrdersForCustomer,
   InsufficientStockError,
   type NewOrder,
+  type NewOrderItem,
 } from "@/lib/orders";
 import { getProductBySlug, type Product } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -60,6 +61,31 @@ afterEach(async () => {
   }
 });
 
+function walletItem(
+  quantity: number,
+  colorValue = "Chestnut Brown"
+): NewOrderItem {
+  return {
+    slug: wallet.slug,
+    name: wallet.name,
+    options: [{ optionTypeName: "Color", optionValue: colorValue }],
+    quantity,
+    priceCentavos: wallet.priceCentavos,
+    productId: wallet.id,
+  };
+}
+
+function toteItem(quantity: number, colorValue = "Chestnut Brown"): NewOrderItem {
+  return {
+    slug: tote.slug,
+    name: tote.name,
+    options: [{ optionTypeName: "Color", optionValue: colorValue }],
+    quantity,
+    priceCentavos: tote.priceCentavos,
+    productId: tote.id,
+  };
+}
+
 function buildOrder(
   items: NewOrder["items"],
   overrides: Partial<NewOrder["customer"]> = {}
@@ -85,8 +111,7 @@ function buildOrder(
 }
 
 describe("createOrder", () => {
-  it("decrements stock by exactly the ordered quantity", async () => {
-    const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
+  it("decrements stock by exactly the ordered quantity and records selected options", async () => {
     const supabase = getSupabaseServerClient();
     const { data: before } = await supabase
       .from("products")
@@ -94,19 +119,7 @@ describe("createOrder", () => {
       .eq("id", wallet.id)
       .single();
 
-    const order = await createOrder(
-      buildOrder([
-        {
-          slug: wallet.slug,
-          name: wallet.name,
-          variantLabel: variant.label,
-          quantity: 1,
-          priceCentavos: wallet.priceCentavos,
-          productId: wallet.id,
-          variantId: variant.id,
-        },
-      ])
-    );
+    const order = await createOrder(buildOrder([walletItem(1)]));
     cleanupOrderIds.push(order.id);
 
     const { data: after } = await supabase
@@ -118,26 +131,15 @@ describe("createOrder", () => {
     expect(after!.stock_quantity).toBe(before!.stock_quantity - 1);
     expect(order.status).toBe("pending_payment");
     expect(order.totalCentavos).toBe(wallet.priceCentavos + 15000);
+    expect(order.items[0].options).toEqual([
+      { optionTypeName: "Color", optionValue: "Chestnut Brown" },
+    ]);
   });
 
   it("throws InsufficientStockError and leaves no order behind when quantity exceeds stock", async () => {
-    const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
-
-    await expect(
-      createOrder(
-        buildOrder([
-          {
-            slug: wallet.slug,
-            name: wallet.name,
-            variantLabel: variant.label,
-            quantity: 9999,
-            priceCentavos: wallet.priceCentavos,
-            productId: wallet.id,
-            variantId: variant.id,
-          },
-        ])
-      )
-    ).rejects.toThrow(InsufficientStockError);
+    await expect(createOrder(buildOrder([walletItem(9999)]))).rejects.toThrow(
+      InsufficientStockError
+    );
 
     const supabase = getSupabaseServerClient();
     const { data: orders } = await supabase
@@ -148,13 +150,6 @@ describe("createOrder", () => {
   });
 
   it("rolls back an earlier item's decrement when a later item lacks stock", async () => {
-    const walletVariant = wallet.variants.find(
-      (v) => v.label === "Chestnut Brown"
-    )!;
-    const toteVariant = tote.variants.find(
-      (v) => v.label === "Chestnut Brown"
-    )!;
-
     const supabase = getSupabaseServerClient();
     const { data: before } = await supabase
       .from("products")
@@ -165,26 +160,10 @@ describe("createOrder", () => {
     await expect(
       createOrder(
         buildOrder([
-          {
-            slug: wallet.slug,
-            name: wallet.name,
-            variantLabel: walletVariant.label,
-            quantity: 1,
-            priceCentavos: wallet.priceCentavos,
-            productId: wallet.id,
-            variantId: walletVariant.id,
-          },
-          {
-            slug: tote.slug,
-            name: tote.name,
-            variantLabel: toteVariant.label,
-            // Comfortably exceeds seeded product-level capacity (5) without
-            // overflowing the integer subtotal column the way 9999 would.
-            quantity: 50,
-            priceCentavos: tote.priceCentavos,
-            productId: tote.id,
-            variantId: toteVariant.id,
-          },
+          walletItem(1),
+          // Comfortably exceeds seeded product-level capacity (5) without
+          // overflowing the integer subtotal column the way 9999 would.
+          toteItem(50),
         ])
       )
     ).rejects.toThrow(InsufficientStockError);
@@ -201,20 +180,7 @@ describe("createOrder", () => {
 
 describe("cancelOrderAndRestoreStock", () => {
   it("cancels a pending order and restores its stock", async () => {
-    const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
-    const order = await createOrder(
-      buildOrder([
-        {
-          slug: wallet.slug,
-          name: wallet.name,
-          variantLabel: variant.label,
-          quantity: 1,
-          priceCentavos: wallet.priceCentavos,
-          productId: wallet.id,
-          variantId: variant.id,
-        },
-      ])
-    );
+    const order = await createOrder(buildOrder([walletItem(1)]));
     cleanupOrderIds.push(order.id);
 
     const supabase = getSupabaseServerClient();
@@ -243,20 +209,7 @@ describe("cancelOrderAndRestoreStock", () => {
   });
 
   it("returns false and doesn't touch stock for an order that's already paid", async () => {
-    const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
-    const order = await createOrder(
-      buildOrder([
-        {
-          slug: wallet.slug,
-          name: wallet.name,
-          variantLabel: variant.label,
-          quantity: 1,
-          priceCentavos: wallet.priceCentavos,
-          productId: wallet.id,
-          variantId: variant.id,
-        },
-      ])
-    );
+    const order = await createOrder(buildOrder([walletItem(1)]));
     cleanupOrderIds.push(order.id);
 
     const supabase = getSupabaseServerClient();
@@ -285,20 +238,7 @@ describe("cancelOrderAndRestoreStock", () => {
 
 describe("getExpiredPendingOrderIds", () => {
   it("finds an order past the hold window and excludes it at a longer window", async () => {
-    const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
-    const order = await createOrder(
-      buildOrder([
-        {
-          slug: wallet.slug,
-          name: wallet.name,
-          variantLabel: variant.label,
-          quantity: 1,
-          priceCentavos: wallet.priceCentavos,
-          productId: wallet.id,
-          variantId: variant.id,
-        },
-      ])
-    );
+    const order = await createOrder(buildOrder([walletItem(1)]));
     cleanupOrderIds.push(order.id);
 
     const supabase = getSupabaseServerClient();
@@ -315,23 +255,12 @@ describe("getExpiredPendingOrderIds", () => {
 
 describe("listOrdersForCustomer", () => {
   it("only returns orders matching the given customer email", async () => {
-    const variant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
-    const item = {
-      slug: wallet.slug,
-      name: wallet.name,
-      variantLabel: variant.label,
-      quantity: 1,
-      priceCentavos: wallet.priceCentavos,
-      productId: wallet.id,
-      variantId: variant.id,
-    };
-
     const mine = await createOrder(
-      buildOrder([item], { email: "vitest-account@example.com" })
+      buildOrder([walletItem(1)], { email: "vitest-account@example.com" })
     );
     cleanupOrderIds.push(mine.id);
     const theirs = await createOrder(
-      buildOrder([item], { email: "vitest@example.com" })
+      buildOrder([walletItem(1)], { email: "vitest@example.com" })
     );
     cleanupOrderIds.push(theirs.id);
 

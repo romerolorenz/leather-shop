@@ -49,13 +49,16 @@ afterAll(async () => {
 
 describe("POST /api/orders", () => {
   it("rejects a non-Metro-Manila city", async () => {
-    const walletVariant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: { street: "1 St", city: "Cebu City" },
         items: [
-          { slug: "classic-bifold-wallet", variantId: walletVariant.id, quantity: 1 },
+          {
+            slug: wallet.slug,
+            selectedOptions: { Color: "Chestnut Brown" },
+            quantity: 1,
+          },
         ],
       })
     );
@@ -73,8 +76,24 @@ describe("POST /api/orders", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rejects an order when the product is sold out (capacity is product-level, not per variant)", async () => {
-    const toteVariant = tote.variants.find((v) => v.label === "Black")!;
+  it("rejects an option selection that isn't one of the product's values", async () => {
+    const res = await POST(
+      makeRequest({
+        customer: { name: "Test", email: "t@example.com", phone: "123" },
+        shippingAddress: { street: "1 St", city: "Pasig" },
+        items: [
+          {
+            slug: wallet.slug,
+            selectedOptions: { Color: "Not A Real Color" },
+            quantity: 1,
+          },
+        ],
+      })
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an order when the product is sold out (capacity is product-level, not per option combination)", async () => {
     const supabase = getSupabaseServerClient();
 
     const { data: before } = await supabase
@@ -93,7 +112,13 @@ describe("POST /api/orders", () => {
         makeRequest({
           customer: { name: "Test", email: "t@example.com", phone: "123" },
           shippingAddress: { street: "1 St", city: "Pasig" },
-          items: [{ slug: "tote-bag", variantId: toteVariant.id, quantity: 1 }],
+          items: [
+            {
+              slug: tote.slug,
+              selectedOptions: { Color: "Black" },
+              quantity: 1,
+            },
+          ],
         })
       );
       expect(res.status).toBe(400);
@@ -106,13 +131,16 @@ describe("POST /api/orders", () => {
   });
 
   it("creates a valid order and prices it server-side", async () => {
-    const walletVariant = wallet.variants.find((v) => v.label === "Chestnut Brown")!;
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "vitest-api@example.com", phone: "123" },
         shippingAddress: { street: "1 St", city: "Pasig" },
         items: [
-          { slug: "classic-bifold-wallet", variantId: walletVariant.id, quantity: 1 },
+          {
+            slug: wallet.slug,
+            selectedOptions: { Color: "Chestnut Brown" },
+            quantity: 1,
+          },
         ],
       })
     );
@@ -122,5 +150,8 @@ describe("POST /api/orders", () => {
     createdOrderIds.push(body.order.id);
     expect(body.order.totalCentavos).toBeGreaterThan(0);
     expect(body.order.status).toBe("pending_payment");
+    expect(body.order.items[0].options).toEqual([
+      { optionTypeName: "Color", optionValue: "Chestnut Brown" },
+    ]);
   });
 });

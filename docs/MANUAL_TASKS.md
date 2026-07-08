@@ -10,18 +10,32 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [ ] **Run `supabase/migrations/0010_product_level_stock.sql` against
-  it, then merge `feat/product-options` to `develop`.** This is the
-  course-correction migration described in `docs/PRODUCT_OPTIONS_DESIGN.md`
-  — moves `stock_quantity`/`in_stock` from `product_variants` to
-  `products` (summing each product's existing per-variant stock into one
-  capacity number, so nothing already set is lost), replaces
-  `decrement_variant_stock`/`restore_variant_stock` with
-  `decrement_product_stock`/`restore_product_stock`, and adds
-  `display_style` to `product_option_types` (admin picks buttons or
-  dropdown per option type — US-39). Code is already reworked to match on
-  the `feat/product-options` branch; don't merge until this migration has
-  run and been verified live.
+- [ ] **Run `supabase/migrations/0010_product_level_stock.sql` then
+  `supabase/migrations/0011_option_library_and_order_item_options.sql`
+  against the live DB, in that order, then merge `feat/product-options`
+  to `develop`.** Both are written but neither has run live yet. `0011`
+  implements the "Second" and "Third" course corrections in
+  `docs/PRODUCT_OPTIONS_DESIGN.md` (checkpoints 8/9): drops
+  `product_variants`/`product_variant_options` entirely (any combination
+  of a product's own option values is orderable, no admin-created variant
+  row), and makes option types/values shop-wide/reusable
+  (`option_types`/`option_values`, attached per-product via
+  `product_options`/`product_option_selections`) instead of one row per
+  product. It reads through the still-live `product_variant_options` →
+  `product_option_values` → `product_option_types` chain before dropping
+  any of it, so it must run *after* `0010` (which is what moves
+  `stock_quantity` off `product_variants`), not before or instead of it.
+  After both run: live-verify per `PRODUCT_OPTIONS_DESIGN.md`'s
+  "Verification" section — `order_item_options` correctly backfilled from
+  existing `product_variant_options`, and the shared option library
+  correctly backfilled/merged from existing per-product
+  `product_option_types`/`product_option_values` (read-only script against
+  the dev DB) — **then also spot-check option `display_style` on every
+  product that has 2+ option types with the same name** (e.g. if "Color"
+  ever had a different display style set on two different products before
+  this migration): the migration's merge-by-name step picks the majority
+  style and could visibly change one of those product's PDPs. Full manual
+  walkthrough checklist is in `MANUAL_TESTING.md`.
 - [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
   Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
   send to your own account email (`marcolorenzoromero@gmail.com`) — it

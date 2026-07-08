@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useCart } from "@/lib/cart-context";
+import { useCart, formatSelectedOptions } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
@@ -40,9 +40,11 @@ export default function CartView({
         Your cart
       </h1>
       <ul className="divide-y divide-black/[.08] dark:divide-white/[.145]">
-        {items.map((item) => (
+        {items.map((item) => {
+          const optionsLabel = formatSelectedOptions(item.selectedOptions);
+          return (
           <li
-            key={`${item.slug}-${item.variantId}`}
+            key={`${item.slug}-${JSON.stringify(item.selectedOptions)}`}
             className="flex items-center justify-between gap-4 py-4"
           >
             <div className="flex items-center gap-3">
@@ -59,7 +61,9 @@ export default function CartView({
               )}
               <div>
                 <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.variantLabel}</p>
+                {optionsLabel && (
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">{optionsLabel}</p>
+                )}
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   {formatPrice(item.priceCentavos)}
                 </p>
@@ -71,7 +75,7 @@ export default function CartView({
                   type="button"
                   aria-label="Decrease quantity"
                   onClick={() =>
-                    setQuantity(item.slug, item.variantId, item.quantity - 1)
+                    setQuantity(item.slug, item.selectedOptions, item.quantity - 1)
                   }
                   className="px-3 py-1"
                 >
@@ -84,7 +88,7 @@ export default function CartView({
                   type="button"
                   aria-label="Increase quantity"
                   onClick={() =>
-                    setQuantity(item.slug, item.variantId, item.quantity + 1)
+                    setQuantity(item.slug, item.selectedOptions, item.quantity + 1)
                   }
                   className="px-3 py-1"
                 >
@@ -93,7 +97,7 @@ export default function CartView({
               </div>
               <button
                 type="button"
-                onClick={() => removeItem(item.slug, item.variantId)}
+                onClick={() => removeItem(item.slug, item.selectedOptions)}
                 aria-label="Remove item"
                 className="rounded-md p-1.5 text-zinc-500 dark:text-zinc-400 transition-transform hover:bg-red-600/10 hover:text-red-600 active:scale-95"
               >
@@ -116,7 +120,8 @@ export default function CartView({
               </button>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <div className="mt-8 flex items-center justify-between border-t border-black/[.08] pt-6 dark:border-white/[.145]">

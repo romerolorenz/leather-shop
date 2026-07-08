@@ -9,31 +9,34 @@ export default function ProductDetail({ product }: { product: Product }) {
   const { addItem } = useCart();
   const [selectedOptions, setSelectedOptions] = useState<
     Record<string, string>
-  >(() => product.variants[0]?.options ?? {});
+  >({});
   const [justAdded, setJustAdded] = useState(false);
 
-  const selectedVariant = product.variants.find((variant) =>
-    product.optionTypes.every(
-      (type) => variant.options[type.name] === selectedOptions[type.name]
-    )
-  );
-  const noMatchingVariant = product.variants.length > 0 && !selectedVariant;
   const canAddToCart =
-    product.orderingEnabled && product.inStock && !!selectedVariant;
+    product.orderingEnabled &&
+    product.inStock &&
+    product.optionTypes.every((type) => !!selectedOptions[type.name]);
 
   function handleAddToCart() {
-    if (!canAddToCart || !selectedVariant) return;
+    if (!canAddToCart) return;
+    // Always built from product.optionTypes (its display order), not
+    // straight from selectedOptions state — that state's key order is
+    // whatever order the shopper clicked things in, and the cart/checkout
+    // UI relies on this object's key order to render a stable "Type: Value"
+    // display string.
+    const orderedOptions = Object.fromEntries(
+      product.optionTypes.map((type) => [type.name, selectedOptions[type.name]])
+    );
     addItem({
       slug: product.slug,
       name: product.name,
       priceCentavos: product.priceCentavos,
-      variantId: selectedVariant.id,
-      variantLabel: selectedVariant.label,
+      selectedOptions: orderedOptions,
       photoUrl: product.photos[0] ?? null,
     });
     trackEvent("add_to_cart", {
       slug: product.slug,
-      variant: selectedVariant.label,
+      options: orderedOptions,
       priceCentavos: product.priceCentavos,
     });
     setJustAdded(true);
@@ -101,12 +104,6 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
         )
-      )}
-
-      {noMatchingVariant && (
-        <p className="mt-4 text-sm text-red-600">
-          Not available in this combination.
-        </p>
       )}
 
       <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">

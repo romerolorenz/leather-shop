@@ -24,7 +24,7 @@ finalized and swapped in later without a structural rebuild.
 ## 3. Non-Goals (v1)
 
 - No full product configurator / build-your-own (monogramming beyond a fixed
-  option list, custom dimensions, etc.) — fixed variants only.
+  option list, custom dimensions, etc.) — fixed option lists only.
 - No multi-vendor / marketplace features.
 - No wholesale or B2B ordering flows.
 - No subscriptions or recurring orders.
@@ -52,6 +52,11 @@ finalized and swapped in later without a structural rebuild.
     choices, size: S/M/L, thread color) — customer picks one value per
     option type at order time; the item is produced afterward per that
     choice. Not a full build-your-own configurator (§3).
+  - **Option types/values are defined once, shop-wide, and reused across
+    products** (e.g. a single Color list) — the admin attaches an
+    existing option type to a product and picks which of its values that
+    product actually offers, rather than recreating the same list per
+    product (US-40).
   - **Thread color** is a selectable fixed-option (e.g. natural, black,
     contrast stitch) — not a free-text/custom input.
   - **Admin chooses how each option is presented** — swatch-style buttons
@@ -62,7 +67,7 @@ finalized and swapped in later without a structural rebuild.
     an admin will typically set to dropdown.)
   - Price, plus an availability status (made-to-order / sold out).
   - **Stock is a single admin-only capacity number per product, not per
-    option/variant combination** — never shown to customers (storefront
+    option combination** — never shown to customers (storefront
     only ever shows the status label: made-to-order / sold out).
     Regardless of which color/size/thread combination someone orders, it
     draws from the same product-level count — options don't each have
@@ -112,7 +117,7 @@ finalized and swapped in later without a structural rebuild.
   option type shown as swatch buttons or a dropdown, per the admin's
   per-type choice — §5), price, add to cart, lead time, materials/care
   info.
-- Cart: view items, adjust quantity/variant, remove items.
+- Cart: view items, adjust quantity, remove items.
 - Checkout: shipping address, shipping method, payment, order review.
   - **Metro Manila delivery only.** Site does not accept orders with a
     shipping address outside Metro Manila (this supersedes "domestic
@@ -139,7 +144,7 @@ finalized and swapped in later without a structural rebuild.
 - **Access**: Google login (via Supabase Auth — same mechanism as customer
   social login), restricted to the shop owner's email via an allow-list.
   Not open to any Google account; not a separate credential system.
-- Add/edit products, variants, photos, prices, stock status.
+- Add/edit products, options, photos, prices, stock status.
 - Set/edit per-product lead time, and toggle ordering on/off per product
   (e.g. to pause a product when wait time is too long).
 - View and manage incoming orders (mark shipped, fulfilled, etc.).
@@ -173,11 +178,6 @@ finalized and swapped in later without a structural rebuild.
   hold inventory hostage under manual payment. The duration itself is a
   shop-configuration value (see Admin/Back Office above), not a hardcoded
   constant, so it can be tightened or loosened without a code change.
-- **v2 (quick upgrade)**: online payment via a standard provider aggregating
-  GCash/Maya (e.g. PayMongo). The order/checkout flow in v1 must be built so
-  swapping in real payment processing (payment intent creation + webhook
-  confirmation) is a drop-in change, not a rework — i.e. keep order status
-  ("pending payment" / "paid") as first-class data from day one.
 
 ## 7. Technical Approach
 
@@ -190,14 +190,15 @@ finalized and swapped in later without a structural rebuild.
   because it also bundles the Google social login already required in §6
   (Account) and file storage for product photos in §5 — one
   integration covers persistence, auth, and image hosting instead of three
-  separate services. Relational fits the data model (products → variants →
+  separate services. Relational fits the data model (products with options →
   orders → order items) and supports the aggregation queries behind the
   Success Metrics in §9.
   - Replaces the current in-memory order store and hardcoded product list
     (both placeholders, reset on every server restart/redeploy).
 - Order/checkout logic should go through an internal API layer (Next.js API
-  routes) from the start, even while payment is manual — this is what keeps
-  the PayMongo upgrade in §6 low-effort.
+  routes) from the start, even while payment is manual — keeps
+  order-writing/stock/pricing logic server-side rather than exposing
+  Supabase credentials to the browser.
 - **Email**: Resend, for both the customer order-confirmation email and the
   admin order-notification email (§6).
 - **No hardcoded business configuration**: shipping fee, delivery area

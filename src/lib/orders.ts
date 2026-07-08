@@ -1,18 +1,30 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getProductBySlug } from "@/lib/products";
 
+export type OrderItemOption = {
+  optionTypeName: string;
+  optionValue: string;
+};
+
 export type OrderItem = {
   slug: string;
   name: string;
-  variantLabel: string;
+  options: OrderItemOption[];
   quantity: number;
   priceCentavos: number;
 };
 
 export type NewOrderItem = OrderItem & {
   productId: string;
-  variantId: string;
 };
+
+// "Color: Black, Size: Large" — for order display in emails/admin/account.
+// Empty for a product with no option types.
+export function formatItemOptions(options: OrderItemOption[]): string {
+  return options
+    .map((o) => `${o.optionTypeName}: ${o.optionValue}`)
+    .join(", ");
+}
 
 export type OrderStatus = "pending_payment" | "paid" | "shipped" | "cancelled";
 
@@ -45,11 +57,8 @@ export type NewOrder = {
 };
 
 export class InsufficientStockError extends Error {
-  constructor(
-    public productName: string,
-    public variantLabel: string
-  ) {
-    super(`${productName} (${variantLabel}) no longer has enough stock.`);
+  constructor(public productName: string) {
+    super(`${productName} no longer has enough stock.`);
     this.name = "InsufficientStockError";
   }
 }
@@ -82,20 +91,48 @@ export async function createOrder(input: NewOrder): Promise<Order> {
 
   if (orderErr) throw orderErr;
 
-  const { error: itemsErr } = await supabase.from("order_items").insert(
-    input.items.map((item) => ({
-      order_id: orderRow.id,
-      product_id: item.productId,
-      variant_id: item.variantId,
-      variant_label: item.variantLabel,
-      quantity: item.quantity,
-      unit_price_centavos: item.priceCentavos,
+  // Inserted one at a time (not a single bulk insert) so each row's id is
+  // deterministically tied to its source item — needed to attach the right
+  // order_item_options rows to the right order_item afterward.
+  const insertedItems: { id: string; item: NewOrderItem }[] = [];
+  for (const item of input.items) {
+    const { data: itemRow, error: itemErr } = await supabase
+      .from("order_items")
+      .insert({
+        order_id: orderRow.id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        unit_price_centavos: item.priceCentavos,
+      })
+      .select("id")
+      .single();
+
+    if (itemErr) {
+      await supabase.from("orders").delete().eq("id", orderRow.id);
+      throw itemErr;
+    }
+
+    insertedItems.push({ id: itemRow.id, item });
+  }
+
+  const optionRows = insertedItems.flatMap(({ id, item }) =>
+    item.options.map((option, index) => ({
+      order_item_id: id,
+      option_type_name: option.optionTypeName,
+      option_value: option.optionValue,
+      position: index,
     }))
   );
 
-  if (itemsErr) {
-    await supabase.from("orders").delete().eq("id", orderRow.id);
-    throw itemsErr;
+  if (optionRows.length > 0) {
+    const { error: optionsErr } = await supabase
+      .from("order_item_options")
+      .insert(optionRows);
+
+    if (optionsErr) {
+      await supabase.from("orders").delete().eq("id", orderRow.id);
+      throw optionsErr;
+    }
   }
 
   const decremented: { productId: string; quantity: number }[] = [];
@@ -113,7 +150,7 @@ export async function createOrder(input: NewOrder): Promise<Order> {
         });
       }
       await supabase.from("orders").delete().eq("id", orderRow.id);
-      throw new InsufficientStockError(item.name, item.variantLabel);
+      throw new InsufficientStockError(item.name);
     }
 
     decremented.push({ productId: item.productId, quantity: item.quantity });
@@ -206,7 +243,11 @@ type OrderRow = {
   order_items: {
     quantity: number;
     unit_price_centavos: number;
-    variant_label: string;
+    order_item_options: {
+      option_type_name: string;
+      option_value: string;
+      position: number;
+    }[];
     products: { slug: string; name: string } | null;
   }[];
 };
@@ -228,7 +269,12 @@ function mapOrderRow(row: OrderRow): Order {
     items: row.order_items.map((item) => ({
       slug: item.products?.slug ?? "",
       name: item.products?.name ?? "(deleted product)",
-      variantLabel: item.variant_label,
+      options: [...item.order_item_options]
+        .sort((a, b) => a.position - b.position)
+        .map((o) => ({
+          optionTypeName: o.option_type_name,
+          optionValue: o.option_value,
+        })),
       quantity: item.quantity,
       priceCentavos: item.unit_price_centavos,
     })),
@@ -239,7 +285,7 @@ function mapOrderRow(row: OrderRow): Order {
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, total_centavos, order_items(quantity, unit_price_centavos, variant_label, products(slug, name))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, total_centavos, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
 export async function listOrdersForAdmin(): Promise<Order[]> {
   const supabase = getSupabaseServerClient();

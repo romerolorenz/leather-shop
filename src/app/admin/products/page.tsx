@@ -33,9 +33,7 @@ export default async function AdminProductsPage() {
                   <p className="font-medium">{product.name}</p>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
                     {product.category} · {formatPrice(product.priceCentavos)}{" "}
-                    · {product.variants.length} variant
-                    {product.variants.length === 1 ? "" : "s"} · stock:{" "}
-                    {product.stockQuantity}
+                    · stock: {product.stockQuantity}
                   </p>
                 </div>
                 {!product.orderingEnabled && (
