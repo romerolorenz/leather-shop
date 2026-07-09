@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useToast } from "./ToastProvider";
+import { useToast } from "@/components/ToastProvider";
 import type { ActionResult } from "@/lib/action-result";
 
 // Plain button (not a <form>) that invokes a bound Server Action directly —

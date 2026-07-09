@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useToast } from "./ToastProvider";
+import { useToast } from "@/components/ToastProvider";
 import type { ActionResult } from "@/lib/action-result";
 
 // <form>-free counterpart to ActionForm — for a single-field "add" control

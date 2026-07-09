@@ -8,6 +8,7 @@ import {
   deleteAddressAction,
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { ActionButton } from "@/components/ActionButton";
 import AddressFormModal from "./AddressFormModal";
 
 const archivo = Archivo({
@@ -46,15 +47,16 @@ export default async function AddressesPage() {
 
             return (
               <li key={address.id} className="py-6 first:pt-0">
-                <div className="mb-2 flex items-center justify-between">
-                  {address.isDefault ? (
-                    <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#7A3B22] dark:text-[#C97A4E]">
-                      Default
-                    </span>
-                  ) : (
-                    <span />
-                  )}
-                  <div className="ml-auto flex items-center gap-1">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="flex items-center gap-2 font-semibold">
+                    {address.label}
+                    {address.isDefault && (
+                      <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#7A3B22] dark:text-[#C97A4E]">
+                        Default
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex items-center gap-1">
                     <AddressFormModal
                       action={updateThis}
                       cities={cities}
@@ -70,34 +72,32 @@ export default async function AddressesPage() {
                         isDefault: address.isDefault,
                       }}
                     />
-                    <form action={removeThis}>
-                      <button
-                        type="submit"
-                        aria-label="Delete address"
-                        className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95"
+                    <ActionButton
+                      action={removeThis}
+                      confirmMessage={`Delete "${address.label}"? This can't be undone.`}
+                      ariaLabel="Delete address"
+                      className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                        >
-                          <path d="M3 6h18" />
-                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                        </svg>
-                      </button>
-                    </form>
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                      </svg>
+                    </ActionButton>
                   </div>
                 </div>
-                <p className="font-semibold">{address.label}</p>
-                <p className="text-sm">
+                <p className="mt-1 text-sm">
                   {address.recipientName} · {address.phone}
                 </p>
                 <p className="text-sm text-[#6E6A64] dark:text-[#A39C90]">

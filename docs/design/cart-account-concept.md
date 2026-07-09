@@ -73,6 +73,41 @@ Three more changes from the user, after testing the build:
   prop and the trigger button rendered directly inside the component,
   which sidesteps the rule entirely and is simpler besides.
 
+## Build notes 3 (2026-07-09, same day)
+
+Three more changes from the user, on the addresses page specifically:
+
+- **"Default" flag moved inline with the label** (`Home  DEFAULT` on one
+  line) instead of a separate line above the address block, and the
+  edit/trash icons now align to that same label row instead of a
+  separate header row above everything.
+- **Delete now has a confirmation + success toast**, matching the
+  pattern already established on the admin side rather than inventing a
+  new one: `window.confirm()` via `ActionButton`
+  (`src/components/ActionButton.tsx`), and a toast via `ToastProvider`
+  (`src/components/ToastProvider.tsx`). Both components previously lived
+  under `components/admin/` and were admin-only; moved to
+  `components/` and `ToastProvider` is now mounted once in the root
+  layout (removed from `admin/layout.tsx`, which was double-wrapping)
+  so both admin and customer-facing pages share one toast system instead
+  of two parallel ones.
+  - `deleteAddressAction` (`src/app/account/actions.ts`) changed from a
+    void, throwing function used as a `<form action>` to
+    `Promise<ActionResult>` via a new shared `runAction` helper
+    (`src/lib/action-result.ts`) — extracted from a near-identical
+    private copy in `admin/actions.ts` (now imports it too) rather than
+    duplicating the try/catch-to-result wrapper a second time.
+  - `createAddressAction`/`updateAddressAction` were **not** touched —
+    the request was delete-only; they still use plain `<form action>`
+    with no confirm/toast.
+- Verified end-to-end against real data: created a disposable test
+  address through the real Add flow, deleted it through the real confirm
+  dialog (checked the exact message shown) and toast, confirmed it's
+  actually gone, and left the account's two real addresses untouched.
+  Also spot-checked `/admin/faq` still renders (redirects to Admin
+  Login as expected, not an error) after relocating the two shared
+  components, to catch any import-path mistake from the move.
+
 Written to think through
 how [docs/design/STYLE_GUIDE.md](STYLE_GUIDE.md) applies to `/cart`,
 `/account`, and `/account/addresses` before touching code. These three

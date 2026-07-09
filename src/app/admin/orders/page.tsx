@@ -11,7 +11,7 @@ import {
   cancelOrderAction,
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { ActionButton } from "@/components/admin/ActionButton";
+import { ActionButton } from "@/components/ActionButton";
 
 const STATUS_ORDER: OrderStatus[] = [
   "pending_payment",

@@ -34,25 +34,7 @@ import {
   moveFaqItem,
 } from "@/lib/admin/faq";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { ActionResult } from "@/lib/action-result";
-
-// Used by actions wired up to <ActionButton> (src/components/admin/ActionButton.tsx)
-// instead of a <form> — catches thrown errors into a result the client can
-// toast, instead of letting them bubble into a bare Next.js error page.
-async function runAction(
-  fn: () => Promise<void>,
-  successMessage: string
-): Promise<ActionResult> {
-  try {
-    await fn();
-    return { success: true, message: successMessage };
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Something went wrong.",
-    };
-  }
-}
+import { runAction, type ActionResult } from "@/lib/action-result";
 
 function parseProductInput(formData: FormData): ProductInput {
   return {

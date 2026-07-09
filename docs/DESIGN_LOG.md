@@ -47,6 +47,15 @@ should already exist under `docs/design/` and be agreed with the user.
   icons, replacing the always-visible inline edit form — the edit icon
   opens the same modal "Add address" uses, generalized into
   `AddressFormModal.tsx` (`variant: "add" | "edit"`). See "Build notes 2".
+  **Refined again same day**: on the addresses page, "Default" now sits
+  inline next to the label instead of on its own line, and the edit/
+  delete icons align to that label row. Delete now confirms
+  (`window.confirm`) and toasts on success, reusing the admin side's
+  `ActionButton`/`ToastProvider`/`runAction` pattern rather than
+  inventing a second one — both components moved from `components/admin/`
+  to `components/` since they're no longer admin-only, and
+  `ToastProvider` now mounts once in the root layout instead of
+  separately in `admin/layout.tsx`. See "Build notes 3".
 
 - **2026-07-08 — Homepage v3, "Quiet & Confident"**
   [artifact](https://claude.ai/code/artifact/dbb0209b-fc2d-40cd-bc50-d29f3cb23551) —

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useToast } from "./ToastProvider";
+import { useToast } from "@/components/ToastProvider";
 import type { ActionResult } from "@/lib/action-result";
 
 // <form> counterpart to ActionButton — for actions that take FormData

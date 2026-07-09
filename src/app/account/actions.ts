@@ -8,6 +8,7 @@ import {
   deleteAddress,
   type AddressInput,
 } from "@/lib/customer/addresses";
+import { runAction, type ActionResult } from "@/lib/action-result";
 
 function parseAddressInput(formData: FormData): AddressInput {
   const label = String(formData.get("label") ?? "").trim();
@@ -42,8 +43,10 @@ export async function updateAddressAction(id: string, formData: FormData) {
   revalidatePath("/account/addresses");
 }
 
-export async function deleteAddressAction(id: string) {
-  const email = await assertCustomer();
-  await deleteAddress(id, email);
-  revalidatePath("/account/addresses");
+export async function deleteAddressAction(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    const email = await assertCustomer();
+    await deleteAddress(id, email);
+    revalidatePath("/account/addresses");
+  }, "Address deleted.");
 }
