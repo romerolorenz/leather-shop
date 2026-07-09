@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { swapPositions } from "@/lib/admin/reorder";
 
 export type OptionDisplayStyle = "buttons" | "dropdown";
 
@@ -44,12 +45,16 @@ export type AdminProduct = {
   // as unavailable — see supabase/migrations/0012_product_visibility.sql.
   visible: boolean;
   stockQuantity: number;
+  // Admin-curated homepage picks (US-38) — see src/lib/admin/reorder.ts's
+  // moveFeaturedProduct and setProductFeatured below.
+  featured: boolean;
+  featuredPosition: number | null;
   photos: AdminProductPhoto[];
   options: AdminProductOption[];
 };
 
 const ADMIN_PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, " +
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, featured, featured_position, " +
   "product_photos(id, url, position), " +
   "product_options(id, position, option_types(id, name, display_style, option_values(id, value, position)), product_option_selections(option_value_id))";
 
@@ -64,6 +69,8 @@ type AdminProductRow = {
   ordering_enabled: boolean;
   visible: boolean;
   stock_quantity: number;
+  featured: boolean;
+  featured_position: number | null;
   product_photos: { id: string; url: string; position: number }[];
   product_options: {
     id: string;
@@ -106,6 +113,8 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     orderingEnabled: row.ordering_enabled,
     visible: row.visible,
     stockQuantity: row.stock_quantity,
+    featured: row.featured,
+    featuredPosition: row.featured_position,
     photos: [...row.product_photos].sort((a, b) => a.position - b.position),
     options,
   };
@@ -480,4 +489,109 @@ export async function moveProductOption(
     .update({ position: current.position })
     .eq("id", swap.id);
   if (swapErr) throw swapErr;
+}
+
+// ─── Homepage featured products (US-38) ─────────────────────────────────
+
+export type FeaturedProduct = {
+  id: string;
+  slug: string;
+  name: string;
+  featuredPosition: number;
+};
+
+const MAX_FEATURED = 3;
+
+// Ordered by featuredPosition — the exact set/order the homepage's
+// featured grid renders (up to 3, US-38). The hero image is a separate,
+// standalone settings-driven image with no product association.
+export async function listFeaturedProducts(): Promise<FeaturedProduct[]> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, slug, name, featured_position")
+    .eq("featured", true)
+    .order("featured_position", { ascending: true });
+
+  if (error) throw error;
+  return data.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    featuredPosition: row.featured_position,
+  }));
+}
+
+// Toggling on: rejects a 4th until one is unfeatured. Toggling off: clears
+// featured_position and compacts every remaining featured product with a
+// higher position down by one, so positions stay dense (0,1,2 — never a
+// gap) for moveFeaturedProduct's boundary checks.
+export async function setProductFeatured(
+  productId: string,
+  featured: boolean
+): Promise<void> {
+  const supabase = getSupabaseServerClient();
+
+  if (featured) {
+    const current = await listFeaturedProducts();
+    if (current.length >= MAX_FEATURED) {
+      throw new Error(
+        `Only ${MAX_FEATURED} products can be featured at once. Unfeature one first.`
+      );
+    }
+    const { error } = await supabase
+      .from("products")
+      .update({ featured: true, featured_position: current.length })
+      .eq("id", productId);
+    if (error) throw error;
+    return;
+  }
+
+  const { data: row, error: fetchErr } = await supabase
+    .from("products")
+    .select("featured_position")
+    .eq("id", productId)
+    .single();
+  if (fetchErr) throw fetchErr;
+  const removedPosition = row.featured_position;
+
+  const { error: clearErr } = await supabase
+    .from("products")
+    .update({ featured: false, featured_position: null })
+    .eq("id", productId);
+  if (clearErr) throw clearErr;
+
+  if (removedPosition === null) return;
+
+  const { data: remaining, error: remainingErr } = await supabase
+    .from("products")
+    .select("id, featured_position")
+    .eq("featured", true)
+    .gt("featured_position", removedPosition)
+    .order("featured_position", { ascending: true });
+  if (remainingErr) throw remainingErr;
+
+  for (const row of remaining) {
+    const { error } = await supabase
+      .from("products")
+      .update({ featured_position: row.featured_position - 1 })
+      .eq("id", row.id);
+    if (error) throw error;
+  }
+}
+
+export async function moveFeaturedProduct(
+  productId: string,
+  direction: "up" | "down"
+): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  await swapPositions(
+    supabase,
+    "products",
+    { featured: true },
+    "id",
+    "featured_position",
+    productId,
+    direction
+  );
 }

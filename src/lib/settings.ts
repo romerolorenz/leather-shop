@@ -8,6 +8,15 @@ export type Settings = {
   contactEmail: string;
   contactInstagramUrl: string;
   contactInstagramHandle: string;
+  heroImageUrl: string | null;
+  heroFocalX: number;
+  heroFocalY: number;
+  homepageHeroEyebrow: string;
+  homepageHeroHeadline: string;
+  homepageFeaturedEyebrow: string;
+  homepageFeaturedHeading: string;
+  homepageStudioHeading: string;
+  homepageStudioBody: string;
 };
 
 // Admin-editable shop configuration (CLAUDE.md: settings are configurable,
@@ -27,6 +36,15 @@ export async function getSettings(): Promise<Settings> {
     contact_email: string;
     contact_instagram_url: string;
     contact_instagram_handle: string;
+    hero_image_url: string | null;
+    hero_focal_x: number;
+    hero_focal_y: number;
+    homepage_hero_eyebrow: string;
+    homepage_hero_headline: string;
+    homepage_featured_eyebrow: string;
+    homepage_featured_heading: string;
+    homepage_studio_heading: string;
+    homepage_studio_body: string;
   };
 
   return {
@@ -37,6 +55,15 @@ export async function getSettings(): Promise<Settings> {
     contactEmail: map.contact_email,
     contactInstagramUrl: map.contact_instagram_url,
     contactInstagramHandle: map.contact_instagram_handle,
+    heroImageUrl: map.hero_image_url,
+    heroFocalX: map.hero_focal_x,
+    heroFocalY: map.hero_focal_y,
+    homepageHeroEyebrow: map.homepage_hero_eyebrow,
+    homepageHeroHeadline: map.homepage_hero_headline,
+    homepageFeaturedEyebrow: map.homepage_featured_eyebrow,
+    homepageFeaturedHeading: map.homepage_featured_heading,
+    homepageStudioHeading: map.homepage_studio_heading,
+    homepageStudioBody: map.homepage_studio_body,
   };
 }
 
@@ -48,6 +75,15 @@ const SETTINGS_KEYS: Record<keyof Settings, string> = {
   contactEmail: "contact_email",
   contactInstagramUrl: "contact_instagram_url",
   contactInstagramHandle: "contact_instagram_handle",
+  heroImageUrl: "hero_image_url",
+  heroFocalX: "hero_focal_x",
+  heroFocalY: "hero_focal_y",
+  homepageHeroEyebrow: "homepage_hero_eyebrow",
+  homepageHeroHeadline: "homepage_hero_headline",
+  homepageFeaturedEyebrow: "homepage_featured_eyebrow",
+  homepageFeaturedHeading: "homepage_featured_heading",
+  homepageStudioHeading: "homepage_studio_heading",
+  homepageStudioBody: "homepage_studio_body",
 };
 
 export async function updateSettings(input: Partial<Settings>): Promise<void> {

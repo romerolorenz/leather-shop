@@ -9,6 +9,22 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] Homepage content management (US-38) — live: migration `0013` run
+  against the dev DB, admin UI manually verified end-to-end (see
+  `docs/MANUAL_TESTING.md`).
+  - **Featured products**: `products.featured` + `featured_position` (max
+    3, enforced in `setProductFeatured`), toggle + ↑/↓ reorder from the new
+    `/admin/homepage` page. The hero image is deliberately *not* one of the
+    3 — it's a fully standalone concept (see below), so "featured" now
+    means only the up-to-3-product grid.
+  - **Hero image**: standalone upload (new `site-images` bucket), not tied
+    to any product's photos. Click-to-set focal-point picker
+    (`HeroFocalPointPicker.tsx`) with live preview at both mobile (9:16)
+    and desktop (16:9) aspect ratios, applied via `object-position` on the
+    real hero.
+  - **Editable text**: hero eyebrow/headline, featured section
+    eyebrow/heading, studio heading/body — six new `settings` keys, one
+    batched save form matching `/admin/settings`.
 - [x] Fixed a dropdown-style option with only one value permanently blocking
   Add to Cart — `ProductDetail.tsx`'s `selectedOptions` started empty and
   relied on `<select>`'s `onChange`, which never fires when there's only one

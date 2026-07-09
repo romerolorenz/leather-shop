@@ -14,24 +14,23 @@ fixed).
 
 ## Outstanding
 
-- [ ] **Homepage v3 implementation.** Verified so far via Playwright
-  screenshots (desktop light/dark, mobile, real-scroll captures) — layout,
-  content, and both color schemes look correct. Still needs a human in a
-  real browser for what screenshots can't show:
-  - [ ] Hero crossfade/Ken Burns actually loops smoothly over a full cycle
-    (~18s) without a visible jump or flash between the two images.
-  - [ ] `prefers-reduced-motion: reduce` (OS-level setting) shows a fully
-    static hero — no crossfade, no zoom.
-  - [ ] Real mobile device: hero text is legible over the photo, tap
-    targets ("Shop the Collection", product cards, FAQ link) are easy to
-    hit, scroll-reveal on the featured grid/studio paragraph feels right
-    (not too early/late, no jank).
-  - [ ] Product card hover (image scale) and link hover/underline states
-    on desktop.
-  - Findings:
+(none — see Done below)
 
 ## Done
 
+- [x] **US-38 — Homepage featured products, hero image, editable text.**
+  Migration `0013` run against the dev DB; full checklist passed as
+  intended — max-3 featured enforcement with clean ordering, ↑/↓ reorder
+  reflected on the homepage, a paused/sold-out featured product stays in
+  its slot showing "Currently unavailable", hero upload + focal-point
+  picker (crosshair + live mobile/desktop preview, persisted across
+  reload) confirmed against real narrow/wide viewports, batched homepage
+  text save, and the post-migration null-hero empty state.
+- [x] **Homepage v3 implementation.** Previously cleared: hero
+  crossfade/Ken Burns loops smoothly with no jump/flash,
+  `prefers-reduced-motion` shows a static hero, real mobile device
+  legibility/tap targets/scroll-reveal feel right, desktop hover states
+  confirmed.
 - [x] **Option library fixes — breadcrumb, batched save, single-value
   dropdown.** All four checks passed clean: `/admin/options` breadcrumb
   now reads "Admin / Options" (no stray "Products" crumb); editing

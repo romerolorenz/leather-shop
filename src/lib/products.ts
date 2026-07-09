@@ -26,13 +26,18 @@ export type Product = {
   // A single per-product capacity number, not per option combination — see
   // PRD §5. Every option combination is orderable or sold out together.
   inStock: boolean;
+  // Admin-curated homepage featured grid (US-38, up to 3) — the hero image
+  // is a separate, standalone settings-driven image with no product tie.
+  // featuredPosition is the grid render order; null when not featured.
+  featured: boolean;
+  featuredPosition: number | null;
   optionTypes: ProductOptionType[];
   description: string;
   photos: string[];
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, " +
+  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, " +
   "product_photos(url, position), " +
   "product_options(position, option_types(id, name, display_style), product_option_selections(option_values(value, position)))";
 
@@ -47,6 +52,8 @@ type ProductRow = {
   ordering_enabled: boolean;
   visible: boolean;
   in_stock: boolean;
+  featured: boolean;
+  featured_position: number | null;
   product_photos: { url: string; position: number }[];
   product_options: {
     position: number;
@@ -89,6 +96,8 @@ function mapRow(row: ProductRow): Product {
     orderingEnabled: row.ordering_enabled,
     visible: row.visible,
     inStock: row.in_stock,
+    featured: row.featured,
+    featuredPosition: row.featured_position,
     description: row.description,
     photos: [...row.product_photos]
       .sort((a, b) => a.position - b.position)

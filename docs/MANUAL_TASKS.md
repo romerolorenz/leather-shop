@@ -87,3 +87,9 @@ blockers, then items that don't block any phase.
 - [x] Update the placeholder Contact Us email in `/admin/settings` to a
   real inbox.
 - [x] Set the real Instagram handle in `/admin/settings`.
+- [x] Run `supabase/migrations/0013_homepage_featured_hero_and_text.sql`
+  against the dev DB — powers US-38 (featured products, hero image,
+  editable homepage text); `npm test`'s new `admin-homepage-*.test.ts`
+  files pass clean against it.
+- [x] Upload the real hero image via `/admin/homepage` — confirmed live,
+  `settings.hero_image_url` and a non-center focal point are both set.

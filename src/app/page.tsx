@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Archivo } from "next/font/google";
-import { getProducts, formatPrice, type Product } from "@/lib/products";
+import { getProducts, formatPrice } from "@/lib/products";
+import { getSettings } from "@/lib/settings";
 import { Reveal } from "@/components/Reveal";
 
 const archivo = Archivo({
@@ -9,30 +10,22 @@ const archivo = Archivo({
   weight: ["400", "500", "600", "700"],
 });
 
-// `products` has no `featured` flag (gap flagged in
-// docs/design/homepage.md §5.2) — hardcoded editorial picks for now
-// rather than building admin tooling for a catalog this small.
-const HERO_SLUG = "heritage-messenger-bag";
-const FEATURED_SLUGS = [
-  "weekender-duffel",
-  "card-wallet",
-  "minimalist-cardholder",
-] as const;
-
-function pick(products: Product[], slugs: readonly string[]): Product[] {
-  return slugs
-    .map((slug) => products.find((p) => p.slug === slug))
-    .filter((p): p is Product => Boolean(p));
-}
-
 // Matches SiteHeader.tsx's nav container so the hero copy lines up with
 // the "Leather Shop" wordmark above it.
 const HERO_CONTAINER = "mx-auto max-w-6xl px-6 sm:px-10";
 
 export default async function Home() {
-  const products = await getProducts();
-  const hero = products.find((p) => p.slug === HERO_SLUG);
-  const featured = pick(products, FEATURED_SLUGS);
+  const [products, settings] = await Promise.all([
+    getProducts(),
+    getSettings(),
+  ]);
+
+  // Admin-curated featured grid (US-38, up to 3, /admin/homepage) — the
+  // hero image above is a separate, standalone settings-driven image with
+  // no product association.
+  const featured = products
+    .filter((p) => p.featured)
+    .sort((a, b) => (a.featuredPosition ?? 0) - (b.featuredPosition ?? 0));
 
   return (
     <main
@@ -40,43 +33,46 @@ export default async function Home() {
     >
       {/* 1. Full-screen product highlight */}
       <section className="relative h-dvh overflow-hidden">
-        {hero && (
+        {settings.heroImageUrl && (
           <Image
-            src={hero.photos[0]}
+            src={settings.heroImageUrl}
             alt=""
             fill
             priority
             sizes="100vw"
             className="homepage-hero-image object-cover"
+            style={{
+              objectPosition: `${settings.heroFocalX}% ${settings.heroFocalY}%`,
+            }}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-        {hero && (
-          <div className={`absolute inset-x-0 bottom-0 pb-10 sm:pb-14 lg:pb-20 ${HERO_CONTAINER}`}>
-            <p className="text-xs font-medium uppercase tracking-[0.08em] text-white/70">
-              Handcrafted in Metro Manila
-            </p>
-            <p className="mt-3 max-w-2xl text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
-              Handcrafted leather, made in small batches.
-            </p>
-            <Link
-              href="/products"
-              className="mt-8 inline-flex items-center rounded-full border border-white/70 px-6 py-3 text-xs font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white hover:text-[#1C1A18] sm:text-sm"
-            >
-              Shop the Collection
-            </Link>
-          </div>
-        )}
+        <div
+          className={`absolute inset-x-0 bottom-0 pb-10 sm:pb-14 lg:pb-20 ${HERO_CONTAINER}`}
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-white/70">
+            {settings.homepageHeroEyebrow}
+          </p>
+          <p className="mt-3 max-w-2xl text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
+            {settings.homepageHeroHeadline}
+          </p>
+          <Link
+            href="/products"
+            className="mt-8 inline-flex items-center rounded-full border border-white/70 px-6 py-3 text-xs font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white hover:text-[#1C1A18] sm:text-sm"
+          >
+            Shop the Collection
+          </Link>
+        </div>
       </section>
 
       {/* 2. Top 3 products */}
       <section className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
         <div className="mb-12 sm:mb-16">
           <p className="text-xs font-medium uppercase tracking-[0.08em] text-[#6E6A64] dark:text-[#A39C90]">
-            Chosen by the Studio
+            {settings.homepageFeaturedEyebrow}
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            The Selection
+            {settings.homepageFeaturedHeading}
           </h2>
         </div>
         <ul className="grid grid-cols-1 gap-12 sm:grid-cols-3 sm:gap-8">
@@ -108,7 +104,7 @@ export default async function Home() {
                     {product.description}
                   </p>
                   <span className="mt-2 inline-block text-xs font-medium uppercase tracking-[0.08em] text-[#7A3B22] group-hover:underline dark:text-[#C97A4E]">
-                    View
+                    {product.orderingEnabled ? "View" : "Currently unavailable"}
                   </span>
                 </Link>
               </Reveal>
@@ -125,21 +121,20 @@ export default async function Home() {
       {/* 3. Studio brief */}
       <section className="mx-auto max-w-3xl px-6 pt-16 pb-24 sm:pb-32">
         <Reveal>
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            The studio
-          </h2>
-          <p className="mt-4 max-w-[34rem] text-base leading-relaxed text-[#1C1A18]/90 dark:text-[#F3F1EC]/90">
-            Every bag and wallet starts as a single hide, cut and
-            hand-stitched in a small studio in Metro Manila. We work in small
-            batches, not a production line, so each order gets real attention
-            from start to finish.
-          </p>
-          <Link
-            href="/faq"
-            className="mt-4 inline-block text-sm font-medium uppercase tracking-[0.08em] text-[#7A3B22] hover:underline dark:text-[#C97A4E]"
-          >
-            Learn more
-          </Link>
+          <div className="mx-auto max-w-[34rem]">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {settings.homepageStudioHeading}
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-[#1C1A18]/90 dark:text-[#F3F1EC]/90">
+              {settings.homepageStudioBody}
+            </p>
+            <Link
+              href="/faq"
+              className="mt-4 inline-block text-sm font-medium uppercase tracking-[0.08em] text-[#7A3B22] hover:underline dark:text-[#C97A4E]"
+            >
+              Learn more
+            </Link>
+          </div>
         </Reveal>
       </section>
     </main>

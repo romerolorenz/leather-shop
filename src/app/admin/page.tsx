@@ -43,6 +43,9 @@ export default async function AdminPage() {
         <Link href="/admin/orders" className="underline">
           Orders
         </Link>
+        <Link href="/admin/homepage" className="underline">
+          Homepage
+        </Link>
         <Link href="/admin/faq" className="underline">
           FAQ
         </Link>

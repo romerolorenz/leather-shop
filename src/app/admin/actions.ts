@@ -18,9 +18,12 @@ import {
   moveProductOption,
   addProductPhotos,
   deleteProductPhoto,
+  setProductFeatured,
+  moveFeaturedProduct,
   type ProductInput,
   type OptionDisplayStyle,
 } from "@/lib/admin/catalog";
+import { uploadHeroImage } from "@/lib/admin/homepage";
 import {
   markOrderPaid,
   markOrderShipped,
@@ -56,6 +59,10 @@ function parseDisplayStyle(formData: FormData): OptionDisplayStyle {
 
 function revalidateStorefront() {
   revalidatePath("/products", "layout");
+}
+
+function revalidateHomepage() {
+  revalidatePath("/");
 }
 
 // prevState is unused (createProductAction navigates away via redirect() on
@@ -463,4 +470,91 @@ export async function moveFaqItemAction(id: string, direction: "up" | "down") {
   await moveFaqItem(id, direction);
   revalidatePath("/admin/faq");
   revalidatePath("/faq");
+}
+
+// ─── Homepage content management (US-38) ────────────────────────────────
+
+export async function setProductFeaturedAction(
+  productId: string,
+  featured: boolean
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await setProductFeatured(productId, featured);
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, featured ? "Product featured." : "Product unfeatured.");
+}
+
+export async function moveFeaturedProductAction(
+  productId: string,
+  direction: "up" | "down"
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await moveFeaturedProduct(productId, direction);
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Reordered.");
+}
+
+// Resets the focal point to center on every new upload — a stale focal
+// point from the previous image would silently miscrop the new one.
+export async function uploadHeroImageAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const file = formData.get("heroImage");
+    if (!(file instanceof File) || file.size === 0) {
+      throw new Error("Choose an image to upload.");
+    }
+
+    await uploadHeroImage(file);
+    await updateSettings({ heroFocalX: 50, heroFocalY: 50 });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Hero image uploaded.");
+}
+
+// Commits immediately per click, not batched with the text-save form
+// below — matches this codebase's existing bias toward instant-commit for
+// anything that isn't a batch text edit (photo delete, reorder, option
+// detach all commit instantly already).
+export async function updateHeroFocalPointAction(
+  x: number,
+  y: number
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateSettings({ heroFocalX: x, heroFocalY: y });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Focal point saved.");
+}
+
+export async function updateHomepageTextAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateSettings({
+      homepageHeroEyebrow: String(formData.get("heroEyebrow") ?? "").trim(),
+      homepageHeroHeadline: String(formData.get("heroHeadline") ?? "").trim(),
+      homepageFeaturedEyebrow: String(
+        formData.get("featuredEyebrow") ?? ""
+      ).trim(),
+      homepageFeaturedHeading: String(
+        formData.get("featuredHeading") ?? ""
+      ).trim(),
+      homepageStudioHeading: String(
+        formData.get("studioHeading") ?? ""
+      ).trim(),
+      homepageStudioBody: String(formData.get("studioBody") ?? "").trim(),
+    });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Homepage text saved.");
 }
