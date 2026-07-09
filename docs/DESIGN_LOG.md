@@ -1,5 +1,35 @@
 # Design Log — Leather Shop
 
+- **2026-07-09 — Branding test: "Hiraya"**
+  [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —
+  brief: [docs/design/homepage.md](design/homepage.md) § "Branding test".
+  Store name swapped from "Leather Shop" to "Hiraya" on the real homepage
+  build, wordmark set in a fixed orange (`#C97A4E`) instead of white/ink
+  since the header floats over the photo hero, with its baybayin
+  transliteration (ᜑᜒᜇᜌ) set in small tracked type directly beneath it.
+  Rest of the "Quiet & Confident" system (§1–§7 of the brief) is
+  untouched — this is a header-only branding overlay on the existing
+  homepage layout, not a new design direction. Baybayin renders via an
+  embedded Noto Sans Tagalog woff2 (Tagalog-script subset, ~3.5KB data
+  URI) rather than system-font fallback, since glyph support for that
+  Unicode block isn't guaranteed everywhere.
+  **Built 2026-07-10** (`src/components/SiteHeader.tsx`), stacked (not
+  inline) per a follow-up call — Latin and Baybayin letterforms have
+  different x-heights/baseline rhythm, so stacking lets the script read
+  as a quiet caption rather than fighting the name for equal weight.
+  Self-hosted via `next/font/google`'s `Noto_Sans_Tagalog` (`tagalog`
+  subset) instead of the artifact's embedded data URI. Since
+  `SiteHeader.tsx` is shared site-wide, the wordmark now follows the same
+  `isHome` split as the rest of the header: fixed orange/white-70 on the
+  homepage's photo overlay, normal light/dark accent/ink-soft tokens on
+  every solid-header page. `<title>`/metadata and the rest of the
+  "Leather Shop" references in page copy and docs are untouched — this
+  was a header-only change, not a full rename. See
+  [docs/design/homepage.md](design/homepage.md) "Build notes (2026-07-10)"
+  for the real-browser font-loading verification and a scare that turned
+  out not to be a bug (a floating kudlit dot that looked like a glyph
+  error but is correct Baybayin rendering).
+
 Every design artifact published for review, newest first, so a design
 made in one session is still visible in the next. See the "Ask before
 designing, and write the design doc before building" rule in

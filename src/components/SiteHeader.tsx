@@ -2,8 +2,18 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Noto_Sans_Tagalog } from "next/font/google";
 import { Tooltip } from "@/components/Tooltip";
 import CartLink from "@/components/CartLink";
+
+// Baybayin transliteration of "Hiraya" (Hi-ra-ya), set under the
+// wordmark — see docs/design/homepage.md "Branding test" for the
+// character-by-character derivation. Needs its own font: Baybayin glyph
+// support isn't guaranteed in default system/UI fonts.
+const notoTagalog = Noto_Sans_Tagalog({
+  subsets: ["tagalog"],
+  weight: "400",
+});
 
 // Same icon for both the logged-in (My Account) and logged-out (Log In)
 // header nav states — the destination differs, the glyph doesn't.
@@ -31,30 +41,31 @@ export default function SiteHeader({
 }: {
   customerEmail: string | null;
 }) {
-  // The homepage hero is a full-bleed photo the header floats over —
-  // everywhere else needs a solid, readable header against plain content.
+  // The homepage hero fills the viewport (h-dvh) — the header floats over
+  // it instead of taking up document-flow space, so it doesn't push the
+  // hero image/copy down. Same solid color as every other page either way.
   const isHome = usePathname() === "/";
 
   return (
     <header
-      className={
-        isHome
-          ? "absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/60 via-black/10 to-transparent"
-          : "border-b border-black/[.08] dark:border-white/[.145]"
-      }
+      className={`${isHome ? "absolute inset-x-0 top-0 z-20 " : ""}border-b border-black/[.08] bg-white/80 dark:border-white/[.145] dark:bg-[#121110]/80`}
     >
       <nav
         className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-10"
       >
-        <Link
-          href="/"
-          className={`font-semibold tracking-tight ${isHome ? "text-white" : ""}`}
-        >
-          Leather Shop
+        <Link href="/" aria-label="Hiraya, home" className="flex items-baseline gap-3">
+          <span className="text-2xl font-semibold tracking-tight text-[#7A3B22] dark:text-[#C97A4E]">
+            Hiraya
+          </span>
+          <span
+            lang="tl"
+            aria-hidden="true"
+            className={`${notoTagalog.className} text-xl text-[#6E6A64] dark:text-[#A39C90]`}
+          >
+            ᜑᜒᜇᜌ
+          </span>
         </Link>
-        <div
-          className={`flex items-center gap-6 text-sm ${isHome ? "text-white" : ""}`}
-        >
+        <div className="flex items-center gap-6 text-sm">
           <Tooltip label="Shop">
             <Link href="/products" aria-label="Shop" className="inline-flex">
               <svg

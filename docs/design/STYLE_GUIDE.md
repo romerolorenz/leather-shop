@@ -137,13 +137,33 @@ zoom (scale 1 → 1.05 over 45s), not a crossfade. Every animation has a
 state — see `globals.css` and the `motion-reduce:` Tailwind variants used
 throughout.
 
-## Route-aware chrome
+## Header
 
-`src/components/SiteHeader.tsx` is a client component that changes
-appearance based on `usePathname()` — transparent gradient overlay,
-absolutely positioned, on the homepage (floats over the full-bleed hero);
-solid background, normal document flow, everywhere else (a transparent
-header is unreadable over a plain white page). The nav's *spacing*
-(`max-w-6xl`, wider gap between wordmark and icons) is shared across all
-routes; only the background/position is conditional. Use this component,
-don't fork it, if a future page needs its own transparent-hero treatment.
+`src/components/SiteHeader.tsx` uses one unconditional **color** across
+every route, homepage included: `border-b border-black/[.08] bg-white/80
+dark:border-white/[.145] dark:bg-[#121110]/80` — translucent, no blur
+(the homepage overlay is the only place this reads as anything other
+than opaque, since nothing sits behind the header on other routes).
+**Positioning** stays
+route-aware via `usePathname()`: `absolute inset-x-0 top-0 z-20` on the
+homepage (floats over the full-bleed `h-dvh` hero instead of pushing it
+down the page — the opaque bar just covers the top sliver of the photo),
+normal document flow everywhere else. See
+[docs/design/homepage.md](homepage.md)'s revision passes for the full
+back-and-forth that landed here (gradient scrim → flat gray bar → darker
+gray bar → dropped in favor of one color; position briefly went
+document-flow-everywhere too, before "don't push the hero down" brought
+the overlay back). If a future page wants its own transparent (not
+solid) overlay treatment, that's new ground, not a revert of this one.
+
+**Wordmark** ("Hiraya," added 2026-07-10, see
+[docs/design/homepage.md](homepage.md) § "Branding test"): name and a
+baybayin transliteration side by side (`flex items-baseline gap-3`,
+`text-2xl` name / `text-xl` script — briefly smaller and briefly
+stacked, settled here same day), the script in **Noto Sans Tagalog**
+(`next/font/google`, `subsets: ["tagalog"]`). Both follow the normal
+accent/ink-soft light-dark tokens on every route — no homepage-only
+color override, only the header's position differs by route. The script
+`<span>` is `aria-hidden` with `aria-label="Hiraya, home"` on the
+wrapping link, since it's a decorative gloss, not independently
+meaningful to a screen reader.

@@ -219,3 +219,103 @@ for contrast, same as previous rounds.
 - Confirm using free-license stock photography as realistic placeholders
   is acceptable (vs. plainer placeholder blocks).
 - Anything from §5 you want added/cut before I build the artifact.
+
+## Branding test (2026-07-09, built 2026-07-10) — "Hiraya"
+
+Status: **Built** (`src/components/SiteHeader.tsx`). A test of a store
+name, requested directly (not a fresh vibe brief) — the "Quiet &
+Confident" system from §1–§7 is unchanged, this only swaps the wordmark
+treatment in the header:
+
+- **Store name → "Hiraya"** (Filipino: "dream, aspiration/fervent wish"),
+  replacing "Leather Shop" in `SiteHeader.tsx`.
+- **Wordmark set in accent** instead of `--ink`/white — the one deliberate
+  exception to "accent is never a background/large element fill," since a
+  wordmark is text, not a fill, and a named brand reads better with a spot
+  of color than fully monochrome. On the homepage the header always floats
+  over the photo hero, so — same logic as the existing "photo overlay text
+  is fixed white regardless of theme" rule — the wordmark uses one fixed
+  shade rather than switching between the light/dark accent tokens on the
+  same photo: **`#C97A4E`** (the dark-theme accent), because it reads as
+  genuinely orange against the dark hero scrim, where the light-theme
+  accent (`#7A3B22`, more oxblood/brown) would read muddier and undersells
+  "make it orange." On solid (non-overlay) headers elsewhere, the normal
+  light/dark accent swap (`#7A3B22`/`#C97A4E`) would apply instead — not
+  exercised in this artifact since it's homepage-only.
+- **Baybayin transliteration set below the wordmark**, small and quiet
+  (`ink-soft`, not accent — one color accent per element, not two): "Hi-ra-
+  ya" → ᜑᜒᜇᜌ (U+1711 HA + U+1712 vowel-sign I, U+1707 DA/RA, U+170C YA;
+  baybayin's DA/RA glyph covers both sounds, there's no separate RA in the
+  Unicode Tagalog block). Rendered with **Noto Sans Tagalog**, embedded as
+  a woff2 data URI in the artifact (Tagalog-script subset only, ~3.5KB) —
+  not left to system-font fallback, since Baybayin glyph support isn't
+  guaranteed on every OS/browser and the artifact CSP blocks a live
+  Google Fonts request anyway.
+- Scope: header treatment only (name + script line, `SiteHeader.tsx` is
+  shared site-wide so it's live everywhere, not just the homepage). The
+  overlay-vs-solid color split described above is real, not just planned
+  — `isHome` picks the fixed overlay orange, every other route gets the
+  light/dark accent swap. **Not yet applied**: `<title>`/metadata (still
+  says "Leather Shop"), and the ~10 other `"Leather Shop"` references
+  across page copy and `docs/*.md` — pending a decision on whether
+  "Hiraya" is the actual name going forward before doing a full rename.
+
+### Build notes (2026-07-10)
+
+- `Noto_Sans_Tagalog` loaded via `next/font/google` with
+  `subsets: ["tagalog"]` — self-hosted like Archivo, no runtime Google
+  Fonts request. Verified with a real browser (Playwright) that the font
+  actually downloads and `document.fonts` reports it `loaded`, not just
+  that the CSS class was applied.
+- **Scare, not a bug**: a first glance at the rendered baybayin looked
+  like tofu (a stray mark separated from the rest), which looked like a
+  missing-glyph or letter-spacing/combining-mark bug. Rendered each
+  character in isolation at 100px to check: `ᜑ` (HA) is a plain wave
+  shape, and `ᜑᜒ` (HA + the I-kudlit) is that same wave with a small
+  *separate* dot above it — the dot is supposed to float above and
+  slightly apart from the base glyph, not merge into one stroke. Confirmed
+  correct rendering, no fix needed.
+- Added `aria-label="Hiraya, home"` on the header's home link, since the
+  visible content is now split across two `<span>`s and the baybayin one
+  is `aria-hidden` (it's a decorative gloss, not independently meaningful
+  to a screen reader).
+- **Homepage header scrim swapped from a black gradient to a flat gray
+  bar**: `bg-gradient-to-b from-black/60 via-black/10 to-transparent` →
+  `bg-gray-500/80` (no blur — tried `backdrop-blur-md` and `/25`, `/50`
+  first, darkened twice per feedback). No longer fades to transparent at
+  the bottom of the bar — a uniform gray strip the same height as the
+  nav, rather than a scrim that blended into the photo. Reads quieter
+  and more consistent with the "no painted-on decoration" mood than the
+  gradient did. Solid-header pages (everywhere except `/`) are
+  unaffected — this only touches the `isHome` branch.
+- **Wordmark reset to one line**: `Hiraya ᜑᜒᜇᜌ` side by side
+  (`flex items-baseline gap-2`), reversing the earlier stacked-caption
+  call — per the user, after seeing both in the browser rather than
+  just discussed in the abstract. Baybayin sized up slightly (`text-[13px]`
+  → `text-base`) to hold its own next to the name at this width.
+- **Homepage header reverted to the same solid treatment as every other
+  page**, undoing the "header becomes part of the hero" call from the
+  first revision pass above. Wordmark/icon colors are now unconditional —
+  the same ink/accent tokens everywhere, no more homepage-only
+  white/fixed-orange override. Net effect of this session's header
+  color work: gradient → gray bar → darker gray bar → dropped entirely
+  in favor of one consistent color across routes.
+- **Positioning kept route-aware, though**: the very next ask was "don't
+  push the hero down because of the navbar" — so `usePathname()` stayed,
+  now only deciding `absolute inset-x-0 top-0 z-20` (homepage) vs. normal
+  document flow (everywhere else), with the *color* unconditional either
+  way. The homepage header floats over the hero's full `h-dvh` as an
+  opaque white/dark bar (covering the top sliver of the photo) instead of
+  the hero starting below it. Net shape of this whole session's header
+  arc: route-aware color+position → route-aware color only (briefly) →
+  same color everywhere, route-aware position only.
+- **Wordmark sized up**: `Hiraya` `text-lg` → `text-2xl`, baybayin
+  `text-base` → `text-xl`, gap `gap-2` → `gap-3` to keep breathing room
+  at the larger size.
+- **Header made translucent**: `bg-white`/`dark:bg-[#121110]` →
+  `bg-white/80`/`dark:bg-[#121110]/80` (no blur, per the earlier
+  no-blur call). Since the color is unconditional now, this technically
+  applies everywhere, but only reads as a visible change on the homepage
+  overlay — on every other page nothing sits behind the header, so
+  translucent vs. opaque looks identical there. The hero photo and
+  headline now show through faintly beneath the bar.
