@@ -14,7 +14,7 @@ export default function ProductGallery({
 
   if (photos.length === 0) {
     return (
-      <div className="aspect-square w-full rounded-lg bg-zinc-100 dark:bg-zinc-900" />
+      <div className="aspect-square w-full bg-[#f3f1ec] dark:bg-[#1c1a18]" />
     );
   }
 
@@ -26,7 +26,7 @@ export default function ProductGallery({
         width={800}
         height={800}
         priority
-        className="aspect-square w-full rounded-lg object-cover"
+        className="aspect-square w-full object-cover"
       />
       {photos.length > 1 && (
         <div className="grid grid-cols-4 gap-2">
@@ -37,9 +37,9 @@ export default function ProductGallery({
               onClick={() => setSelectedIndex(index)}
               aria-pressed={index === selectedIndex}
               aria-label={`Show photo ${index + 1}`}
-              className={`aspect-square overflow-hidden rounded-lg border-2 ${
+              className={`aspect-square overflow-hidden border-2 ${
                 index === selectedIndex
-                  ? "border-foreground"
+                  ? "border-[#7A3B22] dark:border-[#C97A4E]"
                   : "border-transparent"
               }`}
             >

@@ -58,11 +58,11 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
         {product.name}
       </h1>
       <p className="mt-2 text-lg">{formatPrice(product.priceCentavos)}</p>
-      <p className="mt-4 text-zinc-600 dark:text-zinc-400">
+      <p className="mt-4 text-[#6E6A64] dark:text-[#A39C90]">
         {product.description}
       </p>
 
@@ -81,7 +81,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                   [type.name]: e.target.value,
                 }))
               }
-              className="mt-2 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm dark:border-white/[.2]"
+              className="mt-2 w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
             >
               {type.values.map((value) => (
                 <option key={value} value={value}>
@@ -108,7 +108,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                   className={`rounded-full border px-3 py-1 text-sm transition-colors ${
                     selectedOptions[type.name] === value
                       ? "border-foreground bg-foreground text-background"
-                      : "border-black/[.15] hover:border-foreground dark:border-white/[.2]"
+                      : "border-[rgba(28,26,24,.12)] hover:border-foreground dark:border-[rgba(243,241,236,.14)]"
                   }`}
                 >
                   {value}
@@ -119,7 +119,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         )
       )}
 
-      <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mt-4 text-sm text-[#6E6A64] dark:text-[#A39C90]">
         Lead time: ~{product.leadTimeDays} days
       </p>
 

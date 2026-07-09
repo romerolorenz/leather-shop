@@ -8,7 +8,7 @@ export type Crumb = {
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
   return (
     <nav aria-label="Breadcrumb" className="mb-6 text-sm">
-      <ol className="flex flex-wrap items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+      <ol className="flex flex-wrap items-center gap-1.5 text-[#6E6A64] dark:text-[#A39C90]">
         {items.map((item, index) => (
           <li key={index} className="flex items-center gap-1.5">
             {index > 0 && <span aria-hidden="true">/</span>}
@@ -17,7 +17,10 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
                 {item.label}
               </Link>
             ) : (
-              <span aria-current="page" className="text-foreground">
+              <span
+                aria-current="page"
+                className="text-[#7A3B22] dark:text-[#C97A4E]"
+              >
                 {item.label}
               </span>
             )}
