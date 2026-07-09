@@ -7,6 +7,11 @@ attempt at the homepage — the two before this ("Editorial Filipino" and
 "Atelier Ledger") were dropped outright, not iterated on; this was a
 from-zero rethink, not a v3 of either.
 
+The vibe/typography/color system that came out of this build is captured
+as a reusable reference in
+[docs/design/STYLE_GUIDE.md](STYLE_GUIDE.md) — read that first if reusing
+this look for another page, rather than re-deriving values from here.
+
 ## Implementation notes (2026-07-09)
 
 Built against the live dev catalog rather than the mockup's Pexels
