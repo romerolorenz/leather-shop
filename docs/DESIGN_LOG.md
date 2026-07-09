@@ -39,6 +39,14 @@ should already exist under `docs/design/` and be agreed with the user.
   way: the add-address `<dialog>` rendered top-left instead of centered
   because Tailwind's preflight strips the `margin: auto` a modal dialog
   needs — fixed with `m-auto`. See the brief's "Build notes" section.
+  **Refined same day**: status-group dividers now run wider than
+  order-to-order dividers (bigger break, longer line); status headers are
+  larger, full-ink, and semibold with a proper rotating chevron instead
+  of the tiny native `<details>` marker; addresses are now a read-only
+  display (label / recipient·phone / street·city) with edit and delete
+  icons, replacing the always-visible inline edit form — the edit icon
+  opens the same modal "Add address" uses, generalized into
+  `AddressFormModal.tsx` (`variant: "add" | "edit"`). See "Build notes 2".
 
 - **2026-07-08 — Homepage v3, "Quiet & Confident"**
   [artifact](https://claude.ai/code/artifact/dbb0209b-fc2d-40cd-bc50-d29f3cb23551) —

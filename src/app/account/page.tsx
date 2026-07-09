@@ -128,7 +128,10 @@ export default async function AccountPage() {
           </p>
         )}
 
-        <div className="divide-y divide-[rgba(28,26,24,.12)] dark:divide-[rgba(243,241,236,.14)]">
+        {/* Negative margin cancels the container's own padding so these
+            dividers run wider than the order-to-order ones inside each
+            group — a bigger structural break gets a longer line. */}
+        <div className="-mx-6 divide-y divide-[rgba(28,26,24,.12)] sm:-mx-10 dark:divide-[rgba(243,241,236,.14)]">
           {STATUS_ORDER.map((status) => {
             const group = orders.filter((order) => order.status === status);
             if (group.length === 0) return null;
@@ -136,10 +139,22 @@ export default async function AccountPage() {
             return (
               <details
                 key={status}
-                className="py-6 first:pt-0"
+                className="group px-6 py-6 first:pt-0 sm:px-10"
                 open={status !== "cancelled"}
               >
-                <summary className="cursor-pointer text-sm font-medium text-[#6E6A64] dark:text-[#A39C90]">
+                <summary className="flex cursor-pointer list-none items-center gap-2 text-base font-semibold tracking-tight [&::-webkit-details-marker]:hidden sm:text-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 flex-none text-[#6E6A64] transition-transform duration-150 group-open:rotate-90 dark:text-[#A39C90]"
+                  >
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
                   {STATUS_LABEL[status]} ({group.length})
                 </summary>
                 <ul className="mt-4 divide-y divide-[rgba(28,26,24,.12)] dark:divide-[rgba(243,241,236,.14)]">

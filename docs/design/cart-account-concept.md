@@ -2,7 +2,7 @@
 
 Status: **Agreed, mocked up as an artifact, and built** (`src/app/cart/CartView.tsx`,
 `src/app/account/page.tsx`, `src/app/account/addresses/page.tsx` +
-`AddAddressModal.tsx`). See [docs/DESIGN_LOG.md](../DESIGN_LOG.md) for the
+`AddressFormModal.tsx`). See [docs/DESIGN_LOG.md](../DESIGN_LOG.md) for the
 published [artifact](https://claude.ai/code/artifact/62d9e570-a159-46d0-bddd-52c401e70efd)
 (all three routes stacked in one page for review; quantity steppers and
 the order-status accordions are functional in the mockup).
@@ -37,6 +37,41 @@ the order-status accordions are functional in the mockup).
   order/address data for the logged-in test account, screenshotted, then
   reverted both files exactly (confirmed via `git diff` showing no
   changes) before committing.
+
+## Build notes 2 (2026-07-09, same day)
+
+Three more changes from the user, after testing the build:
+
+- **Status-group dividers are now wider than order-to-order dividers**,
+  reading as a bigger structural break. The status-groups wrapper gets
+  `-mx-6 sm:-mx-10` (cancelling the page's own horizontal padding) while
+  each `<details>` re-applies `px-6 sm:px-10` so the summary/order text
+  stays aligned with the rest of the page — only the divider *line*
+  extends into the gutter. Order-to-order dividers inside a group are
+  unchanged (normal width), so the hierarchy reads: wide line = status
+  break, normal line = order break.
+- **Status headers are much more visible**: `text-sm font-medium
+  text-ink-soft` → `text-base sm:text-lg font-semibold` in full ink
+  (not muted), plus a proper chevron (`group-open:rotate-90`) replacing
+  the tiny, inconsistent native `<details>` marker — hidden via
+  `[&::-webkit-details-marker]:hidden` and `list-none`.
+- **Addresses now match the artifact's read-only display**, not an
+  always-visible edit form: `Label` (bold) / `Recipient · Phone` /
+  `Street, City` (muted), with a pencil (edit) and trash (delete) icon in
+  the header row — the edit icon opens the *same* modal pattern as
+  "Add address" now uses, pre-filled with that address's current values,
+  calling `updateAddressAction` instead of `createAddressAction`.
+  `AddAddressModal.tsx` was generalized into `AddressFormModal.tsx`
+  (`variant: "add" | "edit"`, optional `defaultValues`) rather than
+  duplicating the dialog/form markup in a second component.
+  **Lint-driven redesign**: the first pass used a render-prop (`trigger:
+  (props) => ReactNode`) so each caller could supply its own trigger
+  button. `eslint-plugin-react-hooks`'s `react-hooks/refs` rule flagged
+  it — calling a function during render that closes over `dialogRef.current`
+  reads as an unsafe ref access even though the ref is only actually
+  dereferenced inside the later click handler. Replaced with a `variant`
+  prop and the trigger button rendered directly inside the component,
+  which sidesteps the rule entirely and is simpler besides.
 
 Written to think through
 how [docs/design/STYLE_GUIDE.md](STYLE_GUIDE.md) applies to `/cart`,
