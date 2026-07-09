@@ -1,3 +1,5 @@
+"use client";
+
 // Pure-CSS hover/focus tooltip for icon-only controls that already carry an
 // aria-label — the label is invisible to sighted mouse users otherwise.
 // Named group (group/tooltip) so nesting doesn't collide with any other
@@ -16,6 +18,16 @@ export function Tooltip({
       className={`group/tooltip relative inline-flex${
         className ? ` ${className}` : ""
       }`}
+      // The wrapped link/button keeps browser focus after being clicked
+      // (client-side navigation doesn't remount this header), which keeps
+      // :focus-within — and the tooltip — showing indefinitely post-click.
+      // Blurring on click clears that while leaving hover/keyboard-tab
+      // focus (which also uses :focus-within) untouched.
+      onClick={() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }}
     >
       {children}
       <span

@@ -29,45 +29,58 @@ export default async function ProductsPage() {
           Shop the Collection
         </h1>
         <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8 lg:grid-cols-4">
-          {products.map((product) => (
-            <li key={product.slug}>
-              <Reveal>
-                <Link href={`/products/${product.slug}`} className="group block">
-                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18]">
-                    {product.photos[0] ? (
-                      <Image
-                        src={product.photos[0]}
-                        alt={product.name}
-                        fill
-                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                        className="object-cover transition-transform duration-700 ease-out motion-reduce:transition-none group-hover:scale-[1.03]"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between gap-4">
-                    <h2 className="font-semibold tracking-tight">
-                      {product.name}
-                    </h2>
-                    <span className="shrink-0 text-[#6E6A64] dark:text-[#A39C90]">
-                      {formatPrice(product.priceCentavos)}
+          {products.map((product) => {
+            const unavailable = !product.orderingEnabled || !product.inStock;
+            return (
+              <li key={product.slug}>
+                <Reveal>
+                  <Link href={`/products/${product.slug}`} className="group block">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18]">
+                      {product.photos[0] ? (
+                        <Image
+                          src={product.photos[0]}
+                          alt={product.name}
+                          fill
+                          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                          className={`object-cover transition-transform duration-700 ease-out motion-reduce:transition-none group-hover:scale-[1.03] ${
+                            unavailable ? "opacity-60 grayscale-[0.4]" : ""
+                          }`}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="mt-4 flex items-baseline justify-between gap-4">
+                      <h2 className="font-semibold tracking-tight">
+                        {product.name}
+                      </h2>
+                      <span
+                        className={`shrink-0 text-[#6E6A64] dark:text-[#A39C90] ${
+                          unavailable ? "line-through" : ""
+                        }`}
+                      >
+                        {formatPrice(product.priceCentavos)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
+                      {product.description}
+                    </p>
+                    <span
+                      className={`mt-2 inline-block text-xs font-medium uppercase tracking-[0.08em] ${
+                        unavailable
+                          ? "text-[#6E6A64] dark:text-[#A39C90]"
+                          : "text-[#7A3B22] group-hover:underline dark:text-[#C97A4E]"
+                      }`}
+                    >
+                      {!product.orderingEnabled
+                        ? "Currently unavailable"
+                        : !product.inStock
+                          ? "Sold out"
+                          : "View"}
                     </span>
-                  </div>
-                  <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
-                    {product.description}
-                  </p>
-                  <span
-                    className={`mt-2 inline-block text-xs font-medium uppercase tracking-[0.08em] ${
-                      product.orderingEnabled
-                        ? "text-[#7A3B22] group-hover:underline dark:text-[#C97A4E]"
-                        : "text-[#6E6A64] dark:text-[#A39C90]"
-                    }`}
-                  >
-                    {product.orderingEnabled ? "View" : "Currently unavailable"}
-                  </span>
-                </Link>
-              </Reveal>
-            </li>
-          ))}
+                  </Link>
+                </Reveal>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </main>
