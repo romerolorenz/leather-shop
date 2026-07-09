@@ -42,7 +42,7 @@ export default function ContactForm() {
 
   if (sent) {
     return (
-      <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-6 text-sm text-[#6E6A64] dark:text-[#A39C90]">
         Message sent — we&apos;ll get back to you soon.
       </p>
     );
@@ -58,7 +58,7 @@ export default function ContactForm() {
           id="name"
           name="name"
           required
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className="mt-1 w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
         />
       </div>
       <div>
@@ -70,7 +70,7 @@ export default function ContactForm() {
           name="email"
           type="email"
           required
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className="mt-1 w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
         />
       </div>
       <div>
@@ -82,7 +82,7 @@ export default function ContactForm() {
           name="message"
           rows={4}
           required
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className="mt-1 w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
         />
       </div>
 

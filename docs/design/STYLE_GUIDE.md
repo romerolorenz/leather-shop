@@ -7,15 +7,16 @@ same vibe/typography/color system without re-deriving it. See
 reasoning behind each choice — this doc is the condensed, reusable
 reference.
 
-**Scope today**: the homepage, `/products`, and `/products/[slug]` use
-this system (see [docs/design/shop-page.md](shop-page.md) for the
-shop/PDP pass). Every other page (cart, checkout, FAQ, account, admin,
-etc.) still uses the original look — system font stack
-(`Arial, Helvetica, sans-serif`, via `globals.css` `body`), Tailwind's
-default `zinc` palette for muted text, and plain `rounded-full
-bg-foreground` pill buttons. Treat that as the "before" state to migrate
-*from* when a page gets reworked into this system, not as a second
-parallel style to maintain.
+**Scope today**: the homepage, `/products`, `/products/[slug]`, `/faq`,
+and `/contact` use this system (see
+[docs/design/shop-page.md](shop-page.md) for the shop/PDP pass and
+[docs/design/content-pages.md](content-pages.md) for FAQ/Contact). Every
+other page (cart, checkout, account, admin, etc.) still uses the original
+look — system font stack (`Arial, Helvetica, sans-serif`, via
+`globals.css` `body`), Tailwind's default `zinc` palette for muted text,
+and plain `rounded-full bg-foreground` pill buttons. Treat that as the
+"before" state to migrate *from* when a page gets reworked into this
+system, not as a second parallel style to maintain.
 
 **Exception**: `src/components/Breadcrumbs.tsx` was migrated to the new
 tokens (`--ink-soft` for muted crumbs, `--accent` for the current page)
