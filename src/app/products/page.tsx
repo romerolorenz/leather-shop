@@ -1,7 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Archivo } from "next/font/google";
 import { getProducts, formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { Reveal } from "@/components/Reveal";
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata = {
   title: "Shop — Leather Shop",
@@ -13,34 +20,51 @@ export default async function ProductsPage() {
   const products = await getProducts();
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+    <main
+      className={`${archivo.className} mx-auto w-full max-w-6xl flex-1 bg-white px-6 py-16 text-[#1C1A18] sm:px-10 dark:bg-[#121110] dark:text-[#F3F1EC]`}
+    >
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
-      <h1 className="mb-8 text-2xl font-semibold tracking-tight">
-        Shop the collection
+      <h1 className="mb-8 text-2xl font-semibold tracking-tight sm:text-3xl">
+        Shop the Collection
       </h1>
-      <ul className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+      <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8 lg:grid-cols-4">
         {products.map((product) => (
           <li key={product.slug}>
-            <Link href={`/products/${product.slug}`} className="block">
-              {product.photos[0] ? (
-                <Image
-                  src={product.photos[0]}
-                  alt={product.name}
-                  width={600}
-                  height={600}
-                  className="aspect-square w-full rounded-lg object-cover"
-                />
-              ) : (
-                <div className="aspect-square w-full rounded-lg bg-zinc-100 dark:bg-zinc-900" />
-              )}
-              <h2 className="mt-3 font-medium">{product.name}</h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                {formatPrice(product.priceCentavos)}
-              </p>
-              {!product.orderingEnabled && (
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">Currently unavailable</p>
-              )}
-            </Link>
+            <Reveal>
+              <Link href={`/products/${product.slug}`} className="group block">
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18]">
+                  {product.photos[0] ? (
+                    <Image
+                      src={product.photos[0]}
+                      alt={product.name}
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      className="object-cover transition-transform duration-700 ease-out motion-reduce:transition-none group-hover:scale-[1.03]"
+                    />
+                  ) : null}
+                </div>
+                <div className="mt-4 flex items-baseline justify-between gap-4">
+                  <h2 className="font-semibold tracking-tight">
+                    {product.name}
+                  </h2>
+                  <span className="shrink-0 text-[#6E6A64] dark:text-[#A39C90]">
+                    {formatPrice(product.priceCentavos)}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
+                  {product.description}
+                </p>
+                <span
+                  className={`mt-2 inline-block text-xs font-medium uppercase tracking-[0.08em] ${
+                    product.orderingEnabled
+                      ? "text-[#7A3B22] group-hover:underline dark:text-[#C97A4E]"
+                      : "text-[#6E6A64] dark:text-[#A39C90]"
+                  }`}
+                >
+                  {product.orderingEnabled ? "View" : "Currently unavailable"}
+                </span>
+              </Link>
+            </Reveal>
           </li>
         ))}
       </ul>
