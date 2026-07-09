@@ -2,8 +2,18 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Noto_Sans_Tagalog } from "next/font/google";
 import { Tooltip } from "@/components/Tooltip";
 import CartLink from "@/components/CartLink";
+
+// Baybayin transliteration of "Hiraya" (Hi-ra-ya), set under the
+// wordmark — see docs/design/homepage.md "Branding test" for the
+// character-by-character derivation. Needs its own font: Baybayin glyph
+// support isn't guaranteed in default system/UI fonts.
+const notoTagalog = Noto_Sans_Tagalog({
+  subsets: ["tagalog"],
+  weight: "400",
+});
 
 // Same icon for both the logged-in (My Account) and logged-out (Log In)
 // header nav states — the destination differs, the glyph doesn't.
@@ -48,9 +58,27 @@ export default function SiteHeader({
       >
         <Link
           href="/"
-          className={`font-semibold tracking-tight ${isHome ? "text-white" : ""}`}
+          aria-label="Hiraya, home"
+          className="flex flex-col gap-0.5 leading-none"
         >
-          Leather Shop
+          <span
+            className={`text-lg font-semibold tracking-tight ${
+              isHome ? "text-[#C97A4E]" : "text-[#7A3B22] dark:text-[#C97A4E]"
+            }`}
+          >
+            Hiraya
+          </span>
+          <span
+            lang="tl"
+            aria-hidden="true"
+            className={`${notoTagalog.className} text-[13px] tracking-[0.05em] ${
+              isHome
+                ? "text-white/70"
+                : "text-[#6E6A64] dark:text-[#A39C90]"
+            }`}
+          >
+            ᜑᜒᜇᜌ
+          </span>
         </Link>
         <div
           className={`flex items-center gap-6 text-sm ${isHome ? "text-white" : ""}`}

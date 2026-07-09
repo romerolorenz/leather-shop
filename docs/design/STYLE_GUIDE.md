@@ -147,3 +147,15 @@ header is unreadable over a plain white page). The nav's *spacing*
 (`max-w-6xl`, wider gap between wordmark and icons) is shared across all
 routes; only the background/position is conditional. Use this component,
 don't fork it, if a future page needs its own transparent-hero treatment.
+
+**Wordmark** ("Hiraya," added 2026-07-10, see
+[docs/design/homepage.md](homepage.md) § "Branding test"): two stacked
+`<span>`s — the name, then a baybayin transliteration in **Noto Sans
+Tagalog** (`next/font/google`, `subsets: ["tagalog"]`) below it at a
+smaller size. Same `isHome` split as the rest of the header: on the
+homepage overlay both lines use a fixed color (`#C97A4E` name,
+`white/70` script) since they sit on a photo regardless of theme;
+elsewhere they follow the normal accent/ink-soft light-dark tokens. The
+script `<span>` is `aria-hidden` with `aria-label="Hiraya, home"` on the
+wrapping link, since it's a decorative gloss, not independently
+meaningful to a screen reader.
