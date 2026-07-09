@@ -1,0 +1,143 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { Tooltip } from "@/components/Tooltip";
+import CartLink from "@/components/CartLink";
+
+// Same icon for both the logged-in (My Account) and logged-out (Log In)
+// header nav states — the destination differs, the glyph doesn't.
+function UserIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="10" r="3" />
+      <path d="M7 20.66V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.66" />
+    </svg>
+  );
+}
+
+export default function SiteHeader({
+  customerEmail,
+}: {
+  customerEmail: string | null;
+}) {
+  // The homepage hero is a full-bleed photo the header floats over —
+  // everywhere else needs a solid, readable header against plain content.
+  const isHome = usePathname() === "/";
+
+  return (
+    <header
+      className={
+        isHome
+          ? "absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/60 via-black/10 to-transparent"
+          : "border-b border-black/[.08] dark:border-white/[.145]"
+      }
+    >
+      <nav
+        className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-10"
+      >
+        <Link
+          href="/"
+          className={`font-semibold tracking-tight ${isHome ? "text-white" : ""}`}
+        >
+          Leather Shop
+        </Link>
+        <div
+          className={`flex items-center gap-6 text-sm ${isHome ? "text-white" : ""}`}
+        >
+          <Tooltip label="FAQ">
+            <Link href="/faq" aria-label="FAQ" className="inline-flex">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <path d="M12 17h.01" />
+              </svg>
+            </Link>
+          </Tooltip>
+          <Tooltip label="Contact Us">
+            <Link
+              href="/contact"
+              aria-label="Contact Us"
+              className="inline-flex"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </Link>
+          </Tooltip>
+          <Tooltip label="Shop">
+            <Link href="/products" aria-label="Shop" className="inline-flex">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+              >
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+            </Link>
+          </Tooltip>
+          {customerEmail ? (
+            <Tooltip label="My Account">
+              <Link
+                href="/account"
+                aria-label="My Account"
+                className="inline-flex"
+              >
+                <UserIcon />
+              </Link>
+            </Tooltip>
+          ) : (
+            <Tooltip label="Log In">
+              <Link
+                href="/login?next=/account"
+                aria-label="Log In"
+                className="inline-flex"
+              >
+                <UserIcon />
+              </Link>
+            </Tooltip>
+          )}
+          <Tooltip label="Cart">
+            <CartLink />
+          </Tooltip>
+        </div>
+      </nav>
+    </header>
+  );
+}

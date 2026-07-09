@@ -22,7 +22,14 @@ should already exist under `docs/design/` and be agreed with the user.
   belt was added as a placeholder third item).
   **Implemented in code 2026-07-09** (`src/app/page.tsx`), using real
   catalog photos instead of the mockup's Pexels placeholders — see the
-  "Implementation notes" section added to the brief.
+  "Implementation notes" section added to the brief. **Revised same day**
+  after a feedback pass: single-image hero (dropped the crossfade),
+  transparent-overlay header on the homepage, larger hero headline, a
+  ghost-button CTA, and a restyled featured grid — see the brief's
+  "Revision pass" section. **Revised again same day**: hero copy switched
+  from product-specific to studio-voiced, header spacing (wider
+  container) applied site-wide, studio section restructured into
+  heading/paragraph/link — see "Revision pass 2".
 
 ## Dropped
 

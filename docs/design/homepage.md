@@ -15,16 +15,14 @@ admin UI during earlier testing), and the catalog had grown to 5 SKUs by
 build time (not the 2 assumed above). Decisions made when building, per
 the user:
 
-- **Featured picks stayed hardcoded** (`HERO_SLUGS`/`FEATURED_SLUGS` in
+- **Featured picks stayed hardcoded** (`HERO_SLUG`/`FEATURED_SLUGS` in
   `src/app/page.tsx`) rather than adding a real `featured` column +
   admin toggle now — matches the still-open US-38 in
   [docs/USER_STORIES.md](../USER_STORIES.md), which already tracks the
   admin-toggle work as a separate future item.
-- **Hero crossfade**: Heritage Messenger Bag + Weekender Duffel (the two
-  most visually striking full-screen shots among photographed products).
-  Note: Weekender Duffel is currently `in_stock: false` in the live
-  catalog — still shown since the hero doesn't expose stock state (only
-  the PDP does), but worth reconsidering if it stays sold out long-term.
+- **Hero**: single image, Heritage Messenger Bag, with a slow continuous
+  subtle zoom (revised from an earlier two-image crossfade after a
+  design-feedback pass — see below).
 - **Top-3 grid**: Weekender Duffel, Card Wallet, Minimalist Cardholder —
   chosen so the homepage's hero + grid together surface all 4
   photographed, visible products at least once.
@@ -32,6 +30,59 @@ the user:
   component (`src/components/Reveal.tsx`) rather than CSS
   scroll-driven animations, for reliable cross-browser behavior
   (notably Safari/iOS, a meaningful share of the target market).
+
+## Revision pass (2026-07-09, same day)
+
+A round of visual feedback against the first build, reconciled as follows:
+
+- **Header becomes part of the hero.** The persistent site header (§5.1's
+  "small wordmark top-left" is literally the real nav, not a duplicate
+  wordmark) is now a transparent-to-black gradient overlay, absolutely
+  positioned over the hero — **homepage only** (`src/components/SiteHeader.tsx`,
+  route-aware via `usePathname`). Every other page keeps the original
+  solid header; a transparent one would be unreadable over their plain
+  backgrounds. This also fixed a real alignment bug: the header used to
+  center inside a `max-w-3xl` column while the hero copy padded off the
+  raw viewport edge, so the wordmark and hero text never lined up. Both
+  now share one `max-w-6xl` container (`HERO_CONTAINER` in `page.tsx`).
+- **One hero image, not two.** Dropped the crossfade entirely — a single
+  photo (Heritage Messenger Bag) with a slow, subtle continuous Ken Burns
+  zoom (scale 1 → 1.05 over 45s). Simpler CSS, no risk of the two-image
+  sync drifting.
+- **Hero copy rescaled.** The product description is now the large/bold
+  headline the brief originally specified (§3: "huge scale, tight
+  tracking") — the first build under-sized it as a small caption line.
+- **"Shop the Collection" is a ghost button** (transparent fill, white
+  border/text, inverts to solid on hover) rather than a plain text link —
+  stays quiet against the photo per the brief's minimal-chrome direction.
+- **Featured grid**: added a "Chosen by the Studio / The Selection"
+  heading above the grid; product name and price share a line; each
+  card now shows the one-line catalog description under the name; "View"
+  is `--accent` orange by default (previously gray, accent only on hover).
+- **Thin hairline divider** (the `--hairline` token from §2) between the
+  featured grid and the studio-brief paragraph.
+
+## Revision pass 2 (2026-07-09, same day)
+
+- **Hero copy is now studio-voiced, not product-specific** — a deliberate
+  departure from §5.1's original "product name + catalog description"
+  spec, per the user. Eyebrow: "Handcrafted in Metro Manila"; headline:
+  "Handcrafted leather, made in small batches." (reuses the same brand
+  line as the site's `<meta description>` and the pre-v3 placeholder
+  homepage, for consistency). The hero photo is still a real product shot
+  (Heritage Messenger Bag) — only the copy stopped naming it.
+- **Header spacing (the wider `max-w-6xl` container) now applies
+  site-wide**, not just the homepage overlay — every page's header uses
+  the same wordmark/icon spacing. The transparent-gradient/overlay
+  *positioning* stays homepage-only (see above). Known side effect,
+  flagged rather than silently fixed: on pages whose content is still
+  `max-w-3xl` (e.g. `/products`), the header now sits at a wider inset
+  than the page content below it — worth widening those too if the
+  mismatch reads as off.
+- **Studio section restructured** into three explicit parts: heading
+  ("The studio"), the existing brand paragraph (link removed from the
+  inline sentence), and a standalone "Learn more" link to `/faq` below
+  it — replacing the single paragraph-with-inline-link layout.
 
 ## 1. Mood
 
