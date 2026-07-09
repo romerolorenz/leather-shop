@@ -279,3 +279,36 @@ treatment in the header:
   visible content is now split across two `<span>`s and the baybayin one
   is `aria-hidden` (it's a decorative gloss, not independently meaningful
   to a screen reader).
+- **Homepage header scrim swapped from a black gradient to a flat gray
+  bar**: `bg-gradient-to-b from-black/60 via-black/10 to-transparent` →
+  `bg-gray-500/80` (no blur — tried `backdrop-blur-md` and `/25`, `/50`
+  first, darkened twice per feedback). No longer fades to transparent at
+  the bottom of the bar — a uniform gray strip the same height as the
+  nav, rather than a scrim that blended into the photo. Reads quieter
+  and more consistent with the "no painted-on decoration" mood than the
+  gradient did. Solid-header pages (everywhere except `/`) are
+  unaffected — this only touches the `isHome` branch.
+- **Wordmark reset to one line**: `Hiraya ᜑᜒᜇᜌ` side by side
+  (`flex items-baseline gap-2`), reversing the earlier stacked-caption
+  call — per the user, after seeing both in the browser rather than
+  just discussed in the abstract. Baybayin sized up slightly (`text-[13px]`
+  → `text-base`) to hold its own next to the name at this width.
+- **Homepage header reverted to the same solid treatment as every other
+  page**, undoing the "header becomes part of the hero" call from the
+  first revision pass above. Wordmark/icon colors are now unconditional —
+  the same ink/accent tokens everywhere, no more homepage-only
+  white/fixed-orange override. Net effect of this session's header
+  color work: gradient → gray bar → darker gray bar → dropped entirely
+  in favor of one consistent color across routes.
+- **Positioning kept route-aware, though**: the very next ask was "don't
+  push the hero down because of the navbar" — so `usePathname()` stayed,
+  now only deciding `absolute inset-x-0 top-0 z-20` (homepage) vs. normal
+  document flow (everywhere else), with the *color* unconditional either
+  way. The homepage header floats over the hero's full `h-dvh` as an
+  opaque white/dark bar (covering the top sliver of the photo) instead of
+  the hero starting below it. Net shape of this whole session's header
+  arc: route-aware color+position → route-aware color only (briefly) →
+  same color everywhere, route-aware position only.
+- **Wordmark sized up**: `Hiraya` `text-lg` → `text-2xl`, baybayin
+  `text-base` → `text-xl`, gap `gap-2` → `gap-3` to keep breathing room
+  at the larger size.
