@@ -6,6 +6,40 @@ designing, and write the design doc before building" rule in
 [CLAUDE.md](../CLAUDE.md) — before adding to this list, a design brief
 should already exist under `docs/design/` and be agreed with the user.
 
+- **2026-07-09 — Cart / Account style concept**
+  [artifact](https://claude.ai/code/artifact/62d9e570-a159-46d0-bddd-52c401e70efd) —
+  brief: [docs/design/cart-account-concept.md](design/cart-account-concept.md).
+  Applies the homepage's "Quiet & Confident" system to `/cart`,
+  `/account`, and `/account/addresses`, stacked in one mockup for review.
+  Resolves four open questions from the brief: small utility thumbnails
+  go to hard corners (matching the product grid, no rounded-corner
+  exception); order/address cards drop their bordered-box treatment for
+  hairline-divided lists (full consistency with "no cards" rather than a
+  named exception); order-status accordion headers stay sentence-case
+  (not the uppercase eyebrow treatment); the addresses page's container
+  width is bumped from `max-w-2xl` to `max-w-3xl` to match every other
+  page. Quantity steppers and the order-status accordions are functional
+  in the mockup itself. Not yet built into the real app.
+  **Revised same day**: order-item options now show one per line, labeled
+  ("Color: Tan") instead of a single joined string — flagged in the brief
+  as needing a real change to `formatItemOptions` in `src/lib/orders.ts`,
+  not just styling. "Add address" is now a `+ Add address` button that
+  opens a modal (`<dialog>`) instead of an always-visible inline form —
+  closes via X, Cancel, backdrop click, or submit. See the brief's
+  "Revision pass" section.
+  **Noted, not mocked up**: cart line items should get the same
+  one-per-line option treatment as orders — the user asked to record this
+  in the brief only, not redeploy the artifact, so `CartView.tsx` still
+  needs it whenever this becomes real code even though the mockup itself
+  wasn't updated.
+  **Built same day**: `CartView.tsx`, `account/page.tsx`,
+  `account/addresses/page.tsx` + new `AddAddressModal.tsx`. Cart got the
+  one-per-line option treatment too (per the note above, even though the
+  artifact wasn't updated for it). Found and fixed a real bug along the
+  way: the add-address `<dialog>` rendered top-left instead of centered
+  because Tailwind's preflight strips the `margin: auto` a modal dialog
+  needs — fixed with `m-auto`. See the brief's "Build notes" section.
+
 - **2026-07-08 — Homepage v3, "Quiet & Confident"**
   [artifact](https://claude.ai/code/artifact/dbb0209b-fc2d-40cd-bc50-d29f3cb23551) —
   brief: [docs/design/homepage.md](design/homepage.md). Built from a
