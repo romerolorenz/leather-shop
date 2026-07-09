@@ -140,8 +140,11 @@ throughout.
 ## Header
 
 `src/components/SiteHeader.tsx` uses one unconditional **color** across
-every route, homepage included: `border-b border-black/[.08] bg-white
-dark:border-white/[.145] dark:bg-[#121110]`. **Positioning** stays
+every route, homepage included: `border-b border-black/[.08] bg-white/80
+dark:border-white/[.145] dark:bg-[#121110]/80` — translucent, no blur
+(the homepage overlay is the only place this reads as anything other
+than opaque, since nothing sits behind the header on other routes).
+**Positioning** stays
 route-aware via `usePathname()`: `absolute inset-x-0 top-0 z-20` on the
 homepage (floats over the full-bleed `h-dvh` hero instead of pushing it
 down the page — the opaque bar just covers the top sliver of the photo),

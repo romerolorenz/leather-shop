@@ -312,3 +312,10 @@ treatment in the header:
 - **Wordmark sized up**: `Hiraya` `text-lg` → `text-2xl`, baybayin
   `text-base` → `text-xl`, gap `gap-2` → `gap-3` to keep breathing room
   at the larger size.
+- **Header made translucent**: `bg-white`/`dark:bg-[#121110]` →
+  `bg-white/80`/`dark:bg-[#121110]/80` (no blur, per the earlier
+  no-blur call). Since the color is unconditional now, this technically
+  applies everywhere, but only reads as a visible change on the homepage
+  overlay — on every other page nothing sits behind the header, so
+  translucent vs. opaque looks identical there. The hero photo and
+  headline now show through faintly beneath the bar.
