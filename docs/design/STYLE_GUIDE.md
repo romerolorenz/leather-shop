@@ -7,13 +7,21 @@ same vibe/typography/color system without re-deriving it. See
 reasoning behind each choice — this doc is the condensed, reusable
 reference.
 
-**Scope today**: only the homepage uses this system. Every other page
-(`/products`, cart, checkout, FAQ, account, admin, etc.) still uses the
-original look — system font stack (`Arial, Helvetica, sans-serif`, via
-`globals.css` `body`), Tailwind's default `zinc` palette for muted text,
-and plain `rounded-full bg-foreground` pill buttons. Treat that as the
-"before" state to migrate *from* when a page gets reworked into this
-system, not as a second parallel style to maintain.
+**Scope today**: the homepage, `/products`, and `/products/[slug]` use
+this system (see [docs/design/shop-page.md](shop-page.md) for the
+shop/PDP pass). Every other page (cart, checkout, FAQ, account, admin,
+etc.) still uses the original look — system font stack
+(`Arial, Helvetica, sans-serif`, via `globals.css` `body`), Tailwind's
+default `zinc` palette for muted text, and plain `rounded-full
+bg-foreground` pill buttons. Treat that as the "before" state to migrate
+*from* when a page gets reworked into this system, not as a second
+parallel style to maintain.
+
+**Exception**: `src/components/Breadcrumbs.tsx` was migrated to the new
+tokens (`--ink-soft` for muted crumbs, `--accent` for the current page)
+across *all* pages that use it, not just the restyled ones — a shared
+component, so it couldn't stay half-migrated. It reads fine on
+unrestyled pages too (verified on `/faq`).
 
 ## Mood
 

@@ -35,20 +35,41 @@ component patterns, no page-specific deviation.
 
 ## What stays the same
 
-- **`Breadcrumbs` component is untouched.** It's shared across 17 pages
-  sitewide (admin, account, checkout, etc.) — restyling it here would
-  either change it everywhere or require a variant prop, both bigger than
-  this pass's scope. Its current `zinc-500`/`zinc-400` muted gray is close
-  enough to the new `--ink-soft` token (`#6E6A64`/`#A39C90`) that it won't
-  visibly clash sitting above the restyled heading/grid.
 - No filtering, no category tabs, no sort control — the page still shows
   every product in one flat grid, just restyled.
 - No new copy — product name/price/description all still come straight
   from `getProducts()`, nothing invented.
 
-## Open note
+## Revision pass (2026-07-09, same day)
 
-Once more pages move onto this system, revisit whether `Breadcrumbs`
-should get a style variant rather than staying visually "close enough" —
-flagging now so it doesn't get forgotten once several pages have made the
-same call independently.
+Three follow-ups from the user, after testing the first build:
+
+- **Fixed a real bug**: the page's `bg-white`/`dark:bg-[#121110]` lived on
+  the same element as `mx-auto max-w-6xl`, so the paper color only filled
+  the centered content column — outside it, the old sitewide
+  `--background` var showed through, a visible seam on wide viewports
+  (especially dark mode, where `#0a0a0a` vs `#121110` are visibly
+  different darks). Fixed by splitting the background onto the outer
+  `<main>` (full width, no max-w) and moving `max-w-6xl` to an inner
+  content wrapper — same structure the homepage already used correctly.
+  Applied the same fix to the product detail page (`[slug]/page.tsx`),
+  which had the identical bug.
+- **`Breadcrumbs` now migrated globally** (`src/components/Breadcrumbs.tsx`),
+  resolving the "Open note" below — the user explicitly OK'd changing the
+  shared component rather than staying "close enough": muted crumbs use
+  `--ink-soft`, the current-page crumb is now `--accent` orange. This
+  changes all 17 pages that use it, not just this one; the small accent
+  reads fine even on pages that haven't otherwise adopted the new system
+  (verified on `/faq`).
+- **Product detail page** (`[slug]/page.tsx`, `ProductDetail.tsx`,
+  `ProductGallery.tsx`) got the same restyle pass: Archivo font, ink/
+  ink-soft text colors, hairline-token borders on the option dropdown/
+  swatches, un-rounded gallery image and thumbnail strip, accent-colored
+  thumbnail-selected state. The functional bits (option selection,
+  add-to-cart state/logic, dropdown default-selection behavior) are
+  untouched — this was a color/type pass, not a UX change. The solid
+  ink-fill "Add to cart" button and selected-swatch fill were deliberately
+  *not* switched to accent orange — STYLE_GUIDE.md is explicit that accent
+  is never a background fill, so the existing monochrome
+  `bg-foreground`/`text-background` treatment already matches the system
+  and was left alone.
