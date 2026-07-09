@@ -14,7 +14,7 @@ import {
 } from "../../actions";
 import { ProductFormFields } from "../ProductFormFields";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { ActionButton } from "@/components/admin/ActionButton";
+import { ActionButton } from "@/components/ActionButton";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 

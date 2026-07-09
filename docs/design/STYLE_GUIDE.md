@@ -7,15 +7,24 @@ same vibe/typography/color system without re-deriving it. See
 reasoning behind each choice — this doc is the condensed, reusable
 reference.
 
-**Scope today**: the homepage, `/products`, and `/products/[slug]` use
-this system (see [docs/design/shop-page.md](shop-page.md) for the
-shop/PDP pass). Every other page (cart, checkout, FAQ, account, admin,
-etc.) still uses the original look — system font stack
-(`Arial, Helvetica, sans-serif`, via `globals.css` `body`), Tailwind's
-default `zinc` palette for muted text, and plain `rounded-full
-bg-foreground` pill buttons. Treat that as the "before" state to migrate
-*from* when a page gets reworked into this system, not as a second
-parallel style to maintain.
+**Scope today**: the homepage, `/products`, `/products/[slug]`, `/faq`,
+`/contact`, `/cart`, `/account`, and `/account/addresses` use this system
+(see [docs/design/shop-page.md](shop-page.md) for the shop/PDP pass,
+[docs/design/content-pages.md](content-pages.md) for FAQ/Contact, and
+[docs/design/cart-account-concept.md](cart-account-concept.md) for
+cart/account). Every other page (checkout, admin, etc.) still uses the
+original look — system font stack (`Arial, Helvetica, sans-serif`, via
+`globals.css` `body`), Tailwind's default `zinc` palette for muted text,
+and plain `rounded-full bg-foreground` pill buttons. Treat that as the
+"before" state to migrate *from* when a page gets reworked into this
+system, not as a second parallel style to maintain.
+
+**New pattern from the cart/account pass**: grouped structured data (an
+order's line items, an address's fields) drops the "no cards" rule's
+usual whitespace-only separation in favor of a `divide-y` hairline list —
+still no bordered box, but each record gets a visible top rule instead of
+just a gap. Use this for any future list of multi-line records, not
+single-item teasers (which stay whitespace-only, per the original rule).
 
 **Exception**: `src/components/Breadcrumbs.tsx` was migrated to the new
 tokens (`--ink-soft` for muted crumbs, `--accent` for the current page)

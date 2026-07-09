@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { CartProvider } from "@/lib/cart-context";
+import { ToastProvider } from "@/components/ToastProvider";
 import SiteHeader from "@/components/SiteHeader";
 import { getCustomerEmail } from "@/lib/customer/auth";
 import "./globals.css";
@@ -40,20 +41,22 @@ export default async function RootLayout({
         >
           Skip to content
         </a>
-        <CartProvider>
-          <SiteHeader customerEmail={customerEmail} />
-          <div id="main-content" className="flex flex-1 flex-col">
-            {children}
-          </div>
-          <footer className="border-t border-black/[.08] px-6 py-8 dark:border-white/[.145]">
-            <nav className="mx-auto flex max-w-3xl flex-wrap gap-6 text-sm text-zinc-500 dark:text-zinc-400">
-              <Link href="/products">Shop</Link>
-              <Link href="/faq">FAQ</Link>
-              <Link href="/contact">Contact Us</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-            </nav>
-          </footer>
-        </CartProvider>
+        <ToastProvider>
+          <CartProvider>
+            <SiteHeader customerEmail={customerEmail} />
+            <div id="main-content" className="flex flex-1 flex-col">
+              {children}
+            </div>
+            <footer className="border-t border-black/[.08] px-6 py-8 dark:border-white/[.145]">
+              <nav className="mx-auto flex max-w-3xl flex-wrap gap-6 text-sm text-zinc-500 dark:text-zinc-400">
+                <Link href="/products">Shop</Link>
+                <Link href="/faq">FAQ</Link>
+                <Link href="/contact">Contact Us</Link>
+                <Link href="/privacy">Privacy Policy</Link>
+              </nav>
+            </footer>
+          </CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );
