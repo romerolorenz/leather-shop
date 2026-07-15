@@ -14,7 +14,49 @@ fixed).
 
 ## Outstanding
 
-(none — see Done below)
+- [ ] **`/admin/options` edit-modal pattern.**
+  - [ ] Each option type row shows read-only name + display style
+        (Buttons/Dropdown), with a pencil "Edit" button next to it.
+        Findings:
+  - [ ] Clicking the pencil opens a dialog pre-filled with the current
+        name/display style; Cancel and the X close it without saving.
+        Findings:
+  - [ ] Clicking outside the dialog (on the backdrop) closes it, same as
+        clicking inside a value row's content does not.
+        Findings:
+  - [ ] Saving a valid change updates the row and shows a success toast;
+        the dialog closes only after the save succeeds.
+        Findings:
+  - [ ] Saving an empty name/value shows an error toast and the dialog
+        stays open with the invalid value still in the field.
+        Findings:
+  - [ ] Same checks for a value row's pencil-icon edit (name only, no
+        display style field).
+        Findings:
+  - [ ] "Add option type" and "Add value" still work exactly as before
+        (unaffected by this change) and delete still asks to confirm.
+        Findings:
+
+- [ ] **Drag-to-reorder (FAQ, product options, featured products).**
+  - [ ] `/admin/faq`: dragging an item by its grip handle to a new
+        position (including moving it several places in one drop, not
+        just swapping with a neighbor) persists after reload; dragging
+        does not interfere with editing the question/answer text or
+        clicking Delete.
+        Findings:
+  - [ ] `/admin/products/[id]` Options section: same drag check: reorder
+        persists, checkboxes for each option's values remain correctly
+        checked after reordering and after the (still-batched) "Save
+        options" submit.
+        Findings:
+  - [ ] `/admin/homepage` featured products: dragging a featured product
+        to a new grid position persists and is reflected in the homepage's
+        featured grid order.
+        Findings:
+  - [ ] A failed reorder (e.g. simulate by going offline mid-drag) reverts
+        the list to its previous order and shows an error toast, rather
+        than leaving the UI in a state that doesn't match the database.
+        Findings:
 
 ## Done
 

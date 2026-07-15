@@ -4,7 +4,7 @@ import { getSettings } from "@/lib/settings";
 import { formatPrice } from "@/lib/products";
 import {
   setProductFeaturedAction,
-  moveFeaturedProductAction,
+  reorderFeaturedProductsAction,
   uploadHeroImageAction,
   updateHeroFocalPointAction,
   updateHomepageTextAction,
@@ -14,6 +14,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { HeroFocalPointPicker } from "@/components/admin/HeroFocalPointPicker";
+import { DragReorderList } from "@/components/admin/DragReorderList";
 
 const MAX_FEATURED = 3;
 
@@ -48,53 +49,20 @@ export default async function AdminHomepagePage() {
         </p>
 
         {featured.length > 0 && (
-          <ul className="mb-6 flex flex-col gap-2">
-            {featured.map((product, index) => {
-              const moveUp = moveFeaturedProductAction.bind(
-                null,
-                product.id,
-                "up"
-              );
-              const moveDown = moveFeaturedProductAction.bind(
-                null,
-                product.id,
-                "down"
-              );
-              return (
-                <li
-                  key={product.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-black/[.08] p-3 dark:border-white/[.145]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-1">
-                      <ActionButton
-                        action={moveUp}
-                        disabled={index === 0}
-                        ariaLabel="Move up"
-                        className="rounded-md border border-black/[.15] px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[.2]"
-                      >
-                        ↑
-                      </ActionButton>
-                      <ActionButton
-                        action={moveDown}
-                        disabled={index === featured.length - 1}
-                        ariaLabel="Move down"
-                        className="rounded-md border border-black/[.15] px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[.2]"
-                      >
-                        ↓
-                      </ActionButton>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                        {SLOT_LABELS[index] ?? `Grid position ${index}`}
-                      </p>
-                      <p className="text-sm font-medium">{product.name}</p>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <DragReorderList
+            items={featured}
+            onReorder={reorderFeaturedProductsAction}
+            className="mb-6 flex flex-col gap-2"
+            itemClassName="rounded-lg border border-black/[.08] p-3 dark:border-white/[.145]"
+            renderItem={(product, index) => (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  {SLOT_LABELS[index] ?? `Grid position ${index}`}
+                </p>
+                <p className="text-sm font-medium">{product.name}</p>
+              </div>
+            )}
+          />
         )}
 
         <ul className="flex flex-col gap-2">

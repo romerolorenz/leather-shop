@@ -4,13 +4,16 @@ import {
   deleteOptionTypeAction,
   createOptionValueAction,
   deleteOptionValueAction,
-  updateOptionLibraryAction,
+  updateOptionTypeAction,
+  updateOptionValueAction,
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ActionButton } from "@/components/ActionButton";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { InlineAddForm } from "@/components/admin/InlineAddForm";
+import { OptionTypeFormModal } from "@/components/admin/OptionTypeFormModal";
+import { OptionValueFormModal } from "@/components/admin/OptionValueFormModal";
 
 function TrashIcon() {
   return (
@@ -33,13 +36,10 @@ function TrashIcon() {
   );
 }
 
+const DISPLAY_STYLE_LABELS = { buttons: "Buttons", dropdown: "Dropdown" };
+
 export default async function AdminOptionsPage() {
   const optionTypes = await listOptionTypes();
-  const typeIds = optionTypes.map((type) => type.id);
-  const valueIds = optionTypes.flatMap((type) =>
-    type.values.map((value) => value.id)
-  );
-  const saveLibrary = updateOptionLibraryAction.bind(null, typeIds, valueIds);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
@@ -58,104 +58,94 @@ export default async function AdminOptionsPage() {
         is attached — including products not shown on this page.
       </p>
 
-      <ActionForm action={saveLibrary} className="mb-10">
-        <ul className="flex flex-col gap-4">
-          {optionTypes.map((type) => {
-            const removeType = deleteOptionTypeAction.bind(null, type.id);
-            // createOptionValueAction takes (optionTypeId, prevState,
-            // formData); pre-binding prevState too gives InlineAddForm the
-            // (formData) => ActionResult shape it expects.
-            const addValue = createOptionValueAction.bind(null, type.id, null);
-            return (
-              <li
-                key={type.id}
-                className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
-              >
-                <div className="flex items-center gap-2">
-                  <input
-                    name={`name:${type.id}`}
-                    defaultValue={type.name}
-                    aria-label="Option type name"
-                    required
-                    className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm font-medium dark:border-white/[.2]"
-                  />
-                  <select
-                    name={`displayStyle:${type.id}`}
-                    defaultValue={type.displayStyle}
-                    aria-label="Display style"
-                    className="rounded-md border border-black/[.15] bg-transparent px-2 py-1.5 text-sm dark:border-white/[.2]"
-                  >
-                    <option value="buttons">Buttons</option>
-                    <option value="dropdown">Dropdown</option>
-                  </select>
-                  <ActionButton
-                    action={removeType}
-                    confirmMessage="Delete this option type? This removes it from every product using it."
-                    ariaLabel="Delete option type"
-                    className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
-                  >
-                    <TrashIcon />
-                  </ActionButton>
-                </div>
-
-                <ul className="mt-3 flex flex-col gap-2 pl-4">
-                  {type.values.map((value) => {
-                    const removeValue = deleteOptionValueAction.bind(
-                      null,
-                      value.id
-                    );
-                    return (
-                      <li key={value.id} className="flex items-center gap-2">
-                        <input
-                          name={`value:${value.id}`}
-                          defaultValue={value.value}
-                          aria-label="Option value"
-                          required
-                          className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1 text-sm dark:border-white/[.2]"
-                        />
-                        <ActionButton
-                          action={removeValue}
-                          confirmMessage="Delete this value? This removes it from every product using it."
-                          ariaLabel="Delete value"
-                          className="rounded-md p-1 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
-                        >
-                          <TrashIcon />
-                        </ActionButton>
-                      </li>
-                    );
-                  })}
-                </ul>
-                {type.values.length === 0 && (
-                  <p className="mt-3 pl-4 text-xs text-zinc-500 dark:text-zinc-400">
-                    No values yet.
-                  </p>
-                )}
-                <InlineAddForm
-                  action={addValue}
-                  fieldName="value"
-                  placeholder="e.g. Natural Thread"
-                  buttonLabel="Add value"
-                  pendingLabel="Adding…"
-                  className="mt-2 flex items-center gap-2 pl-4"
+      <ul className="mb-10 flex flex-col gap-4">
+        {optionTypes.map((type) => {
+          const removeType = deleteOptionTypeAction.bind(null, type.id);
+          const updateType = updateOptionTypeAction.bind(null, type.id);
+          // createOptionValueAction takes (optionTypeId, prevState,
+          // formData); pre-binding prevState too gives InlineAddForm the
+          // (formData) => ActionResult shape it expects.
+          const addValue = createOptionValueAction.bind(null, type.id, null);
+          return (
+            <li
+              key={type.id}
+              className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex-1 text-sm font-medium">
+                  {type.name}{" "}
+                  <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                    ({DISPLAY_STYLE_LABELS[type.displayStyle]})
+                  </span>
+                </span>
+                <OptionTypeFormModal
+                  action={updateType}
+                  defaultValues={{
+                    name: type.name,
+                    displayStyle: type.displayStyle,
+                  }}
                 />
-              </li>
-            );
-          })}
-          {optionTypes.length === 0 && (
-            <li className="text-sm text-zinc-500 dark:text-zinc-400">
-              No option types yet.
+                <ActionButton
+                  action={removeType}
+                  confirmMessage="Delete this option type? This removes it from every product using it."
+                  ariaLabel="Delete option type"
+                  className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                >
+                  <TrashIcon />
+                </ActionButton>
+              </div>
+
+              <ul className="mt-3 flex flex-col gap-2 pl-4">
+                {type.values.map((value) => {
+                  const removeValue = deleteOptionValueAction.bind(
+                    null,
+                    value.id
+                  );
+                  const updateValue = updateOptionValueAction.bind(
+                    null,
+                    value.id
+                  );
+                  return (
+                    <li key={value.id} className="flex items-center gap-2">
+                      <span className="flex-1 text-sm">{value.value}</span>
+                      <OptionValueFormModal
+                        action={updateValue}
+                        defaultValues={{ value: value.value }}
+                      />
+                      <ActionButton
+                        action={removeValue}
+                        confirmMessage="Delete this value? This removes it from every product using it."
+                        ariaLabel="Delete value"
+                        className="rounded-md p-1 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                      >
+                        <TrashIcon />
+                      </ActionButton>
+                    </li>
+                  );
+                })}
+              </ul>
+              {type.values.length === 0 && (
+                <p className="mt-3 pl-4 text-xs text-zinc-500 dark:text-zinc-400">
+                  No values yet.
+                </p>
+              )}
+              <InlineAddForm
+                action={addValue}
+                fieldName="value"
+                placeholder="e.g. Natural Thread"
+                buttonLabel="Add value"
+                pendingLabel="Adding…"
+                className="mt-2 flex items-center gap-2 pl-4"
+              />
             </li>
-          )}
-        </ul>
-        {optionTypes.length > 0 && (
-          <SubmitButton
-            pendingLabel="Saving…"
-            className="mt-6 rounded-full bg-foreground px-4 py-1.5 text-sm text-background disabled:opacity-50"
-          >
-            Save library
-          </SubmitButton>
+          );
+        })}
+        {optionTypes.length === 0 && (
+          <li className="text-sm text-zinc-500 dark:text-zinc-400">
+            No option types yet.
+          </li>
         )}
-      </ActionForm>
+      </ul>
 
       <h2 className="mb-4 text-sm font-medium">Add option type</h2>
       <ActionForm

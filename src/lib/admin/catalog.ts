@@ -1,5 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { swapPositions } from "@/lib/admin/reorder";
+import { setPositions } from "@/lib/admin/reorder";
 
 export type OptionDisplayStyle = "buttons" | "dropdown";
 
@@ -454,41 +454,23 @@ export async function detachOptionFromProduct(
   if (error) throw error;
 }
 
-// Swaps this product's attached option with its neighbor — same
-// swap-adjacent-position approach as moveFaqItem (src/lib/admin/faq.ts).
-// Scoped to productId's own product_options rows, not shop-wide.
-export async function moveProductOption(
+// Persists a product's attached options in the exact order dropped —
+// scoped to productId's own product_options rows, not shop-wide. See
+// setPositions (src/lib/admin/reorder.ts) for why this writes the full
+// order instead of swapping adjacent positions.
+export async function reorderProductOptions(
   productId: string,
-  productOptionId: string,
-  direction: "up" | "down"
+  orderedIds: string[]
 ): Promise<void> {
   const supabase = getSupabaseServerClient();
-  const { data: options, error } = await supabase
-    .from("product_options")
-    .select("id, position")
-    .eq("product_id", productId)
-    .order("position", { ascending: true });
-
-  if (error) throw error;
-
-  const index = options.findIndex((o) => o.id === productOptionId);
-  const swapIndex = direction === "up" ? index - 1 : index + 1;
-  if (index === -1 || swapIndex < 0 || swapIndex >= options.length) return;
-
-  const current = options[index];
-  const swap = options[swapIndex];
-
-  const { error: currentErr } = await supabase
-    .from("product_options")
-    .update({ position: swap.position })
-    .eq("id", current.id);
-  if (currentErr) throw currentErr;
-
-  const { error: swapErr } = await supabase
-    .from("product_options")
-    .update({ position: current.position })
-    .eq("id", swap.id);
-  if (swapErr) throw swapErr;
+  await setPositions(
+    supabase,
+    "product_options",
+    { product_id: productId },
+    "id",
+    "position",
+    orderedIds
+  );
 }
 
 // ─── Homepage featured products (US-38) ─────────────────────────────────
@@ -580,18 +562,16 @@ export async function setProductFeatured(
   }
 }
 
-export async function moveFeaturedProduct(
-  productId: string,
-  direction: "up" | "down"
+export async function reorderFeaturedProducts(
+  orderedIds: string[]
 ): Promise<void> {
   const supabase = getSupabaseServerClient();
-  await swapPositions(
+  await setPositions(
     supabase,
     "products",
     { featured: true },
     "id",
     "featured_position",
-    productId,
-    direction
+    orderedIds
   );
 }

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   createProduct,
   setProductFeatured,
-  moveFeaturedProduct,
+  reorderFeaturedProducts,
   listFeaturedProducts,
   type ProductInput,
   type FeaturedProduct,
@@ -99,8 +99,8 @@ describe("setProductFeatured", () => {
   });
 });
 
-describe("moveFeaturedProduct", () => {
-  it("reorders the featured set and no-ops at the boundary", async () => {
+describe("reorderFeaturedProducts", () => {
+  it("persists the featured set in the given order", async () => {
     const a = await createScratchProduct("Vitest Reorder A");
     const b = await createScratchProduct("Vitest Reorder B");
     const c = await createScratchProduct("Vitest Reorder C");
@@ -112,14 +112,11 @@ describe("moveFeaturedProduct", () => {
     let featured = await listFeaturedProducts();
     expect(featured.map((p) => p.id)).toEqual([a, b, c]);
 
-    await moveFeaturedProduct(c, "up");
+    // A drag can move an item several positions in one drop, not just
+    // swap with a neighbor — move c (last) to first.
+    await reorderFeaturedProducts([c, a, b]);
     featured = await listFeaturedProducts();
-    expect(featured.map((p) => p.id)).toEqual([a, c, b]);
-
-    // a is already first — moving it up again is a no-op.
-    await moveFeaturedProduct(a, "up");
-    featured = await listFeaturedProducts();
-    expect(featured.map((p) => p.id)).toEqual([a, c, b]);
+    expect(featured.map((p) => p.id)).toEqual([c, a, b]);
 
     await setProductFeatured(a, false);
     await setProductFeatured(b, false);

@@ -11,7 +11,7 @@ import {
   attachOptionToProduct,
   updateProductOptionSelection,
   detachOptionFromProduct,
-  moveProductOption,
+  reorderProductOptions,
   getProductForAdmin,
   type ProductInput,
 } from "@/lib/admin/catalog";
@@ -159,8 +159,8 @@ describe("attaching a shared option to a product", () => {
   });
 });
 
-describe("moveProductOption", () => {
-  it("reorders a product's attached options and no-ops at the boundary", async () => {
+describe("reorderProductOptions", () => {
+  it("persists a product's attached options in the given order", async () => {
     // Isolated scratch product (not the shared `productId`, which by this
     // point in the file may already have other options attached from
     // earlier tests) — this test needs full control over exactly which
@@ -178,6 +178,11 @@ describe("moveProductOption", () => {
     scratchOptionTypeIds.push(styleTypeId);
     const { id: eraTypeId } = await createOptionType("Vitest Era", "buttons");
     scratchOptionTypeIds.push(eraTypeId);
+    const { id: finishTypeId } = await createOptionType(
+      "Vitest Finish 2",
+      "buttons"
+    );
+    scratchOptionTypeIds.push(finishTypeId);
 
     const { productOptionId: styleOptionId } = await attachOptionToProduct(
       reorderProductId,
@@ -189,26 +194,31 @@ describe("moveProductOption", () => {
       eraTypeId,
       []
     );
+    const { productOptionId: finishOptionId } = await attachOptionToProduct(
+      reorderProductId,
+      finishTypeId,
+      []
+    );
 
     let product = await getProductForAdmin(reorderProductId);
     expect(product!.options.map((o) => o.productOptionId)).toEqual([
       styleOptionId,
       eraOptionId,
+      finishOptionId,
     ]);
 
-    await moveProductOption(reorderProductId, eraOptionId, "up");
-    product = await getProductForAdmin(reorderProductId);
-    expect(product!.options.map((o) => o.productOptionId)).toEqual([
-      eraOptionId,
+    // A drag can move an item several positions in one drop, not just
+    // swap with a neighbor — move finish (last) to first.
+    await reorderProductOptions(reorderProductId, [
+      finishOptionId,
       styleOptionId,
+      eraOptionId,
     ]);
-
-    // era is now first — moving it up again is a no-op.
-    await moveProductOption(reorderProductId, eraOptionId, "up");
     product = await getProductForAdmin(reorderProductId);
     expect(product!.options.map((o) => o.productOptionId)).toEqual([
-      eraOptionId,
+      finishOptionId,
       styleOptionId,
+      eraOptionId,
     ]);
   });
 });

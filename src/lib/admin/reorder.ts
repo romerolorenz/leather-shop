@@ -45,3 +45,30 @@ export async function swapPositions(
     .eq(idColumn, swap[idColumn]);
   if (swapErr) throw swapErr;
 }
+
+// Drag-and-drop reorder: the client already knows the full new order (a
+// drop can move an item several positions in one go, not just swap with a
+// neighbor), so this just writes each id's new dense index directly rather
+// than repeated single-step swaps. Shared by reorderFaqItems
+// (src/lib/admin/faq.ts), reorderProductOptions and
+// reorderFeaturedProducts (both src/lib/admin/catalog.ts).
+export async function setPositions(
+  supabase: SupabaseClient,
+  table: string,
+  filter: Record<string, string | boolean>,
+  idColumn: string,
+  positionColumn: string,
+  orderedIds: string[]
+): Promise<void> {
+  for (const [index, id] of orderedIds.entries()) {
+    let query = supabase
+      .from(table)
+      .update({ [positionColumn]: index })
+      .eq(idColumn, id);
+    for (const [column, value] of Object.entries(filter)) {
+      query = query.eq(column, value);
+    }
+    const { error } = await query;
+    if (error) throw error;
+  }
+}

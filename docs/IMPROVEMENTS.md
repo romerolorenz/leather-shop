@@ -9,6 +9,29 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **`/admin/options` uses an edit-modal pattern instead of inline
+  batch-editable fields**, matching `/account/addresses`
+  (`AddressFormModal.tsx`): each option type/value is shown read-only with
+  a pencil-icon "Edit" button opening a `<dialog>` form pre-filled via
+  `defaultValues` (`OptionTypeFormModal.tsx`, `OptionValueFormModal.tsx`,
+  both in `src/components/admin/`). Unlike `AddressFormModal`'s
+  `onSubmit={close}`, these submit through `useActionState` so a thrown
+  error toasts and keeps the dialog open instead of closing before the
+  action resolves. New single-row `updateOptionTypeAction(id, prevState,
+  formData)` / `updateOptionValueAction(id, prevState, formData)` replace
+  the old batched `updateOptionLibraryAction`; create/delete flows are
+  unchanged.
+- [x] **Drag-to-reorder instead of ↑/↓ buttons**, across `/admin/faq`,
+  `/admin/products/[id]`'s Options section, and `/admin/homepage`'s
+  featured list. New generic `DragReorderList`
+  (`src/components/admin/DragReorderList.tsx`) uses native HTML5 drag
+  events with a dedicated grip handle (not the whole row, so inputs/
+  textareas/buttons inside each row stay usable) and calls back with the
+  full dropped order. The swap-adjacent functions (`moveFaqItem`,
+  `moveProductOption`, `moveFeaturedProduct`) were replaced with
+  set-full-order equivalents (`reorderFaqItems`, `reorderProductOptions`,
+  `reorderFeaturedProducts`) via a new `setPositions` helper alongside the
+  existing `swapPositions` one in `src/lib/admin/reorder.ts`.
 - [x] Homepage content management (US-38) — live: migration `0013` run
   against the dev DB, admin UI manually verified end-to-end (see
   `docs/MANUAL_TESTING.md`).

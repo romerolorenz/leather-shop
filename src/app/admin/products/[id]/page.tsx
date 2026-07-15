@@ -8,7 +8,7 @@ import {
   createOptionTypeAndAttachAction,
   updateProductOptionSelectionsAction,
   detachOptionAction,
-  moveProductOptionAction,
+  reorderProductOptionsAction,
   uploadPhotoAction,
   deletePhotoAction,
 } from "../../actions";
@@ -17,6 +17,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ActionButton } from "@/components/ActionButton";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { SubmitButton } from "@/components/admin/SubmitButton";
+import { DragReorderList } from "@/components/admin/DragReorderList";
 
 function TrashIcon() {
   return (
@@ -64,6 +65,7 @@ export default async function EditProductPage(
     product.id,
     productOptionIds
   );
+  const reorderOptions = reorderProductOptionsAction.bind(null, product.id);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
@@ -175,57 +177,26 @@ export default async function EditProductPage(
 
         {product.options.length > 0 && (
           <ActionForm action={saveAllSelections} className="mb-6">
-            <ul className="mb-4 flex flex-col gap-4">
-              {product.options.map((option, index) => {
-                const moveUp = moveProductOptionAction.bind(
-                  null,
-                  option.productOptionId,
-                  product.id,
-                  "up"
-                );
-                const moveDown = moveProductOptionAction.bind(
-                  null,
-                  option.productOptionId,
-                  product.id,
-                  "down"
-                );
+            <DragReorderList
+              items={product.options.map((o) => ({ ...o, id: o.productOptionId }))}
+              onReorder={reorderOptions}
+              className="mb-4 flex flex-col gap-4"
+              itemClassName="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
+              renderItem={(option) => {
                 const detach = detachOptionAction.bind(
                   null,
                   option.productOptionId,
                   product.id
                 );
                 return (
-                  <li
-                    key={option.productOptionId}
-                    className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
-                  >
+                  <>
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <ActionButton
-                            action={moveUp}
-                            disabled={index === 0}
-                            ariaLabel="Move up"
-                            className="rounded-md border border-black/[.15] px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[.2]"
-                          >
-                            ↑
-                          </ActionButton>
-                          <ActionButton
-                            action={moveDown}
-                            disabled={index === product.options.length - 1}
-                            ariaLabel="Move down"
-                            className="rounded-md border border-black/[.15] px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[.2]"
-                          >
-                            ↓
-                          </ActionButton>
-                        </div>
-                        <span className="text-sm font-medium">
-                          {option.name}{" "}
-                          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
-                            ({option.displayStyle})
-                          </span>
+                      <span className="text-sm font-medium">
+                        {option.name}{" "}
+                        <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                          ({option.displayStyle})
                         </span>
-                      </div>
+                      </span>
                       <ActionButton
                         action={detach}
                         confirmMessage="Detach this option from the product? Other products using it are unaffected."
@@ -261,10 +232,10 @@ export default async function EditProductPage(
                         ))}
                       </div>
                     )}
-                  </li>
+                  </>
                 );
-              })}
-            </ul>
+              }}
+            />
             <SubmitButton
               pendingLabel="Saving…"
               className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"

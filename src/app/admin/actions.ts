@@ -15,11 +15,11 @@ import {
   attachOptionToProduct,
   updateProductOptionSelection,
   detachOptionFromProduct,
-  moveProductOption,
+  reorderProductOptions,
   addProductPhotos,
   deleteProductPhoto,
   setProductFeatured,
-  moveFeaturedProduct,
+  reorderFeaturedProducts,
   type ProductInput,
   type OptionDisplayStyle,
 } from "@/lib/admin/catalog";
@@ -34,7 +34,7 @@ import {
   createFaqItem,
   updateFaqItem,
   deleteFaqItem,
-  moveFaqItem,
+  reorderFaqItems,
 } from "@/lib/admin/faq";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runAction, type ActionResult } from "@/lib/action-result";
@@ -151,35 +151,38 @@ export async function deleteOptionValueAction(id: string): Promise<ActionResult>
   }, "Value deleted.");
 }
 
-// typeIds/valueIds are bound at render time from the library the page
-// already fetched (mirrors updateProductOptionSelectionsAction's
-// productOptionIds bind) — one submit covers every type's name/display
-// style and every value's text, instead of a separate save button per row.
-export async function updateOptionLibraryAction(
-  typeIds: string[],
-  valueIds: string[],
+// Bound per-row (.bind(null, id)) for OptionTypeFormModal/
+// OptionValueFormModal's edit dialogs — replaces the old batched
+// updateOptionLibraryAction now that each row has its own edit modal
+// instead of an always-editable inline field.
+export async function updateOptionTypeAction(
+  id: string,
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    for (const typeId of typeIds) {
-      const name = String(formData.get(`name:${typeId}`) ?? "").trim();
-      if (!name) throw new Error("Option type name is required.");
-      const displayStyle: OptionDisplayStyle =
-        formData.get(`displayStyle:${typeId}`) === "dropdown"
-          ? "dropdown"
-          : "buttons";
-      await updateOptionType(typeId, name, displayStyle);
-    }
-    for (const valueId of valueIds) {
-      const value = String(formData.get(`value:${valueId}`) ?? "").trim();
-      if (!value) throw new Error("Value is required.");
-      await updateOptionValue(valueId, value);
-    }
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) throw new Error("Option type name is required.");
+    await updateOptionType(id, name, parseDisplayStyle(formData));
     revalidatePath("/admin/options");
     revalidateStorefront();
-  }, "Library saved.");
+  }, "Option type updated.");
+}
+
+export async function updateOptionValueAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const value = String(formData.get("value") ?? "").trim();
+    if (!value) throw new Error("Value is required.");
+    await updateOptionValue(id, value);
+    revalidatePath("/admin/options");
+    revalidateStorefront();
+  }, "Option value updated.");
 }
 
 // ─── attaching shared options to a product (per-product page) ───────────
@@ -252,18 +255,15 @@ export async function detachOptionAction(
   }, "Option detached.");
 }
 
-// Returns ActionResult (unlike moveFaqItemAction's void return) because
-// this button lives inside the "Save options" batch form — it has to go
-// through ActionButton rather than a nested <form>, and ActionButton's
-// action prop requires an ActionResult to toast.
-export async function moveProductOptionAction(
-  productOptionId: string,
+// Bound to productId; DragReorderList's onReorder calls this with the
+// full dropped order, same instant-commit treatment as the old ↑/↓ moves.
+export async function reorderProductOptionsAction(
   productId: string,
-  direction: "up" | "down"
+  orderedIds: string[]
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    await moveProductOption(productId, productOptionId, direction);
+    await reorderProductOptions(productId, orderedIds);
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
   }, "Reordered.");
@@ -465,11 +465,15 @@ export async function deleteFaqItemAction(id: string): Promise<ActionResult> {
   }, "FAQ item deleted.");
 }
 
-export async function moveFaqItemAction(id: string, direction: "up" | "down") {
-  await assertAdmin();
-  await moveFaqItem(id, direction);
-  revalidatePath("/admin/faq");
-  revalidatePath("/faq");
+export async function reorderFaqItemsAction(
+  orderedIds: string[]
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await reorderFaqItems(orderedIds);
+    revalidatePath("/admin/faq");
+    revalidatePath("/faq");
+  }, "Reordered.");
 }
 
 // ─── Homepage content management (US-38) ────────────────────────────────
@@ -486,13 +490,12 @@ export async function setProductFeaturedAction(
   }, featured ? "Product featured." : "Product unfeatured.");
 }
 
-export async function moveFeaturedProductAction(
-  productId: string,
-  direction: "up" | "down"
+export async function reorderFeaturedProductsAction(
+  orderedIds: string[]
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    await moveFeaturedProduct(productId, direction);
+    await reorderFeaturedProducts(orderedIds);
     revalidatePath("/admin/homepage");
     revalidateHomepage();
   }, "Reordered.");

@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { setPositions } from "@/lib/admin/reorder";
 
 export type AdminFaqItem = {
   id: string;
@@ -61,34 +62,7 @@ export async function deleteFaqItem(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function moveFaqItem(
-  id: string,
-  direction: "up" | "down"
-): Promise<void> {
+export async function reorderFaqItems(orderedIds: string[]): Promise<void> {
   const supabase = getSupabaseServerClient();
-  const { data: items, error } = await supabase
-    .from("faq_items")
-    .select("id, position")
-    .order("position", { ascending: true });
-
-  if (error) throw error;
-
-  const index = items.findIndex((item) => item.id === id);
-  const swapIndex = direction === "up" ? index - 1 : index + 1;
-  if (index === -1 || swapIndex < 0 || swapIndex >= items.length) return;
-
-  const current = items[index];
-  const swap = items[swapIndex];
-
-  const { error: currentErr } = await supabase
-    .from("faq_items")
-    .update({ position: swap.position })
-    .eq("id", current.id);
-  if (currentErr) throw currentErr;
-
-  const { error: swapErr } = await supabase
-    .from("faq_items")
-    .update({ position: current.position })
-    .eq("id", swap.id);
-  if (swapErr) throw swapErr;
+  await setPositions(supabase, "faq_items", {}, "id", "position", orderedIds);
 }
