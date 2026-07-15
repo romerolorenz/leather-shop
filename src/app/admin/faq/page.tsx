@@ -27,12 +27,13 @@ export default async function AdminFaqPage() {
           onReorder={reorderFaqItemsAction}
           className="mb-10 flex flex-col gap-4"
           itemClassName="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
-          renderItem={(item) => {
+        >
+          {items.map((item) => {
             const updateItem = updateFaqItemAction.bind(null, item.id);
             const removeItem = deleteFaqItemAction.bind(null, item.id);
 
             return (
-              <>
+              <div key={item.id}>
                 <div className="mb-2 flex justify-end">
                   <ActionButton
                     action={removeItem}
@@ -96,10 +97,10 @@ export default async function AdminFaqPage() {
                     </SubmitButton>
                   </div>
                 </ActionForm>
-              </>
+              </div>
             );
-          }}
-        />
+          })}
+        </DragReorderList>
       ) : (
         <p className="mb-10 text-sm text-zinc-500 dark:text-zinc-400">
           No FAQ items yet.

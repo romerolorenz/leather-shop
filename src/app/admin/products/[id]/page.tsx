@@ -182,14 +182,15 @@ export default async function EditProductPage(
               onReorder={reorderOptions}
               className="mb-4 flex flex-col gap-4"
               itemClassName="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
-              renderItem={(option) => {
+            >
+              {product.options.map((option) => {
                 const detach = detachOptionAction.bind(
                   null,
                   option.productOptionId,
                   product.id
                 );
                 return (
-                  <>
+                  <div key={option.productOptionId}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">
                         {option.name}{" "}
@@ -232,10 +233,10 @@ export default async function EditProductPage(
                         ))}
                       </div>
                     )}
-                  </>
+                  </div>
                 );
-              }}
-            />
+              })}
+            </DragReorderList>
             <SubmitButton
               pendingLabel="Saving…"
               className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"

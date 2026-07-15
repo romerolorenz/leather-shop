@@ -54,15 +54,16 @@ export default async function AdminHomepagePage() {
             onReorder={reorderFeaturedProductsAction}
             className="mb-6 flex flex-col gap-2"
             itemClassName="rounded-lg border border-black/[.08] p-3 dark:border-white/[.145]"
-            renderItem={(product, index) => (
-              <div>
+          >
+            {featured.map((product, index) => (
+              <div key={product.id}>
                 <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   {SLOT_LABELS[index] ?? `Grid position ${index}`}
                 </p>
                 <p className="text-sm font-medium">{product.name}</p>
               </div>
-            )}
-          />
+            ))}
+          </DragReorderList>
         )}
 
         <ul className="flex flex-col gap-2">

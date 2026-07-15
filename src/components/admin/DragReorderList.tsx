@@ -26,8 +26,16 @@ function GripIcon() {
 // attached options, and the homepage's featured products — replaces the
 // swap-adjacent ↑/↓ button pairs those three lists used before. Only the
 // grip handle is draggable (not the whole row), so text inputs/textareas/
-// buttons inside renderItem's content stay normally interactive — the
+// buttons inside each row's content stay normally interactive — the
 // handle's onMouseDown flips `draggable` on for just that row.
+//
+// Takes `children` as an array of pre-rendered nodes (one per item, same
+// order as `items`) rather than a `renderItem` render-prop — the pages
+// using this are Server Components, and a Server Component can't pass a
+// plain function to a Client Component (RSC only serializes elements/
+// values, not closures; see ActionForm.tsx's note on the same
+// constraint). Matched back to `items` by id via a Map so the optimistic
+// drag order can reshuffle which content renders where.
 //
 // Reorders optimistically, then calls onReorder with the full dropped
 // order; on failure it reverts to the last server-provided order and
@@ -35,13 +43,13 @@ function GripIcon() {
 export function DragReorderList<T extends { id: string }>({
   items,
   onReorder,
-  renderItem,
+  children,
   className,
   itemClassName,
 }: {
   items: T[];
   onReorder: (orderedIds: string[]) => Promise<ActionResult>;
-  renderItem: (item: T, index: number) => React.ReactNode;
+  children: React.ReactNode[];
   className?: string;
   itemClassName?: string;
 }) {
@@ -59,6 +67,10 @@ export function DragReorderList<T extends { id: string }>({
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
+
+  const contentByItemId = new Map(
+    items.map((item, index) => [item.id, children[index]])
+  );
 
   function handleDrop(targetId: string) {
     const fromId = draggedId;
@@ -88,7 +100,7 @@ export function DragReorderList<T extends { id: string }>({
 
   return (
     <ul className={className}>
-      {order.map((item, index) => (
+      {order.map((item) => (
         <li
           key={item.id}
           draggable={grabbedId === item.id}
@@ -117,7 +129,7 @@ export function DragReorderList<T extends { id: string }>({
           >
             <GripIcon />
           </span>
-          <div className="min-w-0 flex-1">{renderItem(item, index)}</div>
+          <div className="min-w-0 flex-1">{contentByItemId.get(item.id)}</div>
         </li>
       ))}
     </ul>
