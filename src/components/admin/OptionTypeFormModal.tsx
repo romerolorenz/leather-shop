@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import type { ActionResult } from "@/lib/action-result";
@@ -30,33 +30,35 @@ function TrashIcon() {
 // Single edit dialog for a whole option type — label, display style, and
 // every one of its values (rename existing, add new via "+", delete via
 // the in-modal trash icon) — instead of separate per-type/per-value
-// modals. "Save options" persists the label/display-style/renames/new
-// values together in one submit (updateOptionTypeAction); deleting an
-// existing value stays instant (cascades to product_option_selections,
-// same as everywhere else deletes happen in this app), so it has its own
-// trash-icon button rather than waiting for Save. Trigger/dialog/
-// backdrop-click-to-close structure mirrors AddressFormModal
+// modals. Nothing commits until "Save options" is clicked: removing an
+// existing value just stages its id as a hidden `deleteValue` field (the
+// row disappears from view, but the actual delete only happens inside
+// updateOptionTypeAction alongside the renames/creates), matching how
+// "+ Add value" rows are already staged client-side. Manual testing
+// found the earlier per-click-instant delete confusing next to a batched
+// Save, so everything now commits together.
+//
+// Since real edits can now be lost, this dialog is deliberately harder to
+// dismiss by accident: the backdrop is inert (no click-outside-to-close),
+// and Cancel/X/Escape all confirm before discarding if anything changed.
+// Trigger/dialog structure otherwise mirrors AddressFormModal
 // (src/app/account/addresses/AddressFormModal.tsx).
 export function OptionTypeFormModal({
   type,
   saveAction,
-  deleteValueAction,
 }: {
   type: OptionType;
   saveAction: (
     prevState: ActionResult | null,
     formData: FormData
   ) => Promise<ActionResult>;
-  deleteValueAction: (id: string) => Promise<ActionResult>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [state, formAction] = useActionState(saveAction, null);
   const { showToast } = useToast();
-  // Unsaved "+ Add value" rows — plain client state, not yet persisted,
-  // so deleting one of these just drops it from the array instead of
-  // calling deleteValueAction.
   const [newValueKeys, setNewValueKeys] = useState<string[]>([]);
-  const [, startTransition] = useTransition();
+  const [deletedValueIds, setDeletedValueIds] = useState<string[]>([]);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     if (!state) return;
@@ -72,19 +74,16 @@ export function OptionTypeFormModal({
     dialogRef.current?.showModal();
   }
 
-  function close() {
+  // Used by Cancel/X — confirms first if there are unsaved edits, so
+  // accidentally dismissing the dialog can't silently lose them.
+  function requestClose() {
+    if (
+      isDirty &&
+      !window.confirm("Discard unsaved changes to this option?")
+    ) {
+      return;
+    }
     dialogRef.current?.close();
-  }
-
-  function removeExistingValue(id: string) {
-    startTransition(async () => {
-      const result = await deleteValueAction(id);
-      showToast(
-        result.success
-          ? { type: "success", message: result.message ?? "Value deleted." }
-          : { type: "error", message: result.error }
-      );
-    });
   }
 
   return (
@@ -112,20 +111,32 @@ export function OptionTypeFormModal({
 
       <dialog
         ref={dialogRef}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) close();
+        // Escape fires "cancel" before the dialog closes — intercept it
+        // the same way requestClose does, instead of letting it close
+        // unconditionally.
+        onCancel={(e) => {
+          if (
+            isDirty &&
+            !window.confirm("Discard unsaved changes to this option?")
+          ) {
+            e.preventDefault();
+          }
         }}
-        // Fires on every dismissal path (close(), Escape, backdrop click)
-        // — resets unsaved "+ Add value" rows so the next open starts
-        // clean instead of showing stale, never-submitted rows.
-        onClose={() => setNewValueKeys([])}
+        // Fires on every dismissal that actually goes through (Save,
+        // confirmed Cancel/X/Escape) — resets all client-only staged
+        // state so the next open starts clean.
+        onClose={() => {
+          setNewValueKeys([]);
+          setDeletedValueIds([]);
+          setIsDirty(false);
+        }}
         className="m-auto w-[calc(100%-2.5rem)] max-w-md rounded-lg border border-[rgba(28,26,24,.12)] bg-white p-6 text-[#1C1A18] backdrop:bg-black/45 dark:border-[rgba(243,241,236,.14)] dark:bg-[#121110] dark:text-[#F3F1EC]"
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-sm font-semibold">Edit option</h2>
           <button
             type="button"
-            onClick={close}
+            onClick={requestClose}
             aria-label="Close"
             className="rounded-md p-1.5 text-[#6E6A64] transition-transform hover:bg-black/[.05] active:scale-95 dark:text-[#A39C90] dark:hover:bg-white/[.1]"
           >
@@ -144,7 +155,11 @@ export function OptionTypeFormModal({
             </svg>
           </button>
         </div>
-        <form action={formAction} className="flex flex-col gap-3">
+        <form
+          action={formAction}
+          onChange={() => setIsDirty(true)}
+          className="flex flex-col gap-3"
+        >
           <input
             name="name"
             defaultValue={type.name}
@@ -166,25 +181,30 @@ export function OptionTypeFormModal({
             Values
           </p>
           <ul className="flex flex-col gap-2">
-            {type.values.map((value) => (
-              <li key={value.id} className="flex items-center gap-2">
-                <input
-                  name={`value:${value.id}`}
-                  defaultValue={value.value}
-                  aria-label="Option value"
-                  required
-                  className="w-full min-w-0 flex-1 rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-1.5 text-sm dark:border-[rgba(243,241,236,.14)]"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeExistingValue(value.id)}
-                  aria-label="Delete value"
-                  className="shrink-0 rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95"
-                >
-                  <TrashIcon />
-                </button>
-              </li>
-            ))}
+            {type.values
+              .filter((value) => !deletedValueIds.includes(value.id))
+              .map((value) => (
+                <li key={value.id} className="flex items-center gap-2">
+                  <input
+                    name={`value:${value.id}`}
+                    defaultValue={value.value}
+                    aria-label="Option value"
+                    required
+                    className="w-full min-w-0 flex-1 rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-1.5 text-sm dark:border-[rgba(243,241,236,.14)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeletedValueIds((ids) => [...ids, value.id]);
+                      setIsDirty(true);
+                    }}
+                    aria-label="Delete value"
+                    className="shrink-0 rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95"
+                  >
+                    <TrashIcon />
+                  </button>
+                </li>
+              ))}
             {newValueKeys.map((key) => (
               <li key={key} className="flex items-center gap-2">
                 <input
@@ -206,14 +226,18 @@ export function OptionTypeFormModal({
               </li>
             ))}
           </ul>
+          {deletedValueIds.map((id) => (
+            <input key={id} type="hidden" name="deleteValue" value={id} />
+          ))}
           <button
             type="button"
-            onClick={() =>
+            onClick={() => {
               setNewValueKeys((keys) => [
                 ...keys,
                 `new-${keys.length}-${Date.now()}`,
-              ])
-            }
+              ]);
+              setIsDirty(true);
+            }}
             className="self-start rounded-full border border-[rgba(28,26,24,.12)] px-3 py-1 text-xs dark:border-[rgba(243,241,236,.14)]"
           >
             + Add value
@@ -222,7 +246,7 @@ export function OptionTypeFormModal({
           <div className="mt-2 flex justify-end gap-3">
             <button
               type="button"
-              onClick={close}
+              onClick={requestClose}
               className="rounded-full border border-[rgba(28,26,24,.12)] px-4 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
             >
               Cancel

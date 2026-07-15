@@ -15,60 +15,70 @@ fixed).
 ## Outstanding
 
 - [ ] **`/admin/options` edit-modal pattern.**
-  - [ ] Each option type row shows read-only name + display style
+  - [x] Each option type row shows read-only name + display style
         (Buttons/Dropdown) and a comma-separated preview of its values,
         with a single pencil "Edit" button next to it (no per-value
         pencil/trash in the main list).
         Findings:
-  - [ ] Clicking the pencil opens one dialog pre-filled with the type's
+  - [x] Clicking the pencil opens one dialog pre-filled with the type's
         name, display style, and every value in its own text field;
         Cancel and the X close it without saving.
+        Findings: 
+  - [ ] Clicking outside the dialog (on the backdrop) does nothing — the
+        dialog stays open (changed from the first pass: backdrop click no
+        longer closes it at all, since it was too easy to lose edits by
+        accident).
         Findings:
-  - [ ] Clicking outside the dialog (on the backdrop) closes it without
-        saving.
-        Findings:
-  - [ ] Clicking "+ Add value" adds a new empty field; typing into it and
+  - [x] Clicking "+ Add value" adds a new empty field; typing into it and
         clicking "Save options" creates that value alongside any renames
         (all in one submit) and the dialog closes on success with a
         toast.
         Findings:
-  - [ ] Clicking the trash icon next to an *existing* value inside the
-        dialog asks to confirm, then deletes it immediately (not waiting
-        for Save) and shows its own toast; the dialog stays open and the
-        remaining values still show correctly.
+  - [ ] Clicking the trash icon next to an *existing* value removes it
+        from view immediately but does **not** call the server yet — it's
+        only actually deleted once "Save options" is clicked (changed
+        from the first pass, which deleted instantly per click). The
+        dialog stays open and other values are unaffected either way.
         Findings:
-  - [ ] Clicking the trash icon next to an unsaved "+ Add value" row just
+  - [x] Clicking the trash icon next to an unsaved "+ Add value" row just
         removes that row locally — no confirm prompt, no server call.
         Findings:
-  - [ ] Closing the dialog (Cancel, X, or backdrop) after adding one or
-        more "+ Add value" rows without saving discards them — reopening
-        shows no leftover empty rows.
+  - [ ] With no unsaved changes, Cancel/X/Escape close the dialog
+        immediately, no prompt.
         Findings:
-  - [ ] Saving with an existing value's field left empty shows an error
+  - [ ] After adding a value, editing a field, or removing a value (any
+        modification), clicking Cancel/X or pressing Escape shows a
+        native confirm ("Discard unsaved changes to this option?");
+        confirming closes and discards everything staged (new-value rows,
+        pending deletes, edited text all revert to the last-saved state
+        on reopen), while dismissing the confirm leaves the dialog open
+        with the edits intact.
+        Findings:
+  - [x] Saving with an existing value's field left empty shows an error
         toast and the dialog stays open with the invalid state intact.
         Findings:
-  - [ ] "Add option type" (bottom of page) and deleting a whole option
+  - [x] "Add option type" (bottom of page) and deleting a whole option
         type still work exactly as before, with delete still asking to
         confirm.
         Findings:
 
-- [ ] **Drag-to-reorder (FAQ, product options, featured products).**
-  - [ ] `/admin/faq`: dragging an item by its grip handle to a new
+- [x] **Drag-to-reorder (FAQ, product options, featured products).**
+  - [x] `/admin/faq`: dragging an item by its grip handle to a new
         position (including moving it several places in one drop, not
         just swapping with a neighbor) persists after reload; dragging
         does not interfere with editing the question/answer text or
         clicking Delete.
         Findings:
-  - [ ] `/admin/products/[id]` Options section: same drag check: reorder
+  - [x] `/admin/products/[id]` Options section: same drag check: reorder
         persists, checkboxes for each option's values remain correctly
         checked after reordering and after the (still-batched) "Save
         options" submit.
         Findings:
-  - [ ] `/admin/homepage` featured products: dragging a featured product
+  - [x] `/admin/homepage` featured products: dragging a featured product
         to a new grid position persists and is reflected in the homepage's
         featured grid order.
         Findings:
-  - [ ] A failed reorder (e.g. simulate by going offline mid-drag) reverts
+  - [x] A failed reorder (e.g. simulate by going offline mid-drag) reverts
         the list to its previous order and shows an error toast, rather
         than leaving the UI in a state that doesn't match the database.
         Findings:

@@ -2,7 +2,6 @@ import { listOptionTypes } from "@/lib/admin/catalog";
 import {
   createOptionTypeAction,
   deleteOptionTypeAction,
-  deleteOptionValueAction,
   updateOptionTypeAction,
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -74,11 +73,7 @@ export default async function AdminOptionsPage() {
                     ({DISPLAY_STYLE_LABELS[type.displayStyle]})
                   </span>
                 </span>
-                <OptionTypeFormModal
-                  type={type}
-                  saveAction={saveType}
-                  deleteValueAction={deleteOptionValueAction}
-                />
+                <OptionTypeFormModal type={type} saveAction={saveType} />
                 <ActionButton
                   action={removeType}
                   confirmMessage="Delete this option type? This removes it from every product using it."

@@ -128,23 +128,18 @@ export async function deleteOptionTypeAction(id: string): Promise<ActionResult> 
   }, "Option type deleted.");
 }
 
-export async function deleteOptionValueAction(id: string): Promise<ActionResult> {
-  return runAction(async () => {
-    await assertAdmin();
-    await deleteOptionValue(id);
-    revalidatePath("/admin/options");
-    revalidateStorefront();
-  }, "Value deleted.");
-}
-
 // Bound to (typeId, existingValueIds) for OptionTypeFormModal's single
-// edit dialog — one submit saves the type's name/display style, every
-// existing value's rename (read by id from existingValueIds), and any
+// edit dialog — one submit saves the type's name/display style, deletes
+// any value the modal staged for removal (`deleteValue` fields — manual
+// testing found an instant per-click delete confusing next to a batched
+// Save, so deletion now waits for it too), renames every remaining
+// existing value (read by id from existingValueIds), and creates any
 // brand-new values added via the modal's "+" button (all share the
 // `newValue` field name, read back with getAll). Replaces the old
-// separate updateOptionLibraryAction (whole-page batch) and
-// createOptionValueAction/updateOptionValueAction (per-value actions) now
-// that a type's values are edited as one unit inside its own modal.
+// separate updateOptionLibraryAction (whole-page batch),
+// createOptionValueAction/updateOptionValueAction (per-value actions),
+// and deleteOptionValueAction (instant per-value delete) now that a
+// type's values are all edited as one unit inside its own modal.
 export async function updateOptionTypeAction(
   id: string,
   existingValueIds: string[],
@@ -157,7 +152,13 @@ export async function updateOptionTypeAction(
     if (!name) throw new Error("Option type name is required.");
     await updateOptionType(id, name, parseDisplayStyle(formData));
 
+    const deletedIds = new Set(formData.getAll("deleteValue").map(String));
+
     for (const valueId of existingValueIds) {
+      if (deletedIds.has(valueId)) {
+        await deleteOptionValue(valueId);
+        continue;
+      }
       const value = String(formData.get(`value:${valueId}`) ?? "").trim();
       if (!value) throw new Error("Value is required.");
       await updateOptionValue(valueId, value);

@@ -11,21 +11,28 @@ later work. Not started until explicitly requested — see items below.
 
 - [x] **`/admin/options` uses an edit-modal pattern instead of inline
   batch-editable fields**, matching `/account/addresses`
-  (`AddressFormModal.tsx`)'s trigger/dialog/backdrop-click-to-close
-  structure. The main list shows each type read-only (name, display
-  style, comma-separated value preview) with a single pencil "Edit"
-  button; that opens one dialog (`OptionTypeFormModal.tsx`) covering the
-  whole type — name, display style, every value's text (with its own
-  trash icon, deleting immediately since it cascades to other products),
-  and a "+ Add value" button for new ones. "Save options" persists the
-  name/display-style/renames/new-values together in one submit
-  (`updateOptionTypeAction(id, existingValueIds, prevState, formData)`,
-  which replaced the old batched `updateOptionLibraryAction` and the
-  per-value `createOptionValueAction`/`updateOptionValueAction`). Unlike
-  `AddressFormModal`'s `onSubmit={close}`, it submits through
-  `useActionState` so a thrown error toasts and keeps the dialog open
-  instead of closing before the action resolves; creating/deleting a
-  whole option type on the main page is unchanged.
+  (`AddressFormModal.tsx`)'s trigger/dialog structure (though not its
+  backdrop-click-to-close or immediate-delete behavior — see below,
+  changed after manual testing). The main list shows each type read-only
+  (name, display style, comma-separated value preview) with a single
+  pencil "Edit" button; that opens one dialog (`OptionTypeFormModal.tsx`)
+  covering the whole type — name, display style, every value's text, and
+  a "+ Add value" button for new ones. Nothing commits until "Save
+  options": removing an existing value only stages it (hidden
+  `deleteValue` field), so the actual delete happens inside
+  `updateOptionTypeAction(id, existingValueIds, prevState, formData)`
+  alongside the renames/creates, same as "+ Add value" rows were already
+  staged client-side. This replaced the old batched
+  `updateOptionLibraryAction`, the per-value
+  `createOptionValueAction`/`updateOptionValueAction`, and the instant
+  `deleteOptionValueAction`. Because real edits can now be lost, the
+  dialog is deliberately hard to dismiss by accident: the backdrop is
+  inert (no click-outside-to-close), and Cancel/X/Escape all confirm
+  first if anything changed. It still submits through `useActionState`
+  (not `AddressFormModal`'s `onSubmit={close}`) so a thrown error toasts
+  and keeps the dialog open instead of closing before the action
+  resolves; creating/deleting a whole option type on the main page is
+  unchanged.
 - [x] **Drag-to-reorder instead of ↑/↓ buttons**, across `/admin/faq`,
   `/admin/products/[id]`'s Options section, and `/admin/homepage`'s
   featured list. New generic `DragReorderList`
