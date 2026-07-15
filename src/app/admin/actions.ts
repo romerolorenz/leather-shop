@@ -128,20 +128,6 @@ export async function deleteOptionTypeAction(id: string): Promise<ActionResult> 
   }, "Option type deleted.");
 }
 
-export async function createOptionValueAction(
-  optionTypeId: string,
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
-  return runAction(async () => {
-    await assertAdmin();
-    const value = String(formData.get("value") ?? "").trim();
-    if (!value) throw new Error("Value is required.");
-    await createOptionValue(optionTypeId, value);
-    revalidatePath("/admin/options");
-  }, "Value added.");
-}
-
 export async function deleteOptionValueAction(id: string): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
@@ -151,12 +137,17 @@ export async function deleteOptionValueAction(id: string): Promise<ActionResult>
   }, "Value deleted.");
 }
 
-// Bound per-row (.bind(null, id)) for OptionTypeFormModal/
-// OptionValueFormModal's edit dialogs — replaces the old batched
-// updateOptionLibraryAction now that each row has its own edit modal
-// instead of an always-editable inline field.
+// Bound to (typeId, existingValueIds) for OptionTypeFormModal's single
+// edit dialog — one submit saves the type's name/display style, every
+// existing value's rename (read by id from existingValueIds), and any
+// brand-new values added via the modal's "+" button (all share the
+// `newValue` field name, read back with getAll). Replaces the old
+// separate updateOptionLibraryAction (whole-page batch) and
+// createOptionValueAction/updateOptionValueAction (per-value actions) now
+// that a type's values are edited as one unit inside its own modal.
 export async function updateOptionTypeAction(
   id: string,
+  existingValueIds: string[],
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
@@ -165,24 +156,24 @@ export async function updateOptionTypeAction(
     const name = String(formData.get("name") ?? "").trim();
     if (!name) throw new Error("Option type name is required.");
     await updateOptionType(id, name, parseDisplayStyle(formData));
-    revalidatePath("/admin/options");
-    revalidateStorefront();
-  }, "Option type updated.");
-}
 
-export async function updateOptionValueAction(
-  id: string,
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
-  return runAction(async () => {
-    await assertAdmin();
-    const value = String(formData.get("value") ?? "").trim();
-    if (!value) throw new Error("Value is required.");
-    await updateOptionValue(id, value);
+    for (const valueId of existingValueIds) {
+      const value = String(formData.get(`value:${valueId}`) ?? "").trim();
+      if (!value) throw new Error("Value is required.");
+      await updateOptionValue(valueId, value);
+    }
+
+    const newValues = formData
+      .getAll("newValue")
+      .map((v) => String(v).trim())
+      .filter(Boolean);
+    for (const value of newValues) {
+      await createOptionValue(id, value);
+    }
+
     revalidatePath("/admin/options");
     revalidateStorefront();
-  }, "Option value updated.");
+  }, "Option saved.");
 }
 
 // ─── attaching shared options to a product (per-product page) ───────────

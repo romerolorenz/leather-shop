@@ -2,18 +2,14 @@ import { listOptionTypes } from "@/lib/admin/catalog";
 import {
   createOptionTypeAction,
   deleteOptionTypeAction,
-  createOptionValueAction,
   deleteOptionValueAction,
   updateOptionTypeAction,
-  updateOptionValueAction,
 } from "../actions";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ActionButton } from "@/components/ActionButton";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { SubmitButton } from "@/components/admin/SubmitButton";
-import { InlineAddForm } from "@/components/admin/InlineAddForm";
 import { OptionTypeFormModal } from "@/components/admin/OptionTypeFormModal";
-import { OptionValueFormModal } from "@/components/admin/OptionValueFormModal";
 
 function TrashIcon() {
   return (
@@ -61,11 +57,11 @@ export default async function AdminOptionsPage() {
       <ul className="mb-10 flex flex-col gap-4">
         {optionTypes.map((type) => {
           const removeType = deleteOptionTypeAction.bind(null, type.id);
-          const updateType = updateOptionTypeAction.bind(null, type.id);
-          // createOptionValueAction takes (optionTypeId, prevState,
-          // formData); pre-binding prevState too gives InlineAddForm the
-          // (formData) => ActionResult shape it expects.
-          const addValue = createOptionValueAction.bind(null, type.id, null);
+          const saveType = updateOptionTypeAction.bind(
+            null,
+            type.id,
+            type.values.map((v) => v.id)
+          );
           return (
             <li
               key={type.id}
@@ -79,11 +75,9 @@ export default async function AdminOptionsPage() {
                   </span>
                 </span>
                 <OptionTypeFormModal
-                  action={updateType}
-                  defaultValues={{
-                    name: type.name,
-                    displayStyle: type.displayStyle,
-                  }}
+                  type={type}
+                  saveAction={saveType}
+                  deleteValueAction={deleteOptionValueAction}
                 />
                 <ActionButton
                   action={removeType}
@@ -95,48 +89,15 @@ export default async function AdminOptionsPage() {
                 </ActionButton>
               </div>
 
-              <ul className="mt-3 flex flex-col gap-2 pl-4">
-                {type.values.map((value) => {
-                  const removeValue = deleteOptionValueAction.bind(
-                    null,
-                    value.id
-                  );
-                  const updateValue = updateOptionValueAction.bind(
-                    null,
-                    value.id
-                  );
-                  return (
-                    <li key={value.id} className="flex items-center gap-2">
-                      <span className="flex-1 text-sm">{value.value}</span>
-                      <OptionValueFormModal
-                        action={updateValue}
-                        defaultValues={{ value: value.value }}
-                      />
-                      <ActionButton
-                        action={removeValue}
-                        confirmMessage="Delete this value? This removes it from every product using it."
-                        ariaLabel="Delete value"
-                        className="rounded-md p-1 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
-                      >
-                        <TrashIcon />
-                      </ActionButton>
-                    </li>
-                  );
-                })}
-              </ul>
-              {type.values.length === 0 && (
-                <p className="mt-3 pl-4 text-xs text-zinc-500 dark:text-zinc-400">
-                  No values yet.
+              {type.values.length > 0 ? (
+                <p className="mt-2 pl-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  {type.values.map((v) => v.value).join(", ")}
+                </p>
+              ) : (
+                <p className="mt-2 pl-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  No values yet — click edit to add some.
                 </p>
               )}
-              <InlineAddForm
-                action={addValue}
-                fieldName="value"
-                placeholder="e.g. Natural Thread"
-                buttonLabel="Add value"
-                pendingLabel="Adding…"
-                className="mt-2 flex items-center gap-2 pl-4"
-              />
             </li>
           );
         })}

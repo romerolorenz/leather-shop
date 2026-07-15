@@ -16,25 +16,40 @@ fixed).
 
 - [ ] **`/admin/options` edit-modal pattern.**
   - [ ] Each option type row shows read-only name + display style
-        (Buttons/Dropdown), with a pencil "Edit" button next to it.
+        (Buttons/Dropdown) and a comma-separated preview of its values,
+        with a single pencil "Edit" button next to it (no per-value
+        pencil/trash in the main list).
         Findings:
-  - [ ] Clicking the pencil opens a dialog pre-filled with the current
-        name/display style; Cancel and the X close it without saving.
+  - [ ] Clicking the pencil opens one dialog pre-filled with the type's
+        name, display style, and every value in its own text field;
+        Cancel and the X close it without saving.
         Findings:
-  - [ ] Clicking outside the dialog (on the backdrop) closes it, same as
-        clicking inside a value row's content does not.
+  - [ ] Clicking outside the dialog (on the backdrop) closes it without
+        saving.
         Findings:
-  - [ ] Saving a valid change updates the row and shows a success toast;
-        the dialog closes only after the save succeeds.
+  - [ ] Clicking "+ Add value" adds a new empty field; typing into it and
+        clicking "Save options" creates that value alongside any renames
+        (all in one submit) and the dialog closes on success with a
+        toast.
         Findings:
-  - [ ] Saving an empty name/value shows an error toast and the dialog
-        stays open with the invalid value still in the field.
+  - [ ] Clicking the trash icon next to an *existing* value inside the
+        dialog asks to confirm, then deletes it immediately (not waiting
+        for Save) and shows its own toast; the dialog stays open and the
+        remaining values still show correctly.
         Findings:
-  - [ ] Same checks for a value row's pencil-icon edit (name only, no
-        display style field).
+  - [ ] Clicking the trash icon next to an unsaved "+ Add value" row just
+        removes that row locally — no confirm prompt, no server call.
         Findings:
-  - [ ] "Add option type" and "Add value" still work exactly as before
-        (unaffected by this change) and delete still asks to confirm.
+  - [ ] Closing the dialog (Cancel, X, or backdrop) after adding one or
+        more "+ Add value" rows without saving discards them — reopening
+        shows no leftover empty rows.
+        Findings:
+  - [ ] Saving with an existing value's field left empty shows an error
+        toast and the dialog stays open with the invalid state intact.
+        Findings:
+  - [ ] "Add option type" (bottom of page) and deleting a whole option
+        type still work exactly as before, with delete still asking to
+        confirm.
         Findings:
 
 - [ ] **Drag-to-reorder (FAQ, product options, featured products).**
