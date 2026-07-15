@@ -59,6 +59,11 @@ export function OptionTypeFormModal({
   const [newValueKeys, setNewValueKeys] = useState<string[]>([]);
   const [deletedValueIds, setDeletedValueIds] = useState<string[]>([]);
   const [isDirty, setIsDirty] = useState(false);
+  // The dialog never unmounts between opens, so uncontrolled inputs
+  // (defaultValue) keep whatever the user typed even after we reset the
+  // state above — bumping this remounts the <form> subtree fresh next
+  // open, forcing every input back to its current defaultValue prop.
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     if (!state) return;
@@ -129,6 +134,7 @@ export function OptionTypeFormModal({
           setNewValueKeys([]);
           setDeletedValueIds([]);
           setIsDirty(false);
+          setFormKey((k) => k + 1);
         }}
         className="m-auto w-[calc(100%-2.5rem)] max-w-md rounded-lg border border-[rgba(28,26,24,.12)] bg-white p-6 text-[#1C1A18] backdrop:bg-black/45 dark:border-[rgba(243,241,236,.14)] dark:bg-[#121110] dark:text-[#F3F1EC]"
       >
@@ -156,6 +162,7 @@ export function OptionTypeFormModal({
           </button>
         </div>
         <form
+          key={formKey}
           action={formAction}
           onChange={() => setIsDirty(true)}
           className="flex flex-col gap-3"
