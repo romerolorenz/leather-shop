@@ -37,6 +37,10 @@ tasks/testing) live in [docs/](./docs/), not the repo root.
 - **Commit after every phase.** Each phase in DEVELOPMENT_PLAN.md gets its
   own git commit once its exit criteria are met, before moving on to the
   next phase — don't let multiple phases pile up uncommitted.
+- **Commits need approval before running.** Don't run `git commit` (phase
+  commits included) without checking with the user first — surface what
+  would be committed and wait for a go-ahead rather than committing
+  proactively.
 - **Verify with real test cases (`npm test`, Vitest), not one-off curl
   commands or throwaway scripts.** Business logic (`src/lib/*`) and API
   routes get test files under `tests/` that call the actual functions/route
