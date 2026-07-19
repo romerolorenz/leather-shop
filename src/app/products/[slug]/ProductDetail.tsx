@@ -4,9 +4,11 @@ import { useState } from "react";
 import { formatPrice, type Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
 import { trackEvent } from "@/lib/track-event";
+import { useToast } from "@/components/ToastProvider";
 
 export default function ProductDetail({ product }: { product: Product }) {
   const { addItem } = useCart();
+  const { showToast } = useToast();
   // Dropdowns default to their first value here, matching what the browser
   // already shows visually — otherwise a dropdown with exactly one value
   // can never fire onChange (there's nothing else to select), so its entry
@@ -54,6 +56,7 @@ export default function ProductDetail({ product }: { product: Product }) {
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
+    showToast({ type: "success", message: "Added to cart" });
   }
 
   return (

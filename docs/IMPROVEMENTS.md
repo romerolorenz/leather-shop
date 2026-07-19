@@ -9,6 +9,15 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **Show a toast when an item is added to cart.** `ProductDetail.tsx`'s
+  `handleAddToCart` now calls `showToast({ type: "success", message: "Added
+  to cart" })` (from the existing app-wide `useToast()`) right alongside the
+  pre-existing `justAdded` label swap and the cart badge's passive
+  increment — no server-action plumbing needed since `showToast` has no such
+  dependency. Verified in a live dev-server run (product page → select a
+  swatch option → Add to cart): toast, button label, and cart badge all
+  update together with no console errors.
+
 - [x] **`/admin/options` uses an edit-modal pattern instead of inline
   batch-editable fields**, matching `/account/addresses`
   (`AddressFormModal.tsx`)'s trigger/dialog structure (though not its
