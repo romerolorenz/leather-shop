@@ -5,8 +5,10 @@ Status: **Build started 2026-07-20** — see
 was agreed from. Phases 1–3 (shell, Dashboard, Products/Categories/
 Option Library + Product Edit page) done and verified — see
 docs/MANUAL_TESTING.md's Done section, verified both manually and via a
-synthetic test-admin session (see the reference memory on this). Phases
-4–6 not started.
+synthetic test-admin session (see the reference memory on this). Phase 4
+(Orders) built and self-verified, one item (Mark paid/Mark shipped/
+Cancel button styling) needs a real pending/paid order to check since
+none exist in current seed data. Phases 5–6 not started.
 
 **One scope trim from the brief**: the Catalog table's low-stock
 indicator (originally "amber when at or below the product's threshold")
@@ -160,8 +162,9 @@ view from a Catalog row, same URL as the rest of this brief's prototype).
 
 ## Orders (`/admin/orders`)
 
-- Swaps the `<details>` accordion-by-status layout for **status tabs**
-  (Pending / Paid / Shipped / Cancelled) with a count badge per tab —
+- Built 2026-07-20. Swaps the `<details>` accordion-by-status layout for
+  **status tabs** (Pending / Paid / Shipped / Cancelled) with a count
+  badge per tab —
   same grouping, less vertical scroll to reach a given status.
 - Adds a simple **search by customer name/email or order ID** above the
   list.

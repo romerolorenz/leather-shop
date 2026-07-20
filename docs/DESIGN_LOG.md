@@ -151,6 +151,18 @@
   description paragraph from Categories and Option Library per the
   user (the shared "The catalog, its categories, and shop-wide options."
   intro above the tab bar stays, since it's common to all three tabs).
+  **Phase 4 (Orders) built and self-verified**: `<details>` accordions
+  replaced with `StatusTabs` (Pending/Paid/Shipped/Cancelled, counts
+  reflect the live search), search by customer name/email/order ID.
+  Kept the existing card-per-order layout rather than the artifact's
+  plain table — a table has no room for the line-items list and
+  shipping address the owner actually needs to fulfil an order, so this
+  deliberately diverges from the mockup where real data density
+  required it. Caught and fixed a real copy bug during self-verification:
+  the empty state said "match your search" even with no search typed.
+  One thing self-verification couldn't cover — no pending/paid orders
+  exist in the current seed data, so the Mark paid/Mark shipped/Cancel
+  button styling is unverified pending a real order to check against.
 
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —

@@ -14,6 +14,18 @@ fixed).
 
 ## Outstanding
 
+### Admin redesign, Phase 4 — Orders (docs/design/admin.md)
+
+Self-verified everything driveable without real pending/paid order
+data (status tabs + counts, search filtering, empty states, dark mode).
+One thing needs a real order to check:
+
+- [ ] With at least one pending-payment and one paid order, confirm
+      "Mark paid"/"Cancel order" (Pending tab) and "Mark shipped" (Paid
+      tab) are styled correctly and still work — they're restyled
+      buttons but the underlying bound actions are unchanged.
+      Findings:
+
 ### Promo codes + categories (docs/IMPROVEMENTS.md's "Promo code capability")
 
 Migrations `0014_categories.sql`/`0015_promo_codes.sql`/
