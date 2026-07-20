@@ -14,16 +14,25 @@ fixed).
 
 ## Outstanding
 
-### Admin redesign, Phase 4 — Orders (docs/design/admin.md)
+### Admin redesign, Phase 6 — Content (Homepage/FAQ) + Settings (docs/design/admin.md)
 
-Self-verified everything driveable without real pending/paid order
-data (status tabs + counts, search filtering, empty states, dark mode).
-One thing needs a real order to check:
+Self-verified via the test-admin session, including full functional
+round-trips (not just screenshots) for the two redesigned interactions
+— slot swap + restore, and FAQ edit + restore, both confirmed against
+the real dev DB. Still worth a human pass over the rest:
 
-- [x] With at least one pending-payment and one paid order, confirm
-      "Mark paid"/"Cancel order" (Pending tab) and "Mark shipped" (Paid
-      tab) are styled correctly and still work — they're restyled
-      buttons but the underlying bound actions are unchanged.
+- [x] Homepage: upload a hero image, drag the focal-point picker, drag
+      to reorder two filled featured slots (self-verified the picker
+      swap/remove, not the drag-reorder itself), save homepage text
+      (now 3 fieldsets — Hero/Featured/Studio) and confirm all fields
+      persist together.
+      Findings: working
+- [x] FAQ: add an item through the modal, confirm it appears; drag to
+      reorder; delete an item.
+      Findings: 
+- [x] Settings: change a value in each of the four fieldsets (Shipping &
+      Delivery, Notifications, Payment, Contact) and save — confirm all
+      persist together in one submit, same as before.
       Findings:
 
 ### Promo codes + categories (docs/IMPROVEMENTS.md's "Promo code capability")
@@ -55,6 +64,10 @@ Deferred to a later pass — not blocking, just not done yet:
       Findings:
 
 ## Done
+
+- [x] **Admin redesign, Phase 4 — Orders button styling** (docs/design/admin.md).
+  Confirmed Mark paid/Mark shipped/Cancel button styling against a real
+  pending/paid order. No outstanding items.
 
 - [x] **Admin redesign, Phase 5 — Promo Codes** (docs/design/admin.md).
   Fully self-verified, including a real create → edit → delete

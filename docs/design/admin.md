@@ -1,16 +1,15 @@
 # Admin Area Design Brief
 
-Status: **Build started 2026-07-20** — see
+Status: **All 6 phases built, 2026-07-20** — see
 [DESIGN_LOG.md](../DESIGN_LOG.md) for the click-through prototype this
-was agreed from. Phases 1–3 (shell, Dashboard, Products/Categories/
-Option Library + Product Edit page) done and verified — see
-docs/MANUAL_TESTING.md's Done section, verified both manually and via a
-synthetic test-admin session (see the reference memory on this). Phase 4
-(Orders) built and self-verified, one item (Mark paid/Mark shipped/
-Cancel button styling) needs a real pending/paid order to check since
-none exist in current seed data. Phase 5 (Promo Codes) built and fully
-self-verified, including a real create/edit/delete round-trip against
-the dev DB. Phase 6 not started.
+was agreed from and the full revision history. Phases 1–5 fully
+verified — see docs/MANUAL_TESTING.md's Done section. Phase 6 (Content:
+Homepage/FAQ + Settings), including the follow-up featured-slot-picker
+and FAQ-edit-modal redesigns, is self-verified via the test-admin
+session with full functional round-trips (not just screenshots) on
+both new interactions; a few items (hero upload/focal-point drag,
+featured-slot drag-reorder, Settings save) still want a final human
+pass — see docs/MANUAL_TESTING.md's Outstanding section.
 
 **One scope trim from the brief**: the Catalog table's low-stock
 indicator (originally "amber when at or below the product's threshold")
@@ -232,18 +231,30 @@ view from a Catalog row, same URL as the rest of this brief's prototype).
   "Add flow" below) instead of a separate full-page/full-panel view —
   clicking a row in any status tab opens the same modal pre-filled.
 
-## Content: Homepage / FAQ (now one section, two tabs)
+## Content: Homepage / FAQ (now one section, two tabs) — built 2026-07-20
 
 - Restyled to the same tokens. The inconsistency this brief originally
   flagged — FAQ's raw `<form>` reorder buttons vs. `ActionButton`
   elsewhere — is already resolved: FAQ now uses the shared
-  `DragReorderList` component, same as Options. Nothing left to fix here
-  but the token restyle.
-- The two tabs keep their existing content unchanged (featured products/
-  hero/homepage-text on one, FAQ CRUD + reorder on the other) — merging
-  them is a navigation change only, not a content or feature change.
+  `DragReorderList` component, same as Options.
+- **Featured products, revised to match the artifact exactly**: 3 fixed
+  grid-position tiles, not a reorderable list plus a separate full
+  product list below. Clicking a tile (filled or the next empty one)
+  opens a picker to choose/change what's featured there; drag to
+  reorder the filled tiles. New `setFeaturedSlotProduct()` assigns a
+  product directly to a position without touching the other slots.
+  `DragReorderList` gained an `overlayGrip` option for this — 3 photo
+  tiles read as boxes, so the grip needed to be a small corner badge
+  over each tile rather than sitting beside it (the default, still used
+  for FAQ/Options/Photos, which are lists not boxes).
+- **Homepage text** is now three fieldsets (Hero / Featured / Studio)
+  matching the page's actual structure, instead of one flat field list.
+- **FAQ, revised to match the artifact exactly**: read-only rows
+  (question bold, answer as a truncated preview) with edit/delete icon
+  buttons, instead of every row being a permanently-open editable form.
+  Edit opens the same `FormModal` pattern used everywhere else.
 
-## Settings (`/admin/settings`, standalone top-level item)
+## Settings (`/admin/settings`, standalone top-level item) — built 2026-07-20
 
 - Stays a single form (it's inherently one config record, no natural
   tab split) but grouped into labeled sections (Shipping & Delivery,

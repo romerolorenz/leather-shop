@@ -188,6 +188,70 @@
   line too (matching `/account`'s order history) but held off since
   `OrderItem` doesn't snapshot a photo at order time — flagged as a
   possible follow-up in the brief, not built.
+  **Phase 6 (Content: Homepage/FAQ + Settings) built and self-verified
+  — this closes out all 6 planned phases.** Homepage and FAQ both get
+  the `SectionTabs` header; Homepage's featured-products/hero-image/
+  homepage-text sections are a token restyle only, no structural
+  change. FAQ's "Add FAQ item" moves to a `FormModal`, same pattern as
+  every other add-flow this pass. `HeroFocalPointPicker` got the same
+  token restyle. Settings is now four labeled fieldsets (Shipping &
+  Delivery, Notifications, Payment, Contact) with hairline dividers
+  instead of one flat field list, still a single form (no tabs — it's
+  one config record, nothing to split by). Self-verified in both light
+  and dark mode via the test-admin session; pending a final manual pass
+  since this session hasn't tested actually saving Settings/Homepage
+  text end-to-end.
+  **Revised same day — two follow-ups from the user.** (1) Featured
+  products now matches the artifact exactly: 3 fixed grid-position
+  tiles (not a reorderable list + a separate full product list below),
+  clicking a tile opens a picker to choose/change what's featured
+  there, drag to reorder. New `setFeaturedSlotProduct()` assigns a
+  product directly to a position without disturbing the other slots
+  (unlike the existing unfeature-then-refeature flow, which compacts
+  and would shift every later slot). `DragReorderList` gained an
+  `overlayGrip` option (grip as a small corner badge over the tile
+  instead of sitting beside the content) — needed here because 3 photo
+  tiles read as boxes, not a list, so the existing beside-content grip
+  (already accepted for the Photos tab) would have fought the layout
+  instead of just being a minor divergence from the mockup. Homepage
+  text is now three fieldsets (Hero / Featured / Studio) instead of one
+  flat list, matching the page's actual structure. (2) FAQ now matches
+  the artifact too: read-only rows (question bold, answer as a
+  2-line-clamp preview) with edit/delete icon buttons, instead of every
+  row being permanently an editable form — edit opens the same
+  `FormModal` pattern used everywhere else this pass. Self-verified
+  with full round-trips (slot swap + restore, FAQ edit + restore),
+  restoring the actual dev-DB state afterward both times, not just
+  screenshots.
+  **Revised again same day — four more fixes from the user.** Section
+  order is now Hero → Featured → Text (was Featured → Hero → Text);
+  the "separate from the hero image" copy now says "above" instead of
+  "below" to match. Fixed a real copy bug — "Up to 3products" was
+  missing its space in the rendered output despite the source having
+  one (JSX text-node whitespace handling, not obvious from reading the
+  source) — rewrote that paragraph as a single template-literal
+  expression so spacing is never ambiguous again. Hero's mobile/desktop
+  previews are now hidden behind "Preview mobile"/"Preview desktop"
+  buttons that pop them out in a dialog, instead of always rendering
+  inline. Fixed a real layout bug in the featured-tile grip: it was
+  positioned absolutely relative to the whole draggable item, which
+  included the "Grid position N" label sitting *above* the image — so
+  the grip landed on the label's corner, not the photo's. Fix wasn't
+  just moving the label below the image; realized position labels
+  should be fixed to their column (position 1 is always the first slot,
+  independent of which product currently occupies it) rather than
+  traveling with the draggable tile, so they're now a separate static
+  row above the tiles entirely — which also fixes the grip alignment
+  as a side effect, since nothing precedes the image inside the
+  draggable item anymore.
+  **Reverted one of those four, plus a small fix.** The mobile/desktop
+  preview popout (buttons + dialog) is reverted back to the original
+  always-visible inline previews — the user tried it and preferred the
+  original. Separately, the hero image `<input type="file">` had no
+  `file:` styling, so "Choose File" rendered as the bare OS-default
+  button instead of matching the rest of the admin — fixed with the
+  same `file:` Tailwind-variant treatment already used on the product
+  edit page's photo upload.
 
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —

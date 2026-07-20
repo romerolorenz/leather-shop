@@ -603,6 +603,38 @@ export async function setProductFeatured(
   }
 }
 
+// Assigns productId directly to a grid slot (position), replacing
+// whatever's currently there without touching any other slot — unlike
+// setProductFeatured's unfeature-then-refeature, which compacts and
+// would shift every later slot up by one. Only ever called with
+// position <= current featured count (the admin UI only makes the next
+// empty slot clickable), so this can't introduce a gap: replacing an
+// existing slot leaves the count unchanged, and filling the next slot
+// extends the dense range by exactly one.
+export async function setFeaturedSlotProduct(
+  position: number,
+  productId: string
+): Promise<void> {
+  const supabase = getSupabaseServerClient();
+
+  const current = await listFeaturedProducts();
+  const existing = current.find((p) => p.featuredPosition === position);
+
+  if (existing) {
+    const { error: clearErr } = await supabase
+      .from("products")
+      .update({ featured: false, featured_position: null })
+      .eq("id", existing.id);
+    if (clearErr) throw clearErr;
+  }
+
+  const { error } = await supabase
+    .from("products")
+    .update({ featured: true, featured_position: position })
+    .eq("id", productId);
+  if (error) throw error;
+}
+
 export async function reorderFeaturedProducts(
   orderedIds: string[]
 ): Promise<void> {

@@ -22,6 +22,7 @@ import {
   reorderProductPhotos,
   deleteProduct,
   setProductFeatured,
+  setFeaturedSlotProduct,
   reorderFeaturedProducts,
   type ProductInput,
   type OptionDisplayStyle,
@@ -527,6 +528,18 @@ export async function setProductFeaturedAction(
     revalidatePath("/admin/homepage");
     revalidateHomepage();
   }, featured ? "Product featured." : "Product unfeatured.");
+}
+
+export async function setFeaturedSlotProductAction(
+  position: number,
+  productId: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await setFeaturedSlotProduct(position, productId);
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Product featured.");
 }
 
 export async function reorderFeaturedProductsAction(
