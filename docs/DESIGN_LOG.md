@@ -182,6 +182,12 @@
   Discount % on one row, Max discount / Minimum order value on the
   next) instead of two full-width fields breaking up two half-width
   ones — per the user, self-verified with a screenshot.
+  **Back to Phase 4 same day**: order line items now show one per line
+  instead of joined into one run-on string, after the user asked how to
+  better show what was ordered. Considered adding a photo thumbnail per
+  line too (matching `/account`'s order history) but held off since
+  `OrderItem` doesn't snapshot a photo at order time — flagged as a
+  possible follow-up in the brief, not built.
 
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —

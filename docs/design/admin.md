@@ -173,6 +173,17 @@ view from a Catalog row, same URL as the rest of this brief's prototype).
 - Mark-paid / mark-shipped / cancel actions stay as the existing
   `ActionButton` pattern, restyled (ink-fill primary action, hairline-
   outline for cancel) instead of the default pill-button look.
+- **Line items, revised 2026-07-20**: each item now gets its own line
+  (`1× Tote Bag — Thread Color: Tan, Size: Small`) instead of every
+  item in the order joined into one run-on string — asked for by the
+  user after noting a multi-item order was hard to scan. Considered
+  adding a product-photo thumbnail per line too (matching the
+  customer-facing `/account` order history) but held off: `OrderItem`
+  doesn't snapshot a photo at order time, only `slug`/`name`/`options`/
+  `price`, so a thumbnail would mean either a live lookup by slug
+  (shows today's photo, not necessarily what shipped) or a schema
+  change to snapshot one. Flagged as a possible follow-up, not done
+  here — the one-line change alone was the requested fix.
 
 ## Option Library (`/admin/options`, now a tab under Products)
 

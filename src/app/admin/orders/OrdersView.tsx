@@ -64,14 +64,21 @@ function OrderCard({ order }: { order: Order }) {
           <p className={`text-sm ${INK_SOFT}`}>
             {order.shippingAddress.street}, {order.shippingAddress.city}
           </p>
-          <p className="mt-2 text-sm text-[#1C1A18] dark:text-[#F3F1EC]">
-            {order.items
-              .map((item) => {
-                const options = formatItemOptions(item.options);
-                return `${item.quantity}x ${item.name}${options ? ` (${options})` : ""}`;
-              })
-              .join(", ")}
-          </p>
+          <div className="mt-2 flex flex-col gap-0.5">
+            {order.items.map((item, index) => {
+              const options = formatItemOptions(item.options);
+              return (
+                <p
+                  key={`${item.slug}-${index}`}
+                  className="text-sm text-[#1C1A18] dark:text-[#F3F1EC]"
+                >
+                  <span className="tabular-nums">{item.quantity}×</span>{" "}
+                  {item.name}
+                  {options && <span className={INK_SOFT}> — {options}</span>}
+                </p>
+              );
+            })}
+          </div>
         </div>
         <p className="flex-none font-medium tabular-nums text-[#1C1A18] dark:text-[#F3F1EC]">
           {formatPrice(order.totalCentavos)}
