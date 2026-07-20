@@ -44,6 +44,13 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Admin redesign, Phase 1 — sidebar shell** (docs/design/admin.md).
+  Logged in and verified clean: sidebar nav + nested Products/Content
+  sub-links all correct and correctly highlight active state, mobile
+  hamburger/drawer works, sign-out still works, storefront header/footer
+  confirmed gone from every admin page and still present everywhere else
+  (the `StorefrontChrome` split). No issues found.
+
 - [x] **Promo codes + categories — admin CRUD and the shopper-facing
   flow** (docs/IMPROVEMENTS.md's "Promo code capability"; end-to-end
   order placement + usage-limit enforcement deferred separately, see

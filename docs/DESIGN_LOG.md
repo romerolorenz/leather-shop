@@ -1,5 +1,59 @@
 # Design Log — Leather Shop
 
+- **2026-07-20 — Admin redesign**
+  [artifact](https://claude.ai/code/artifact/6f2c9696-ffc2-4533-87e2-4c50d6dab7e9) —
+  brief: [docs/design/admin.md](design/admin.md). Click-through prototype
+  (real tab/nav switching via vanilla JS, no framework) covering the
+  whole admin shell: a persistent 6-item sidebar (Dashboard, Products,
+  Orders, Promo Codes, Content, Settings) replacing the old plain-link
+  dashboard nav, with Products (Catalog/Categories/Option Library) and
+  Content (Homepage/FAQ) each nested as tabs. Restyled to the storefront's
+  "Quiet & Confident" tokens (ink/paper/accent, Archivo) but admin-tuned —
+  real bordered tables, denser spacing — plus three new semantic tones
+  (positive/warning/critical) modeled on leather hardware finishes
+  (waxed-canvas olive, brass ochre, oxidized brick) rather than generic
+  red/green/blue, used for status chips (order status, stock level,
+  promo active/inactive/expired). Dashboard replaces the section link
+  list with a "needs attention" list of unpaid/unshipped orders. Orders
+  swap `<details>` accordions for status tabs with counts. Promo Codes'
+  ~10-field form groups into three fieldsets (Code & Discount /
+  Eligibility & Limits / Schedule & Status). Not yet built into the real
+  app. See the brief for the full per-section rationale, including why
+  Options and FAQ needed only a token restyle (they'd already picked up
+  a modal editor and `DragReorderList` on `develop` since the brief's
+  first draft, ahead of this design pass).
+  **Revised same day**: three follow-ups from the user after reviewing
+  the first pass. Categories now show what's tagged — each category is
+  a card (matching Option Library's shape) with a product-count badge
+  and the tagged products listed below it, so the owner can see what's
+  attached before renaming or deleting one. Every "add a new record"
+  action (category, option type, FAQ item, promo code, product) now
+  opens a popup modal instead of an inline form or a separate page/
+  panel — reusing the existing `AddressFormModal.tsx` (`variant: "add" |
+  "edit"`) precedent from the cart/account work rather than inventing a
+  new pattern; product creation is the one partial exception, since its
+  modal only holds the minimal create fields and still hands off to the
+  full edit page for photos/options afterward. Promo Codes' flat list
+  is now split into status-scoped tabs (Active / Expired / Inactive,
+  same tab component Orders uses) instead of one mixed list, and its
+  three-fieldset form now lives inside the add/edit modal rather than a
+  full-page panel.
+  **Revised again same day**: each category's tagged-products list is
+  now a closed-by-default `<details>` disclosure (one product per line)
+  instead of an always-visible comma-separated line — keeps the
+  collapsed card compact while still letting the owner check what's
+  tagged before deleting. "New promo code" moved out of the page-head
+  into its own toolbar row, matching the Add Category/Option Type/FAQ
+  Item buttons' position exactly rather than just their style; all five
+  "add" buttons (New product, New promo code, Add category, Add option
+  type, Add FAQ item) are now the same height.
+  **Build started 2026-07-20**: Phase 1 (shell) done —
+  `AdminSidebar`, generic `FormModal`, `SectionTabs`, `StatusTabs`, and a
+  `StorefrontChrome` split so `/admin` no longer inherits the storefront
+  header/footer. See docs/design/admin.md's status line; pending a
+  real-login manual check before Phases 2–7 (per-section restyles)
+  proceed.
+
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —
   brief: [docs/design/homepage.md](design/homepage.md) § "Branding test".
