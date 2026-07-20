@@ -58,6 +58,18 @@ tasks/testing) live in [docs/](./docs/), not the repo root.
 - **Keep git commit messages concise.** A short summary line plus 2-4
   bullet points covering what changed and why is enough — don't restate
   the full reasoning already visible in the diff or in chat.
+- **Every user-triggered action gets visible feedback — never a silent
+  success or a bare error page.** Any mutation (save, create, delete,
+  mark-as-X, apply/remove, etc.), admin or customer-facing, must confirm
+  success or surface a failure to the user. Default to the existing
+  pattern rather than inventing a new one: `ActionForm`/`SubmitButton`
+  (`src/components/admin/ActionForm.tsx`) for `<form>`-based actions,
+  `ActionButton` (`src/components/ActionButton.tsx`) for zero-arg actions
+  (deletes, toggles), both wired through `runAction`/`ActionResult`
+  (`src/lib/action-result.ts`) to the app-wide `ToastProvider`/`useToast()`
+  (`src/components/ToastProvider.tsx`, mounted in `src/app/layout.tsx`).
+  Applies by default to every new mutation added anywhere in the app,
+  without needing to be asked each time.
 - **Manual testing checklists go in MANUAL_TESTING.md, not just chat.**
   Whenever verification needs a human to click through something I can't
   drive myself (forms, file uploads, real OAuth logins, anything needing
