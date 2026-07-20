@@ -8,7 +8,9 @@ docs/MANUAL_TESTING.md's Done section, verified both manually and via a
 synthetic test-admin session (see the reference memory on this). Phase 4
 (Orders) built and self-verified, one item (Mark paid/Mark shipped/
 Cancel button styling) needs a real pending/paid order to check since
-none exist in current seed data. Phases 5–6 not started.
+none exist in current seed data. Phase 5 (Promo Codes) built and fully
+self-verified, including a real create/edit/delete round-trip against
+the dev DB. Phase 6 not started.
 
 **One scope trim from the brief**: the Catalog table's low-stock
 indicator (originally "amber when at or below the product's threshold")
@@ -198,7 +200,7 @@ view from a Catalog row, same URL as the rest of this brief's prototype).
 - "Add category" moves to the shared add-modal pattern (below) instead
   of the inline form that used to sit at the bottom of the page.
 
-## Promo Codes (`/admin/promo-codes`, top-level)
+## Promo Codes (`/admin/promo-codes`, top-level) — built 2026-07-20
 
 - **List page**: split into **status-scoped tabs — Active / Expired /
   Inactive** — with a count per tab, same tab component Orders uses.

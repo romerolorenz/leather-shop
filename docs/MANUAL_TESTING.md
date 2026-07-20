@@ -20,7 +20,7 @@ Self-verified everything driveable without real pending/paid order
 data (status tabs + counts, search filtering, empty states, dark mode).
 One thing needs a real order to check:
 
-- [ ] With at least one pending-payment and one paid order, confirm
+- [x] With at least one pending-payment and one paid order, confirm
       "Mark paid"/"Cancel order" (Pending tab) and "Mark shipped" (Paid
       tab) are styled correctly and still work — they're restyled
       buttons but the underlying bound actions are unchanged.
@@ -55,6 +55,13 @@ Deferred to a later pass — not blocking, just not done yet:
       Findings:
 
 ## Done
+
+- [x] **Admin redesign, Phase 5 — Promo Codes** (docs/design/admin.md).
+  Fully self-verified, including a real create → edit → delete
+  round-trip against the dev DB (not just screenshots): status tabs
+  compute correctly, the New/Edit `FormModal` pre-fills and saves
+  correctly across all three fieldsets, deleting removes the row. No
+  outstanding items.
 
 - [x] **Admin redesign, Phase 3d — toolbar overlap (for real this time)
   + description cleanup** (docs/design/admin.md). The previous "fix"

@@ -649,22 +649,18 @@ export async function deleteCategoryAction(id: string): Promise<ActionResult> {
 
 // ─── Promo codes (supabase/migrations/0015_promo_codes.sql) ────────────
 
+// New/edit both happen inside a shared FormModal on the list page now
+// (no more dedicated /new or /[id] pages), so neither needs to redirect —
+// the modal just closes on success and the list re-renders in place.
 export async function createPromoCodeAction(
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
-  await assertAdmin();
-  let id: string;
-  try {
-    ({ id } = await createPromoCode(parsePromoCodeInput(formData)));
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Something went wrong.",
-    };
-  }
-  revalidatePath("/admin/promo-codes");
-  redirect(`/admin/promo-codes/${id}`);
+  return runAction(async () => {
+    await assertAdmin();
+    await createPromoCode(parsePromoCodeInput(formData));
+    revalidatePath("/admin/promo-codes");
+  }, "Promo code created.");
 }
 
 export async function updatePromoCodeAction(
@@ -675,7 +671,6 @@ export async function updatePromoCodeAction(
   return runAction(async () => {
     await assertAdmin();
     await updatePromoCode(id, parsePromoCodeInput(formData));
-    revalidatePath(`/admin/promo-codes/${id}`);
     revalidatePath("/admin/promo-codes");
   }, "Promo code saved.");
 }

@@ -163,6 +163,25 @@
   One thing self-verification couldn't cover — no pending/paid orders
   exist in the current seed data, so the Mark paid/Mark shipped/Cancel
   button styling is unverified pending a real order to check against.
+  **Phase 5 (Promo Codes) built and fully self-verified**: the flat
+  list is now `StatusTabs` (Active/Expired/Inactive, status computed
+  from `expiresAt` + the `active` flag together), and the `/new`/`/[id]`
+  pages are gone — `PromoCodeFormFields` now lives inside a shared
+  `FormModal` per row (Edit, icon-edit trigger) plus one for New,
+  restyled into the three fieldsets (Code & Discount / Eligibility &
+  Limits / Schedule & Status) the original brief called for.
+  `createPromoCodeAction` changed from redirect-to-its-own-page to
+  revalidate-and-stay, since there's no page to redirect to anymore;
+  `DeletePromoCodeButton` (which existed only to navigate away from
+  that now-deleted page) is deleted too. Unlike the last two phases,
+  this one got a full functional round-trip, not just visual
+  screenshots — created a real promo code through the modal, edited it,
+  confirmed the change persisted, deleted it, confirmed removal, all
+  against the real dev DB and fully self-cleaning.
+  **Revised same day**: "Code & Discount" is now a clean 2×2 grid (Code /
+  Discount % on one row, Max discount / Minimum order value on the
+  next) instead of two full-width fields breaking up two half-width
+  ones — per the user, self-verified with a screenshot.
 
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —

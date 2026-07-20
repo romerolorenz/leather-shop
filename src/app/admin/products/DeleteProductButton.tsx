@@ -7,7 +7,8 @@ import type { ActionResult } from "@/lib/action-result";
 // Deleting from the product's own edit page needs to navigate away first —
 // the page's Server Component re-renders after any Server Action and would
 // otherwise immediately notFound() trying to re-fetch the now-deleted row.
-// Mirrors DeletePromoCodeButton (src/app/admin/promo-codes/DeletePromoCodeButton.tsx).
+// Promo codes had the same bespoke pattern until their edit page moved
+// into a list-page modal (Phase 5) and stopped needing it.
 export function DeleteProductButton({
   action,
 }: {
