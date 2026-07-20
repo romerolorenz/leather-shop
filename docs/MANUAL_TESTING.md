@@ -44,6 +44,11 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Admin redesign, Phase 2 — Dashboard** (docs/design/admin.md).
+  Stat tiles and the "needs attention" list (pending/paid-unshipped
+  orders only, oldest first, correct chip/price/relative-time, correct
+  empty state) all verified against real data. No issues found.
+
 - [x] **Admin redesign, Phase 1 — sidebar shell** (docs/design/admin.md).
   Logged in and verified clean: sidebar nav + nested Products/Content
   sub-links all correct and correctly highlight active state, mobile

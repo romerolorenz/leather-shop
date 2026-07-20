@@ -2,9 +2,9 @@
 
 Status: **Build started 2026-07-20** — see
 [DESIGN_LOG.md](../DESIGN_LOG.md) for the click-through prototype this
-was agreed from. Phase 1 (shell: sidebar, `FormModal`, `SectionTabs`,
-`StatusTabs`) is built, pending a real-login manual check
-(docs/MANUAL_TESTING.md). Phases 2–7 (per-section restyles) not started.
+was agreed from. Phase 1 (shell) done and manually verified. Phase 2
+(Dashboard) built, pending a real-login manual check
+(docs/MANUAL_TESTING.md). Phases 3–7 not started.
 
 ## What this is for
 

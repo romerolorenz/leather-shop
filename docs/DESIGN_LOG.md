@@ -50,9 +50,12 @@
   **Build started 2026-07-20**: Phase 1 (shell) done —
   `AdminSidebar`, generic `FormModal`, `SectionTabs`, `StatusTabs`, and a
   `StorefrontChrome` split so `/admin` no longer inherits the storefront
-  header/footer. See docs/design/admin.md's status line; pending a
-  real-login manual check before Phases 2–7 (per-section restyles)
-  proceed.
+  header/footer. Manually verified, no issues found, committed.
+  **Phase 2 (Dashboard) built**: stat tiles restyled to tokens; the
+  plain section-link list is gone, replaced with a "needs attention"
+  list of pending-payment/paid-unshipped orders (oldest first, same
+  warning-tone chip for both since both need the owner's action, caption
+  text says which). Pending a real-login manual check before Phase 3.
 
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —
