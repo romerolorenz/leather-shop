@@ -46,12 +46,18 @@ export function DragReorderList<T extends { id: string }>({
   children,
   className,
   itemClassName,
+  overlayGrip = false,
 }: {
   items: T[];
   onReorder: (orderedIds: string[]) => Promise<ActionResult>;
   children: React.ReactNode[];
   className?: string;
   itemClassName?: string;
+  // Default layout puts the grip beside the content (a list row). Set
+  // this for tile/thumbnail content instead — the grip becomes a small
+  // absolutely-positioned corner badge over the tile rather than eating
+  // horizontal space next to it (homepage featured-product tiles).
+  overlayGrip?: boolean;
 }) {
   const [order, setOrder] = useState(items);
   // Re-sync from the server-provided order when it changes (e.g. the page
@@ -117,7 +123,7 @@ export function DragReorderList<T extends { id: string }>({
             e.preventDefault();
             handleDrop(item.id);
           }}
-          className={`flex items-start gap-2 ${itemClassName ?? ""} ${
+          className={`${overlayGrip ? "relative" : "flex items-start gap-2"} ${itemClassName ?? ""} ${
             draggedId === item.id ? "opacity-40" : ""
           }`}
         >
@@ -125,11 +131,17 @@ export function DragReorderList<T extends { id: string }>({
             onMouseDown={() => setGrabbedId(item.id)}
             onMouseUp={() => setGrabbedId(null)}
             aria-label="Drag to reorder"
-            className="mt-1 shrink-0 cursor-grab touch-none rounded-md p-1 text-[#6E6A64] active:cursor-grabbing dark:text-[#A39C90]"
+            className={
+              overlayGrip
+                ? "absolute top-1.5 left-1.5 z-10 cursor-grab touch-none rounded-md bg-black/50 p-1 text-white active:cursor-grabbing"
+                : "mt-1 shrink-0 cursor-grab touch-none rounded-md p-1 text-[#6E6A64] active:cursor-grabbing dark:text-[#A39C90]"
+            }
           >
             <GripIcon />
           </span>
-          <div className="min-w-0 flex-1">{contentByItemId.get(item.id)}</div>
+          <div className={overlayGrip ? "" : "min-w-0 flex-1"}>
+            {contentByItemId.get(item.id)}
+          </div>
         </li>
       ))}
     </ul>

@@ -4,11 +4,16 @@ import {
   deleteOptionTypeAction,
   updateOptionTypeAction,
 } from "../actions";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { SectionTabs } from "@/components/admin/SectionTabs";
+import { FormModal } from "@/components/admin/FormModal";
 import { ActionButton } from "@/components/ActionButton";
-import { ActionForm } from "@/components/admin/ActionForm";
-import { SubmitButton } from "@/components/admin/SubmitButton";
 import { OptionTypeFormModal } from "@/components/admin/OptionTypeFormModal";
+
+const PRODUCTS_TABS = [
+  { label: "Catalog", href: "/admin/products" },
+  { label: "Categories", href: "/admin/categories" },
+  { label: "Option Library", href: "/admin/options" },
+];
 
 function TrashIcon() {
   return (
@@ -37,23 +42,55 @@ export default async function AdminOptionsPage() {
   const optionTypes = await listOptionTypes();
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
-      <Breadcrumbs
-        items={[
-          { label: "Admin", href: "/admin" },
-          { label: "Options" },
-        ]}
-      />
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight">
-        Option library
+    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10 sm:px-10">
+      <h1 className="mb-1 text-[1.375rem] font-semibold tracking-tight text-[#1C1A18] dark:text-[#F3F1EC]">
+        Products
       </h1>
-      <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
-        Shop-wide options, defined once and attached to any product from its
-        edit page. Renaming or deleting here applies everywhere the option
-        is attached — including products not shown on this page.
+      <p className="mb-6 text-sm text-[#6E6A64] dark:text-[#A39C90]">
+        The catalog, its categories, and shop-wide options.
       </p>
+      <SectionTabs items={PRODUCTS_TABS} />
 
-      <ul className="mb-10 flex flex-col gap-4">
+      <div className="mb-4 flex justify-end">
+        <FormModal
+          title="Add option type"
+          action={createOptionTypeAction}
+          submitLabel="Add option type"
+          triggerLabel="Add option type"
+        >
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium" htmlFor="new-option-name">
+              Name
+            </label>
+            <input
+              id="new-option-name"
+              name="name"
+              placeholder="e.g. Thread Color"
+              required
+              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium" htmlFor="new-option-style">
+              Display style
+            </label>
+            <select
+              id="new-option-style"
+              name="displayStyle"
+              defaultValue="buttons"
+              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            >
+              <option value="buttons">Buttons</option>
+              <option value="dropdown">Dropdown</option>
+            </select>
+          </div>
+          <p className="text-xs text-[#6E6A64] dark:text-[#A39C90]">
+            Values are added after creating, from the edit modal.
+          </p>
+        </FormModal>
+      </div>
+
+      <ul className="flex flex-col gap-3">
         {optionTypes.map((type) => {
           const removeType = deleteOptionTypeAction.bind(null, type.id);
           const saveType = updateOptionTypeAction.bind(
@@ -64,12 +101,12 @@ export default async function AdminOptionsPage() {
           return (
             <li
               key={type.id}
-              className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]"
+              className="rounded-lg border border-[rgba(28,26,24,.12)] p-4 dark:border-[rgba(243,241,236,.14)]"
             >
               <div className="flex items-center gap-2">
-                <span className="flex-1 text-sm font-medium">
+                <span className="flex-1 text-sm font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
                   {type.name}{" "}
-                  <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                  <span className="text-xs font-normal text-[#6E6A64] dark:text-[#A39C90]">
                     ({DISPLAY_STYLE_LABELS[type.displayStyle]})
                   </span>
                 </span>
@@ -78,18 +115,18 @@ export default async function AdminOptionsPage() {
                   action={removeType}
                   confirmMessage="Delete this option type? This removes it from every product using it."
                   ariaLabel="Delete option type"
-                  className="rounded-md p-1.5 text-red-600 transition-transform hover:bg-red-600/10 active:scale-95 disabled:opacity-50"
+                  className="rounded-md p-1.5 text-[#8C3B32] transition-transform hover:bg-[rgba(140,59,50,.1)] active:scale-95 disabled:opacity-50 dark:text-[#E08A78]"
                 >
                   <TrashIcon />
                 </ActionButton>
               </div>
 
               {type.values.length > 0 ? (
-                <p className="mt-2 pl-1 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="mt-2 pl-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
                   {type.values.map((v) => v.value).join(", ")}
                 </p>
               ) : (
-                <p className="mt-2 pl-1 text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="mt-2 pl-1 text-xs text-[#6E6A64] dark:text-[#A39C90]">
                   No values yet — click edit to add some.
                 </p>
               )}
@@ -97,39 +134,11 @@ export default async function AdminOptionsPage() {
           );
         })}
         {optionTypes.length === 0 && (
-          <li className="text-sm text-zinc-500 dark:text-zinc-400">
+          <li className="text-sm text-[#6E6A64] dark:text-[#A39C90]">
             No option types yet.
           </li>
         )}
       </ul>
-
-      <h2 className="mb-4 text-sm font-medium">Add option type</h2>
-      <ActionForm
-        action={createOptionTypeAction}
-        className="flex items-center gap-2"
-      >
-        <input
-          name="name"
-          placeholder="e.g. Thread Color"
-          required
-          className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-1.5 text-sm dark:border-white/[.2]"
-        />
-        <select
-          name="displayStyle"
-          defaultValue="buttons"
-          aria-label="Display style"
-          className="rounded-md border border-black/[.15] bg-transparent px-2 py-1.5 text-sm dark:border-white/[.2]"
-        >
-          <option value="buttons">Buttons</option>
-          <option value="dropdown">Dropdown</option>
-        </select>
-        <SubmitButton
-          pendingLabel="Adding…"
-          className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-1.5 text-sm disabled:opacity-50 dark:border-white/[.2]"
-        >
-          Add option type
-        </SubmitButton>
-      </ActionForm>
     </main>
   );
 }

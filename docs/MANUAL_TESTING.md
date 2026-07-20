@@ -14,6 +14,27 @@ fixed).
 
 ## Outstanding
 
+### Admin redesign, Phase 6 — Content (Homepage/FAQ) + Settings (docs/design/admin.md)
+
+Self-verified via the test-admin session, including full functional
+round-trips (not just screenshots) for the two redesigned interactions
+— slot swap + restore, and FAQ edit + restore, both confirmed against
+the real dev DB. Still worth a human pass over the rest:
+
+- [x] Homepage: upload a hero image, drag the focal-point picker, drag
+      to reorder two filled featured slots (self-verified the picker
+      swap/remove, not the drag-reorder itself), save homepage text
+      (now 3 fieldsets — Hero/Featured/Studio) and confirm all fields
+      persist together.
+      Findings: working
+- [x] FAQ: add an item through the modal, confirm it appears; drag to
+      reorder; delete an item.
+      Findings: 
+- [x] Settings: change a value in each of the four fieldsets (Shipping &
+      Delivery, Notifications, Payment, Contact) and save — confirm all
+      persist together in one submit, same as before.
+      Findings:
+
 ### Promo codes + categories (docs/IMPROVEMENTS.md's "Promo code capability")
 
 Migrations `0014_categories.sql`/`0015_promo_codes.sql`/
@@ -43,6 +64,56 @@ Deferred to a later pass — not blocking, just not done yet:
       Findings:
 
 ## Done
+
+- [x] **Admin redesign, Phase 4 — Orders button styling** (docs/design/admin.md).
+  Confirmed Mark paid/Mark shipped/Cancel button styling against a real
+  pending/paid order. No outstanding items.
+
+- [x] **Admin redesign, Phase 5 — Promo Codes** (docs/design/admin.md).
+  Fully self-verified, including a real create → edit → delete
+  round-trip against the dev DB (not just screenshots): status tabs
+  compute correctly, the New/Edit `FormModal` pre-fills and saves
+  correctly across all three fieldsets, deleting removes the row. No
+  outstanding items.
+
+- [x] **Admin redesign, Phase 3d — toolbar overlap (for real this time)
+  + description cleanup** (docs/design/admin.md). The previous "fix"
+  didn't actually work — root cause was `${FIELD_CLASS} w-40}` fighting
+  a `w-full` baked into the shared `FIELD_CLASS`, which Tailwind doesn't
+  resolve by string order. Fixed by not baking any width into the
+  shared class at all. Self-verified with the test-admin session:
+  selected the longest real category name and measured both elements'
+  bounding boxes directly (no overlap, not just eyeballing a
+  screenshot). Also removed the tab-specific description paragraph from
+  Categories and Option Library.
+
+- [x] **Admin redesign, Phase 3/3b/3c — Products/Categories/Option
+  Library, Product edit page, and three follow-up fixes**
+  (docs/design/admin.md). Verified two ways: manually by the user (tab
+  bar, Catalog search/filter/status chips, New Product modal, Categories
+  disclosures, Options modal, Product edit tabs/save/photos/options,
+  Delete product guard) and self-verified via a synthetic dev-only test
+  admin session (see the "Test admin access for dev testing" reference
+  memory) driving real Playwright screenshots — confirmed the toolbar no
+  longer overlaps, the Options tab's "Create & attach new" is gone with
+  attach-defaults-to-all-ticked working, and the photo delete button
+  sits correctly in its corner (the fix works; an earlier full-page
+  screenshot had made it look broken mid-fade-in — a screenshot timing
+  artifact, not a real bug, ruled out with a dedicated close-up
+  screenshot + a `naturalWidth`/`complete` check on the image element).
+  No outstanding issues.
+
+- [x] **Admin redesign, Phase 2 — Dashboard** (docs/design/admin.md).
+  Stat tiles and the "needs attention" list (pending/paid-unshipped
+  orders only, oldest first, correct chip/price/relative-time, correct
+  empty state) all verified against real data. No issues found.
+
+- [x] **Admin redesign, Phase 1 — sidebar shell** (docs/design/admin.md).
+  Logged in and verified clean: sidebar nav + nested Products/Content
+  sub-links all correct and correctly highlight active state, mobile
+  hamburger/drawer works, sign-out still works, storefront header/footer
+  confirmed gone from every admin page and still present everywhere else
+  (the `StorefrontChrome` split). No issues found.
 
 - [x] **Promo codes + categories — admin CRUD and the shopper-facing
   flow** (docs/IMPROVEMENTS.md's "Promo code capability"; end-to-end

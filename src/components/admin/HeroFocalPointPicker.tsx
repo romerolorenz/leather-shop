@@ -59,14 +59,14 @@ export function HeroFocalPointPicker({
           style={{ left: `${focalX}%`, top: `${focalY}%` }}
         />
       </div>
-      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="mt-2 text-xs text-[#6E6A64] dark:text-[#A39C90]">
         Click anywhere on the image to set the focal point. Saves
         automatically.
       </p>
 
       <div className="mt-6 flex gap-4">
         <div className="flex-1">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#6E6A64] dark:text-[#A39C90]">
             Mobile preview
           </p>
           <div className="relative aspect-[9/16] w-full overflow-hidden rounded-md">
@@ -80,7 +80,7 @@ export function HeroFocalPointPicker({
           </div>
         </div>
         <div className="flex-1">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#6E6A64] dark:text-[#A39C90]">
             Desktop preview
           </p>
           <div className="relative aspect-[16/9] w-full overflow-hidden rounded-md">

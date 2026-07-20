@@ -156,6 +156,72 @@ document-flow-everywhere too, before "don't push the hero down" brought
 the overlay back). If a future page wants its own transparent (not
 solid) overlay treatment, that's new ground, not a revert of this one.
 
+## Admin shell
+
+Being built out per [docs/design/admin.md](admin.md) — the admin area
+(`src/app/admin/**`) gets its own app shell, not the storefront's
+`SiteHeader`/footer: `src/components/StorefrontChrome.tsx` is the one
+client boundary that knows the route (RootLayout is a Server Component
+and can't call `usePathname()` itself) and skips rendering the
+storefront header/footer for any `/admin/*` path.
+
+- **Content wrapper**: every admin page's `<main>` uses the identical
+  `mx-auto w-full max-w-6xl flex-1 px-6 py-10 sm:px-10` — found by
+  testing that varying it per page (a wider one for the Products table,
+  narrower ones for Categories/Options) made the shared `SectionTabs` bar
+  visibly jump width when switching tabs between sibling pages. One
+  width for every admin page, full stop — content that's naturally
+  narrower (a card list, a form) just doesn't fill it, same as the
+  artifact prototype did. Paper background (`bg-white dark:bg-[#121110]`)
+  is set once on the content wrapper in `admin/layout.tsx`, not per page
+  — the sitewide `--background` CSS var (`#0a0a0a` dark) predates this
+  system and doesn't match the sidebar's `#121110`/`#171513`, a visible
+  seam in dark mode if a page relies on it instead of the explicit token.
+- **`AdminSidebar`** (`src/components/admin/AdminSidebar.tsx`): fixed
+  240px sidebar, `bg-[#FBFAF8] dark:bg-[#171513]` (a barely-off-paper
+  tone — layering without a new hue, per the neutrals rule above),
+  6 top-level items with the accent color (never a fill) marking the
+  active one. Products and Content each show nested sub-links
+  (Catalog/Categories/Option Library; Homepage/FAQ) — those stay real
+  routes with their own server-rendered data fetch, not client-side tab
+  state; see "Section tabs" below for how the page itself shows which
+  sub-page is active. Collapses to a hamburger + slide-over drawer under
+  `md`.
+- **`FormModal`** (`src/components/admin/FormModal.tsx`): the shared
+  "add or edit a record in a popup" primitive — every admin create/edit
+  flow uses this instead of an inline form or a dedicated page, per the
+  admin brief's "Add flow" section. Same dialog/`useActionState`/toast
+  wiring as the pre-existing `AddressFormModal` and `OptionTypeFormModal`
+  it generalizes. The trigger button is rendered *by* `FormModal` itself
+  (`triggerVariant: "primary" | "icon-edit"`), not accepted as a
+  caller-supplied element — passing a `dialogRef`-touching `open`
+  closure into `cloneElement` or a render-prop trips React's
+  `react-hooks/refs` lint rule ("Cannot access refs during render"),
+  since the linter can't prove the callee won't invoke it synchronously.
+  Owning the trigger sidesteps that and guarantees every "add" trigger
+  across the whole admin is the same height, for free.
+- **`SectionTabs`** (`src/components/admin/SectionTabs.tsx`): real
+  `<Link>`s styled as an underlined tab row, active state via
+  `usePathname()` — for route-backed groups (Products, Content).
+- **`StatusTabs`** (`src/components/admin/StatusTabs.tsx`): client-only
+  filter tabs over already-fetched data (no route change) — for Orders
+  and Promo Codes' status groupings. Each tab shows a `tabular-nums`
+  count badge.
+- **Semantic colors** (status chips, low-stock flags, promo status) —
+  separate from the storefront's one accent, modeled on leather-hardware
+  finishes rather than generic red/green/amber:
+
+  | Token | Light | Dark | Use |
+  |---|---|---|---|
+  | Positive | `#55692F` (waxed-canvas olive) | `#A8C17E` | Paid, shipped, active, in stock |
+  | Warning | `#8A6415` (brass ochre) | `#E0B052` | Pending, paused, low stock |
+  | Critical | `#8C3B32` (oxidized brick) | `#E08A78` | Cancelled, expired, out of stock |
+
+  Applied the same way as every other token in this doc — literal hex in
+  Tailwind arbitrary-value classes, not a new CSS custom property (this
+  codebase doesn't use `--ink`/`--paper` as actual CSS vars, despite the
+  table above naming them that way for readability).
+
 **Wordmark** ("Hiraya," added 2026-07-10, see
 [docs/design/homepage.md](homepage.md) § "Branding test"): name and a
 baybayin transliteration side by side (`flex items-baseline gap-3`,

@@ -11,6 +11,10 @@ type Defaults = {
   stockQuantity?: number;
 };
 
+const FIELD_CLASS =
+  "w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]";
+const LABEL_CLASS = "text-sm font-medium text-[#1C1A18] dark:text-[#F3F1EC]";
+
 export function ProductFormFields({
   categories,
   defaultValues = {},
@@ -19,9 +23,9 @@ export function ProductFormFields({
   defaultValues?: Defaults;
 }) {
   return (
-    <>
-      <div>
-        <label className="text-sm font-medium" htmlFor="name">
+    <div className="grid grid-cols-2 gap-4">
+      <div className="col-span-2 flex flex-col gap-1">
+        <label className={LABEL_CLASS} htmlFor="name">
           Name
         </label>
         <input
@@ -29,11 +33,12 @@ export function ProductFormFields({
           name="name"
           required
           defaultValue={defaultValues.name}
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className={FIELD_CLASS}
         />
       </div>
-      <div>
-        <label className="text-sm font-medium" htmlFor="description">
+
+      <div className="col-span-2 flex flex-col gap-1">
+        <label className={LABEL_CLASS} htmlFor="description">
           Description
         </label>
         <textarea
@@ -42,11 +47,12 @@ export function ProductFormFields({
           rows={4}
           required
           defaultValue={defaultValues.description}
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className={FIELD_CLASS}
         />
       </div>
-      <div>
-        <label className="text-sm font-medium" htmlFor="categoryId">
+
+      <div className="col-span-2 flex flex-col gap-1 sm:col-span-1">
+        <label className={LABEL_CLASS} htmlFor="categoryId">
           Category
         </label>
         <select
@@ -54,7 +60,7 @@ export function ProductFormFields({
           name="categoryId"
           required
           defaultValue={defaultValues.categoryId ?? ""}
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className={FIELD_CLASS}
         >
           <option value="" disabled>
             Select a category
@@ -65,16 +71,20 @@ export function ProductFormFields({
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-[#6E6A64] dark:text-[#A39C90]">
           Manage the list from{" "}
-          <Link href="/admin/categories" className="underline">
-            Admin / Categories
+          <Link
+            href="/admin/categories"
+            className="text-[#7A3B22] hover:underline dark:text-[#C97A4E]"
+          >
+            Products / Categories
           </Link>
           .
         </p>
       </div>
-      <div>
-        <label className="text-sm font-medium" htmlFor="price">
+
+      <div className="flex flex-col gap-1">
+        <label className={LABEL_CLASS} htmlFor="price">
           Price (₱)
         </label>
         <input
@@ -85,11 +95,12 @@ export function ProductFormFields({
           min="0"
           required
           defaultValue={defaultValues.price}
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className={FIELD_CLASS}
         />
       </div>
-      <div>
-        <label className="text-sm font-medium" htmlFor="leadTimeDays">
+
+      <div className="flex flex-col gap-1">
+        <label className={LABEL_CLASS} htmlFor="leadTimeDays">
           Lead time (days)
         </label>
         <input
@@ -100,11 +111,12 @@ export function ProductFormFields({
           min="0"
           required
           defaultValue={defaultValues.leadTimeDays ?? 0}
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className={FIELD_CLASS}
         />
       </div>
-      <div>
-        <label className="text-sm font-medium" htmlFor="stockQuantity">
+
+      <div className="flex flex-col gap-1">
+        <label className={LABEL_CLASS} htmlFor="stockQuantity">
           Stock (production capacity)
         </label>
         <input
@@ -115,24 +127,25 @@ export function ProductFormFields({
           min="0"
           required
           defaultValue={defaultValues.stockQuantity ?? 0}
-          className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
+          className={FIELD_CLASS}
         />
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-[#6E6A64] dark:text-[#A39C90]">
           One capacity number for the whole product — the same regardless of
           which option combination a customer picks. Never shown to
           customers.
         </p>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="orderingEnabled"
-          defaultChecked={defaultValues.orderingEnabled ?? true}
-        />
-        Ordering enabled
-      </label>
-      <div>
-        <label className="flex items-center gap-2 text-sm">
+
+      <div className="col-span-2 flex flex-wrap gap-x-6 gap-y-2 sm:col-span-1">
+        <label className="flex items-center gap-2 text-sm text-[#1C1A18] dark:text-[#F3F1EC]">
+          <input
+            type="checkbox"
+            name="orderingEnabled"
+            defaultChecked={defaultValues.orderingEnabled ?? true}
+          />
+          Ordering enabled
+        </label>
+        <label className="flex items-center gap-2 text-sm text-[#1C1A18] dark:text-[#F3F1EC]">
           <input
             type="checkbox"
             name="visible"
@@ -140,12 +153,12 @@ export function ProductFormFields({
           />
           Visible in shop
         </label>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Unchecking this hides the product from the shop listing and
-          search entirely (its page 404s) — different from disabling
-          ordering, which still lists it as unavailable.
-        </p>
       </div>
-    </>
+      <p className="col-span-2 -mt-1 text-xs text-[#6E6A64] dark:text-[#A39C90]">
+        Unchecking &quot;Visible&quot; hides the product from the shop
+        listing and search entirely (its page 404s) — different from
+        disabling ordering, which still lists it as unavailable.
+      </p>
+    </div>
   );
 }

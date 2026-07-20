@@ -1,5 +1,258 @@
 # Design Log — Leather Shop
 
+- **2026-07-20 — Admin redesign**
+  [artifact](https://claude.ai/code/artifact/6f2c9696-ffc2-4533-87e2-4c50d6dab7e9) —
+  brief: [docs/design/admin.md](design/admin.md). Click-through prototype
+  (real tab/nav switching via vanilla JS, no framework) covering the
+  whole admin shell: a persistent 6-item sidebar (Dashboard, Products,
+  Orders, Promo Codes, Content, Settings) replacing the old plain-link
+  dashboard nav, with Products (Catalog/Categories/Option Library) and
+  Content (Homepage/FAQ) each nested as tabs. Restyled to the storefront's
+  "Quiet & Confident" tokens (ink/paper/accent, Archivo) but admin-tuned —
+  real bordered tables, denser spacing — plus three new semantic tones
+  (positive/warning/critical) modeled on leather hardware finishes
+  (waxed-canvas olive, brass ochre, oxidized brick) rather than generic
+  red/green/blue, used for status chips (order status, stock level,
+  promo active/inactive/expired). Dashboard replaces the section link
+  list with a "needs attention" list of unpaid/unshipped orders. Orders
+  swap `<details>` accordions for status tabs with counts. Promo Codes'
+  ~10-field form groups into three fieldsets (Code & Discount /
+  Eligibility & Limits / Schedule & Status). Not yet built into the real
+  app. See the brief for the full per-section rationale, including why
+  Options and FAQ needed only a token restyle (they'd already picked up
+  a modal editor and `DragReorderList` on `develop` since the brief's
+  first draft, ahead of this design pass).
+  **Revised same day**: three follow-ups from the user after reviewing
+  the first pass. Categories now show what's tagged — each category is
+  a card (matching Option Library's shape) with a product-count badge
+  and the tagged products listed below it, so the owner can see what's
+  attached before renaming or deleting one. Every "add a new record"
+  action (category, option type, FAQ item, promo code, product) now
+  opens a popup modal instead of an inline form or a separate page/
+  panel — reusing the existing `AddressFormModal.tsx` (`variant: "add" |
+  "edit"`) precedent from the cart/account work rather than inventing a
+  new pattern; product creation is the one partial exception, since its
+  modal only holds the minimal create fields and still hands off to the
+  full edit page for photos/options afterward. Promo Codes' flat list
+  is now split into status-scoped tabs (Active / Expired / Inactive,
+  same tab component Orders uses) instead of one mixed list, and its
+  three-fieldset form now lives inside the add/edit modal rather than a
+  full-page panel.
+  **Revised again same day**: each category's tagged-products list is
+  now a closed-by-default `<details>` disclosure (one product per line)
+  instead of an always-visible comma-separated line — keeps the
+  collapsed card compact while still letting the owner check what's
+  tagged before deleting. "New promo code" moved out of the page-head
+  into its own toolbar row, matching the Add Category/Option Type/FAQ
+  Item buttons' position exactly rather than just their style; all five
+  "add" buttons (New product, New promo code, Add category, Add option
+  type, Add FAQ item) are now the same height.
+  **Build started 2026-07-20**: Phase 1 (shell) done —
+  `AdminSidebar`, generic `FormModal`, `SectionTabs`, `StatusTabs`, and a
+  `StorefrontChrome` split so `/admin` no longer inherits the storefront
+  header/footer. Manually verified, no issues found, committed.
+  **Phase 2 (Dashboard) built and verified, committed**: stat tiles
+  restyled to tokens; the plain section-link list is gone, replaced with
+  a "needs attention" list of pending-payment/paid-unshipped orders
+  (oldest first, same warning-tone chip for both since both need the
+  owner's action, caption text says which).
+  **Phase 3 (Products/Categories/Option Library) built**: all three now
+  share a `SectionTabs` header (Catalog/Categories/Option Library).
+  Catalog is a real client-filterable table (search + category filter)
+  with status chips (Visible/Paused/Hidden) and an "Out" chip at zero
+  stock — the "low stock" amber tier from the brief was dropped, no
+  configurable threshold exists in the data model (see
+  docs/design/admin.md's note). "New product" is now a `FormModal` with
+  just name/category/price/stock/description, still redirecting to the
+  full edit page afterward for photos/options — the old
+  `/admin/products/new` page is deleted, nothing linked to it anymore.
+  Categories got a new `listCategoriesWithProducts()` query so each card
+  can show its tagged products in the closed-by-default disclosure.
+  "Add category" and "Add option type" both moved to `FormModal`s.
+  Pending a real-login manual check before Phase 4.
+  **Revised same day**: three fixes from real-login testing feedback —
+  the admin content background now comes from an explicit paper token
+  set once in `admin/layout.tsx` instead of the sitewide legacy
+  `--background` var (a visible dark-mode seam against the sidebar); all
+  four restyled pages now share one `max-w-6xl` container instead of
+  varying per page (the shared tab bar was jumping width switching
+  tabs); Catalog's search + category filter are now a locked
+  non-wrapping group so the "New product" button is the only thing that
+  drops to its own line on narrow viewports. Also added **Product edit**
+  to scope (was stubbed in the original brief, fleshed out now after the
+  user hit two real gaps testing Phase 3: the edit page was still the
+  old unstyled scrolling form, and there's no way to delete a product at
+  all). Artifact updated with a new drill-in view from a Catalog row —
+  Details/Photos/Options tabs (in-page client tabs, not routes, since
+  it's one dynamic page not siblings), a "Delete product" button in the
+  header, and drag-handle photo reordering (photos already have a
+  `position` column nothing currently lets the owner change). Not yet
+  built into the real app — see docs/design/admin.md's Product Edit
+  section for the full proposal, pending agreement.
+  **Fixed a real artifact bug found in review**: the Product Edit
+  view's "Back to Products" link rendered as a bare unstyled gray
+  `<button>` — its `.back-link` CSS rule had been deleted during the
+  Promo Codes revision pass (when the old detail-panel that used it got
+  replaced by tabs+modal) and never re-added when the same class got
+  reused here. Restored.
+  **Built 2026-07-20** (`/admin/products/[id]`): Details/Photos/Options
+  as in-page tabs (`StatusTabs`, with its count badge made optional so
+  it doubles as a plain content-tabs primitive rather than adding a
+  fourth tab component). Photo drag-reorder reuses the existing
+  `DragReorderList` component as-is — its grip sits beside each item
+  rather than as a corner overlay on the thumbnail like the artifact
+  showed, since forcing an absolutely-positioned overlay grip into that
+  shared component's fixed row layout wasn't worth diverging from the
+  one interaction pattern already used consistently for FAQ/option-value/
+  featured-product reordering. New `deleteProduct()`/`deleteProductAction`
+  guard the same way `deleteCategory`/`deletePromoCode` already do
+  (blocked with a friendly message if the product has order history —
+  `order_items.product_id` has no cascade, so an unguarded delete would
+  hit a raw FK-violation otherwise). `ProductFormFields.tsx` — now only
+  used by this page since `/admin/products/new` was removed in Phase 3 —
+  restyled in place to the 2-column field-grid convention. Pending a
+  real-login manual check before Phase 4.
+  **Revised same day**: three fixes from real-login testing. Photo
+  delete button was misaligned — its wrapper div wasn't sized to the
+  image, so the absolute-positioned delete icon anchored to a wider
+  invisible box instead of the photo's actual corner; fixed by giving
+  the wrapper an explicit width matching the image. Per the user,
+  "Create & attach new option type" is removed from the product edit
+  page entirely — Option Library is now the only place option types get
+  created, this page only attaches existing ones — and attaching now
+  defaults every value to ticked instead of none, since "offer all of
+  these, uncheck a few" is less friction than the reverse. The now-fully
+  -unused `createOptionTypeAndAttachAction` was deleted rather than left
+  as dead code. Catalog's toolbar no longer wraps/overlaps — the
+  category filter is a fixed width (`w-40`) instead of growing with the
+  selected category name's length, which was pushing into "New product."
+  **Self-verified 2026-07-20**: the user set up a synthetic dev-only test
+  admin session (no Google OAuth needed — see the "Test admin access"
+  reference memory) letting Claude drive real Playwright screenshots
+  against `/admin` for the first time this whole effort. Confirmed all
+  three fixes above actually work, including catching that a first
+  screenshot of the photo delete button looked broken (image not
+  visible) — turned out to be a screenshot-timing artifact (mid
+  fade-in), not a real bug, ruled out with a close-up shot plus an
+  element `naturalWidth`/`complete` check. Phase 3/3b/3c fully verified,
+  ready to commit.
+  **Fixed a real bug found by the user right after**: the Catalog
+  toolbar's category filter was still overlapping "New product" with a
+  long category name selected — root cause was `${FIELD_CLASS} w-40}`,
+  where `FIELD_CLASS` already baked in `w-full`. Tailwind doesn't
+  resolve two conflicting width utilities in one class string by
+  string order (cascade order is internal to Tailwind's generated
+  stylesheet), so `w-full` was winning and the select really was
+  stretching to fill the row. Fixed by not baking any width into the
+  shared `FIELD_CLASS` at all — every usage now sets its own width
+  explicitly. Self-verified with the test-admin session (selected the
+  longest real category, "Watch Straps", measured both elements'
+  bounding boxes — no overlap). Also removed the tab-specific
+  description paragraph from Categories and Option Library per the
+  user (the shared "The catalog, its categories, and shop-wide options."
+  intro above the tab bar stays, since it's common to all three tabs).
+  **Phase 4 (Orders) built and self-verified**: `<details>` accordions
+  replaced with `StatusTabs` (Pending/Paid/Shipped/Cancelled, counts
+  reflect the live search), search by customer name/email/order ID.
+  Kept the existing card-per-order layout rather than the artifact's
+  plain table — a table has no room for the line-items list and
+  shipping address the owner actually needs to fulfil an order, so this
+  deliberately diverges from the mockup where real data density
+  required it. Caught and fixed a real copy bug during self-verification:
+  the empty state said "match your search" even with no search typed.
+  One thing self-verification couldn't cover — no pending/paid orders
+  exist in the current seed data, so the Mark paid/Mark shipped/Cancel
+  button styling is unverified pending a real order to check against.
+  **Phase 5 (Promo Codes) built and fully self-verified**: the flat
+  list is now `StatusTabs` (Active/Expired/Inactive, status computed
+  from `expiresAt` + the `active` flag together), and the `/new`/`/[id]`
+  pages are gone — `PromoCodeFormFields` now lives inside a shared
+  `FormModal` per row (Edit, icon-edit trigger) plus one for New,
+  restyled into the three fieldsets (Code & Discount / Eligibility &
+  Limits / Schedule & Status) the original brief called for.
+  `createPromoCodeAction` changed from redirect-to-its-own-page to
+  revalidate-and-stay, since there's no page to redirect to anymore;
+  `DeletePromoCodeButton` (which existed only to navigate away from
+  that now-deleted page) is deleted too. Unlike the last two phases,
+  this one got a full functional round-trip, not just visual
+  screenshots — created a real promo code through the modal, edited it,
+  confirmed the change persisted, deleted it, confirmed removal, all
+  against the real dev DB and fully self-cleaning.
+  **Revised same day**: "Code & Discount" is now a clean 2×2 grid (Code /
+  Discount % on one row, Max discount / Minimum order value on the
+  next) instead of two full-width fields breaking up two half-width
+  ones — per the user, self-verified with a screenshot.
+  **Back to Phase 4 same day**: order line items now show one per line
+  instead of joined into one run-on string, after the user asked how to
+  better show what was ordered. Considered adding a photo thumbnail per
+  line too (matching `/account`'s order history) but held off since
+  `OrderItem` doesn't snapshot a photo at order time — flagged as a
+  possible follow-up in the brief, not built.
+  **Phase 6 (Content: Homepage/FAQ + Settings) built and self-verified
+  — this closes out all 6 planned phases.** Homepage and FAQ both get
+  the `SectionTabs` header; Homepage's featured-products/hero-image/
+  homepage-text sections are a token restyle only, no structural
+  change. FAQ's "Add FAQ item" moves to a `FormModal`, same pattern as
+  every other add-flow this pass. `HeroFocalPointPicker` got the same
+  token restyle. Settings is now four labeled fieldsets (Shipping &
+  Delivery, Notifications, Payment, Contact) with hairline dividers
+  instead of one flat field list, still a single form (no tabs — it's
+  one config record, nothing to split by). Self-verified in both light
+  and dark mode via the test-admin session; pending a final manual pass
+  since this session hasn't tested actually saving Settings/Homepage
+  text end-to-end.
+  **Revised same day — two follow-ups from the user.** (1) Featured
+  products now matches the artifact exactly: 3 fixed grid-position
+  tiles (not a reorderable list + a separate full product list below),
+  clicking a tile opens a picker to choose/change what's featured
+  there, drag to reorder. New `setFeaturedSlotProduct()` assigns a
+  product directly to a position without disturbing the other slots
+  (unlike the existing unfeature-then-refeature flow, which compacts
+  and would shift every later slot). `DragReorderList` gained an
+  `overlayGrip` option (grip as a small corner badge over the tile
+  instead of sitting beside the content) — needed here because 3 photo
+  tiles read as boxes, not a list, so the existing beside-content grip
+  (already accepted for the Photos tab) would have fought the layout
+  instead of just being a minor divergence from the mockup. Homepage
+  text is now three fieldsets (Hero / Featured / Studio) instead of one
+  flat list, matching the page's actual structure. (2) FAQ now matches
+  the artifact too: read-only rows (question bold, answer as a
+  2-line-clamp preview) with edit/delete icon buttons, instead of every
+  row being permanently an editable form — edit opens the same
+  `FormModal` pattern used everywhere else this pass. Self-verified
+  with full round-trips (slot swap + restore, FAQ edit + restore),
+  restoring the actual dev-DB state afterward both times, not just
+  screenshots.
+  **Revised again same day — four more fixes from the user.** Section
+  order is now Hero → Featured → Text (was Featured → Hero → Text);
+  the "separate from the hero image" copy now says "above" instead of
+  "below" to match. Fixed a real copy bug — "Up to 3products" was
+  missing its space in the rendered output despite the source having
+  one (JSX text-node whitespace handling, not obvious from reading the
+  source) — rewrote that paragraph as a single template-literal
+  expression so spacing is never ambiguous again. Hero's mobile/desktop
+  previews are now hidden behind "Preview mobile"/"Preview desktop"
+  buttons that pop them out in a dialog, instead of always rendering
+  inline. Fixed a real layout bug in the featured-tile grip: it was
+  positioned absolutely relative to the whole draggable item, which
+  included the "Grid position N" label sitting *above* the image — so
+  the grip landed on the label's corner, not the photo's. Fix wasn't
+  just moving the label below the image; realized position labels
+  should be fixed to their column (position 1 is always the first slot,
+  independent of which product currently occupies it) rather than
+  traveling with the draggable tile, so they're now a separate static
+  row above the tiles entirely — which also fixes the grip alignment
+  as a side effect, since nothing precedes the image inside the
+  draggable item anymore.
+  **Reverted one of those four, plus a small fix.** The mobile/desktop
+  preview popout (buttons + dialog) is reverted back to the original
+  always-visible inline previews — the user tried it and preferred the
+  original. Separately, the hero image `<input type="file">` had no
+  `file:` styling, so "Choose File" rendered as the bare OS-default
+  button instead of matching the rest of the admin — fixed with the
+  same `file:` Tailwind-variant treatment already used on the product
+  edit page's photo upload.
+
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —
   brief: [docs/design/homepage.md](design/homepage.md) § "Branding test".
