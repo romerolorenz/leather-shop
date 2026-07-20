@@ -36,6 +36,17 @@ import {
   deleteFaqItem,
   reorderFaqItems,
 } from "@/lib/admin/faq";
+import {
+  createCategory,
+  renameCategory,
+  deleteCategory,
+} from "@/lib/admin/categories";
+import {
+  createPromoCode,
+  updatePromoCode,
+  deletePromoCode,
+  type PromoCodeInput,
+} from "@/lib/promo-codes";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runAction, type ActionResult } from "@/lib/action-result";
 
@@ -43,12 +54,35 @@ function parseProductInput(formData: FormData): ProductInput {
   return {
     name: String(formData.get("name") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
-    category: String(formData.get("category") ?? "").trim(),
+    categoryId: String(formData.get("categoryId") ?? "").trim(),
     priceCentavos: Math.round(Number(formData.get("price")) * 100),
     leadTimeDays: Number(formData.get("leadTimeDays")),
     orderingEnabled: formData.get("orderingEnabled") === "on",
     visible: formData.get("visible") === "on",
     stockQuantity: Number(formData.get("stockQuantity")),
+  };
+}
+
+// starts_at/expires_at come in as <input type="date"> values (YYYY-MM-DD);
+// widened to the full day (00:00:00 → 23:59:59) so a code stays valid
+// through its entire listed expiration date rather than expiring at
+// midnight UTC on that date.
+function parsePromoCodeInput(formData: FormData): PromoCodeInput {
+  return {
+    code: String(formData.get("code") ?? "").trim(),
+    discountPercent: Number(formData.get("discountPercent")),
+    maxDiscountCentavos: Math.round(
+      Number(formData.get("maxDiscountAmount")) * 100
+    ),
+    minOrderValueCentavos: Math.round(
+      Number(formData.get("minOrderValue")) * 100
+    ),
+    usageLimitTotal: Number(formData.get("usageLimitTotal")),
+    startsAt: `${formData.get("startsAt")}T00:00:00.000Z`,
+    expiresAt: `${formData.get("expiresAt")}T23:59:59.999Z`,
+    active: formData.get("active") === "on",
+    categoryIds: formData.getAll("categoryIds").map(String),
+    limitOnePerCustomer: formData.get("limitOnePerCustomer") === "on",
   };
 }
 
@@ -552,4 +586,93 @@ export async function updateHomepageTextAction(
     revalidatePath("/admin/homepage");
     revalidateHomepage();
   }, "Homepage text saved.");
+}
+
+// ─── Categories (internal-only — see supabase/migrations/0014_categories.sql) ──
+
+export async function createCategoryAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) {
+      throw new Error("Category name is required.");
+    }
+
+    await createCategory(name);
+    revalidatePath("/admin/categories");
+    revalidatePath("/admin/products");
+  }, "Category added.");
+}
+
+export async function updateCategoryAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const name = String(formData.get("name") ?? "").trim();
+    if (!name) {
+      throw new Error("Category name is required.");
+    }
+
+    await renameCategory(id, name);
+    revalidatePath("/admin/categories");
+    revalidatePath("/admin/products");
+  }, "Category saved.");
+}
+
+export async function deleteCategoryAction(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteCategory(id);
+    revalidatePath("/admin/categories");
+    revalidatePath("/admin/products");
+  }, "Category deleted.");
+}
+
+// ─── Promo codes (supabase/migrations/0015_promo_codes.sql) ────────────
+
+export async function createPromoCodeAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  await assertAdmin();
+  let id: string;
+  try {
+    ({ id } = await createPromoCode(parsePromoCodeInput(formData)));
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Something went wrong.",
+    };
+  }
+  revalidatePath("/admin/promo-codes");
+  redirect(`/admin/promo-codes/${id}`);
+}
+
+export async function updatePromoCodeAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updatePromoCode(id, parsePromoCodeInput(formData));
+    revalidatePath(`/admin/promo-codes/${id}`);
+    revalidatePath("/admin/promo-codes");
+  }, "Promo code saved.");
+}
+
+export async function deletePromoCodeAction(
+  id: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deletePromoCode(id);
+    revalidatePath("/admin/promo-codes");
+  }, "Promo code deleted.");
 }

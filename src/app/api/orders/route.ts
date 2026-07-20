@@ -7,6 +7,11 @@ import {
   type NewOrderItem,
 } from "@/lib/orders";
 import {
+  validatePromoCode,
+  PromoCodeRedemptionError,
+  type PromoCartItem,
+} from "@/lib/promo-codes";
+import {
   sendOrderNotificationEmail,
   sendOrderConfirmationEmail,
 } from "@/lib/email";
@@ -20,6 +25,7 @@ type OrderRequestBody = {
     selectedOptions?: Record<string, string>;
     quantity?: number;
   }[];
+  promoCode?: string;
 };
 
 export async function POST(request: Request) {
@@ -51,6 +57,7 @@ export async function POST(request: Request) {
   }
 
   const orderItems: NewOrderItem[] = [];
+  const promoCartItems: PromoCartItem[] = [];
   for (const requested of body.items) {
     const product = requested.slug
       ? await getProductBySlug(requested.slug)
@@ -99,13 +106,45 @@ export async function POST(request: Request) {
       priceCentavos: product.priceCentavos,
       productId: product.id,
     });
+    promoCartItems.push({
+      productId: product.id,
+      categoryId: product.categoryId,
+      lineTotalCentavos: product.priceCentavos * quantity,
+    });
   }
 
   const subtotalCentavos = orderItems.reduce(
     (sum, item) => sum + item.priceCentavos * item.quantity,
     0
   );
-  const totalCentavos = subtotalCentavos + settings.shippingFeeCentavos;
+
+  let promoCodeId: string | null = null;
+  let promoCode: string | null = null;
+  let discountCentavos = 0;
+
+  // Re-validated here from scratch (never trusts a client-sent discount
+  // amount) — this is also the first point a guest's email is known, so
+  // it's the first place the per-customer-redemption rule can actually be
+  // checked (the cart/checkout preview in /api/promo-codes/apply skips it
+  // for a not-yet-identified guest).
+  if (body.promoCode) {
+    const result = await validatePromoCode(body.promoCode, {
+      cartItems: promoCartItems,
+      subtotalCentavos,
+      customerEmail: email,
+    });
+
+    if (!result.valid) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    promoCodeId = result.promoCodeId;
+    promoCode = result.code;
+    discountCentavos = result.discountCentavos;
+  }
+
+  const totalCentavos =
+    subtotalCentavos - discountCentavos + settings.shippingFeeCentavos;
 
   let order;
   try {
@@ -115,10 +154,16 @@ export async function POST(request: Request) {
       items: orderItems,
       subtotalCentavos,
       shippingCentavos: settings.shippingFeeCentavos,
+      promoCodeId,
+      promoCode,
+      discountCentavos,
       totalCentavos,
     });
   } catch (err) {
     if (err instanceof InsufficientStockError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
+    if (err instanceof PromoCodeRedemptionError) {
       return NextResponse.json({ error: err.message }, { status: 409 });
     }
     throw err;

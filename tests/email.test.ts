@@ -27,6 +27,8 @@ const order: Order = {
   ],
   subtotalCentavos: 379800,
   shippingCentavos: 15000,
+  promoCode: null,
+  discountCentavos: 0,
   totalCentavos: 394800,
 };
 
@@ -41,6 +43,17 @@ describe("buildOrderNotificationEmail", () => {
     expect(email.text).toContain("123 Rizal St, Makati");
     expect(email.text).toContain("2x Classic Bifold Wallet (Color: Chestnut Brown)");
     expect(email.text).toContain("₱3,948.00");
+  });
+
+  it("includes a discount line when a promo code was applied, omits it otherwise", () => {
+    const withoutDiscount = buildOrderNotificationEmail(order, "admin@example.com");
+    expect(withoutDiscount.text).not.toContain("Discount");
+
+    const withDiscount = buildOrderNotificationEmail(
+      { ...order, promoCode: "SAVE10", discountCentavos: 37980 },
+      "admin@example.com"
+    );
+    expect(withDiscount.text).toContain("Discount (SAVE10): -₱379.80");
   });
 });
 
@@ -72,6 +85,21 @@ describe("buildOrderConfirmationEmail", () => {
     });
 
     expect(email.html).not.toContain("<img");
+  });
+
+  it("includes a discount line (text + html) when a promo code was applied, omits it otherwise", () => {
+    const withoutDiscount = buildOrderConfirmationEmail(order);
+    expect(withoutDiscount.text).not.toContain("Discount");
+    expect(withoutDiscount.html).not.toContain("Discount");
+
+    const withDiscount = buildOrderConfirmationEmail({
+      ...order,
+      promoCode: "SAVE10",
+      discountCentavos: 37980,
+    });
+    expect(withDiscount.text).toContain("Discount (SAVE10): -₱379.80");
+    expect(withDiscount.html).toContain("Discount (SAVE10)");
+    expect(withDiscount.html).toContain("-₱379.80");
   });
 
   it("escapes HTML in user-submitted fields", () => {

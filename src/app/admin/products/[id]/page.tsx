@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { getProductForAdmin, listOptionTypes } from "@/lib/admin/catalog";
+import { listCategories } from "@/lib/admin/categories";
 import {
   updateProductAction,
   attachOptionAction,
@@ -44,9 +45,10 @@ export default async function EditProductPage(
   props: PageProps<"/admin/products/[id]">
 ) {
   const { id } = await props.params;
-  const [product, optionTypes] = await Promise.all([
+  const [product, optionTypes, categories] = await Promise.all([
     getProductForAdmin(id),
     listOptionTypes(),
+    listCategories(),
   ]);
 
   if (!product) {
@@ -140,10 +142,11 @@ export default async function EditProductPage(
         <h2 className="mb-4 text-sm font-medium">Product details</h2>
         <ActionForm action={updateAction} className="flex flex-col gap-4">
           <ProductFormFields
+            categories={categories}
             defaultValues={{
               name: product.name,
               description: product.description,
-              category: product.category,
+              categoryId: product.categoryId,
               price: product.priceCentavos / 100,
               leadTimeDays: product.leadTimeDays,
               orderingEnabled: product.orderingEnabled,

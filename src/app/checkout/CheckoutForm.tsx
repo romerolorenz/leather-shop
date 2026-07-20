@@ -6,6 +6,7 @@ import { useCart, formatSelectedOptions } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trackEvent } from "@/lib/track-event";
+import { PromoCodeField } from "@/components/PromoCodeField";
 import type { CustomerAddress } from "@/lib/customer/addresses";
 
 const checkoutCrumbs = [
@@ -25,7 +26,10 @@ export default function CheckoutForm({
   customerEmail?: string;
   savedAddresses?: CustomerAddress[];
 }) {
-  const { items, totalCentavos, clear } = useCart();
+  const { items, totalCentavos, clear, appliedPromoCode } = useCart();
+  const discountCentavos = appliedPromoCode?.discountCentavos ?? 0;
+  const grandTotalCentavos =
+    totalCentavos - discountCentavos + shippingFeeCentavos;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -86,6 +90,7 @@ export default function CheckoutForm({
             selectedOptions: item.selectedOptions,
             quantity: item.quantity,
           })),
+          promoCode: appliedPromoCode?.code,
         }),
       });
 
@@ -252,6 +257,8 @@ export default function CheckoutForm({
             </p>
           </div>
 
+          <PromoCodeField customerEmail={customerEmail} />
+
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
@@ -288,13 +295,30 @@ export default function CheckoutForm({
             <span>Subtotal</span>
             <span>{formatPrice(totalCentavos)}</span>
           </div>
+          {appliedPromoCode && (
+            <div className="mt-1 flex justify-between text-sm">
+              <span>
+                Promo ({appliedPromoCode.code})
+                {appliedPromoCode.restrictedToCategoryNames && (
+                  <>
+                    {" "}
+                    <span className="text-zinc-500 dark:text-zinc-400">
+                      ({appliedPromoCode.restrictedToCategoryNames.join(", ")}{" "}
+                      items only)
+                    </span>
+                  </>
+                )}
+              </span>
+              <span>-{formatPrice(discountCentavos)}</span>
+            </div>
+          )}
           <div className="mt-1 flex justify-between text-sm">
             <span>Shipping (Metro Manila flat rate)</span>
             <span>{formatPrice(shippingFeeCentavos)}</span>
           </div>
           <div className="mt-2 flex justify-between border-t border-black/[.08] pt-2 font-medium dark:border-white/[.145]">
             <span>Total</span>
-            <span>{formatPrice(totalCentavos + shippingFeeCentavos)}</span>
+            <span>{formatPrice(grandTotalCentavos)}</span>
           </div>
           <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
             Payment is handled manually after ordering (bank transfer / GCash

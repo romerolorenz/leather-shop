@@ -1,7 +1,9 @@
+import Link from "next/link";
+
 type Defaults = {
   name?: string;
   description?: string;
-  category?: string;
+  categoryId?: string;
   price?: number;
   leadTimeDays?: number;
   orderingEnabled?: boolean;
@@ -10,8 +12,10 @@ type Defaults = {
 };
 
 export function ProductFormFields({
+  categories,
   defaultValues = {},
 }: {
+  categories: { id: string; name: string }[];
   defaultValues?: Defaults;
 }) {
   return (
@@ -42,16 +46,32 @@ export function ProductFormFields({
         />
       </div>
       <div>
-        <label className="text-sm font-medium" htmlFor="category">
+        <label className="text-sm font-medium" htmlFor="categoryId">
           Category
         </label>
-        <input
-          id="category"
-          name="category"
+        <select
+          id="categoryId"
+          name="categoryId"
           required
-          defaultValue={defaultValues.category}
+          defaultValue={defaultValues.categoryId ?? ""}
           className="mt-1 w-full rounded-md border border-black/[.15] bg-transparent px-3 py-2 dark:border-white/[.2]"
-        />
+        >
+          <option value="" disabled>
+            Select a category
+          </option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Manage the list from{" "}
+          <Link href="/admin/categories" className="underline">
+            Admin / Categories
+          </Link>
+          .
+        </p>
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="price">

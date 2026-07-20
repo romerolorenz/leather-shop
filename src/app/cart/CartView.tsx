@@ -6,6 +6,7 @@ import { Archivo } from "next/font/google";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PromoCodeField } from "@/components/PromoCodeField";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -19,7 +20,8 @@ export default function CartView({
 }: {
   shippingFeeCentavos: number;
 }) {
-  const { items, removeItem, setQuantity, totalCentavos } = useCart();
+  const { items, removeItem, setQuantity, totalCentavos, appliedPromoCode } =
+    useCart();
 
   if (items.length === 0) {
     return (
@@ -161,10 +163,18 @@ export default function CartView({
           <span className="font-medium">Subtotal</span>
           <span className="font-medium">{formatPrice(totalCentavos)}</span>
         </div>
+        {appliedPromoCode && (
+          <div className="mt-1 flex items-center justify-between text-sm">
+            <span>Promo ({appliedPromoCode.code})</span>
+            <span>-{formatPrice(appliedPromoCode.discountCentavos)}</span>
+          </div>
+        )}
         <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
           Shipping ({formatPrice(shippingFeeCentavos)} flat, Metro Manila)
           calculated at checkout.
         </p>
+
+        <PromoCodeField />
 
         <Link
           href="/checkout"

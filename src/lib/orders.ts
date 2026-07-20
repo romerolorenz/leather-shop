@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getProductBySlug } from "@/lib/products";
+import { redeemPromoCode } from "@/lib/promo-codes";
 
 export type OrderItemOption = {
   optionTypeName: string;
@@ -44,6 +45,11 @@ export type Order = {
   items: OrderItem[];
   subtotalCentavos: number;
   shippingCentavos: number;
+  // Snapshotted at order time, same reasoning as unit_price_centavos — a
+  // later edit/deactivation of the promo code shouldn't rewrite what a
+  // past order actually charged.
+  promoCode: string | null;
+  discountCentavos: number;
   totalCentavos: number;
 };
 
@@ -53,6 +59,9 @@ export type NewOrder = {
   items: NewOrderItem[];
   subtotalCentavos: number;
   shippingCentavos: number;
+  promoCodeId: string | null;
+  promoCode: string | null;
+  discountCentavos: number;
   totalCentavos: number;
 };
 
@@ -84,6 +93,8 @@ export async function createOrder(input: NewOrder): Promise<Order> {
       shipping_city: input.shippingAddress.city,
       subtotal_centavos: input.subtotalCentavos,
       shipping_centavos: input.shippingCentavos,
+      promo_code_id: input.promoCodeId,
+      discount_centavos: input.discountCentavos,
       total_centavos: input.totalCentavos,
     })
     .select()
@@ -156,6 +167,26 @@ export async function createOrder(input: NewOrder): Promise<Order> {
     decremented.push({ productId: item.productId, quantity: item.quantity });
   }
 
+  // Redemption is the last thing that can fail — if it does (lost the race
+  // on the total usage cap, or a double-submit redeemed the same code
+  // twice for this customer), unwind everything already done above so a
+  // failed order never leaves partial state (same compensating-rollback
+  // shape as the stock decrement loop just above).
+  if (input.promoCodeId) {
+    try {
+      await redeemPromoCode(input.promoCodeId, input.customer.email, orderRow.id);
+    } catch (err) {
+      for (const done of decremented) {
+        await supabase.rpc("restore_product_stock", {
+          p_product_id: done.productId,
+          p_quantity: done.quantity,
+        });
+      }
+      await supabase.from("orders").delete().eq("id", orderRow.id);
+      throw err;
+    }
+  }
+
   return {
     id: orderRow.id,
     createdAt: orderRow.created_at,
@@ -165,6 +196,8 @@ export async function createOrder(input: NewOrder): Promise<Order> {
     items: input.items,
     subtotalCentavos: input.subtotalCentavos,
     shippingCentavos: input.shippingCentavos,
+    promoCode: input.promoCode,
+    discountCentavos: input.discountCentavos,
     totalCentavos: input.totalCentavos,
   };
 }
@@ -239,6 +272,8 @@ type OrderRow = {
   shipping_city: string;
   subtotal_centavos: number;
   shipping_centavos: number;
+  discount_centavos: number;
+  promo_codes: { code: string } | null;
   total_centavos: number;
   order_items: {
     quantity: number;
@@ -280,12 +315,14 @@ function mapOrderRow(row: OrderRow): Order {
     })),
     subtotalCentavos: row.subtotal_centavos,
     shippingCentavos: row.shipping_centavos,
+    promoCode: row.promo_codes?.code ?? null,
+    discountCentavos: row.discount_centavos,
     totalCentavos: row.total_centavos,
   };
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, total_centavos, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
 export async function listOrdersForAdmin(): Promise<Order[]> {
   const supabase = getSupabaseServerClient();

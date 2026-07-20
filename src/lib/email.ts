@@ -50,6 +50,9 @@ export function buildOrderNotificationEmail(
       formatOrderItems(order),
       "",
       `Subtotal: ${formatPrice(order.subtotalCentavos)}`,
+      ...(order.discountCentavos > 0
+        ? [`Discount (${order.promoCode}): -${formatPrice(order.discountCentavos)}`]
+        : []),
       `Shipping: ${formatPrice(order.shippingCentavos)}`,
       `Total: ${formatPrice(order.totalCentavos)}`,
       "",
@@ -99,6 +102,14 @@ export function buildOrderConfirmationEmail(
           <td style="padding-top:12px;font-size:14px;color:#52525b;">Subtotal</td>
           <td style="padding-top:12px;font-size:14px;text-align:right;">${formatPrice(order.subtotalCentavos)}</td>
         </tr>
+        ${
+          order.discountCentavos > 0
+            ? `<tr>
+          <td style="font-size:14px;color:#52525b;">Discount (${escapeHtml(order.promoCode ?? "")})</td>
+          <td style="font-size:14px;text-align:right;">-${formatPrice(order.discountCentavos)}</td>
+        </tr>`
+            : ""
+        }
         <tr>
           <td style="font-size:14px;color:#52525b;">Shipping</td>
           <td style="font-size:14px;text-align:right;">${formatPrice(order.shippingCentavos)}</td>
@@ -135,6 +146,9 @@ export function buildOrderConfirmationEmail(
       formatOrderItems(order),
       "",
       `Subtotal: ${formatPrice(order.subtotalCentavos)}`,
+      ...(order.discountCentavos > 0
+        ? [`Discount (${order.promoCode}): -${formatPrice(order.discountCentavos)}`]
+        : []),
       `Shipping: ${formatPrice(order.shippingCentavos)}`,
       `Total: ${formatPrice(order.totalCentavos)}`,
       "",

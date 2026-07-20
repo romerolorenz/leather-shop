@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   createProduct,
   updateProduct,
@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin/catalog";
 import { getProducts, getProductBySlug } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getOrCreateTestCategoryId } from "./helpers/test-category";
 
 // Runs against the real (dev) Supabase project. Uses a scratch product
 // (not the seeded wallet/tote) so mutations here never touch real catalog
@@ -15,7 +16,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 const baseInput: ProductInput = {
   name: "Vitest Products Lib Scratch Product",
   description: "",
-  category: "Test",
+  categoryId: "",
   priceCentavos: 10000,
   leadTimeDays: 1,
   orderingEnabled: true,
@@ -25,6 +26,10 @@ const baseInput: ProductInput = {
 const slug = slugify(baseInput.name);
 
 const scratchProductIds: string[] = [];
+
+beforeAll(async () => {
+  baseInput.categoryId = await getOrCreateTestCategoryId();
+});
 
 afterAll(async () => {
   const supabase = getSupabaseServerClient();

@@ -93,3 +93,16 @@ blockers, then items that don't block any phase.
   files pass clean against it.
 - [x] Upload the real hero image via `/admin/homepage` — confirmed live,
   `settings.hero_image_url` and a non-center focal point are both set.
+- [x] Run `supabase/migrations/0014_categories.sql` then
+  `supabase/migrations/0015_promo_codes.sql` against the dev DB —
+  normalizes `products.category` into a real `categories` table and adds
+  `promo_codes`/`promo_code_categories`/`promo_code_redemptions` +
+  the atomic `redeem_promo_code()` function (docs/IMPROVEMENTS.md's
+  "Promo code capability"); `categories.test.ts`/`promo-codes.test.ts`/
+  `api-promo-codes-apply.test.ts`/`api-orders-promo.test.ts` pass clean
+  against it.
+- [x] Run `supabase/migrations/0016_promo_code_limit_one_per_customer.sql`
+  against the dev DB — powers the promo-code admin form's "Limit to one
+  redemption per customer" checkbox (default on, existing codes
+  unaffected); new cases in `promo-codes.test.ts`/`api-orders-promo.test.ts`
+  pass clean against it.

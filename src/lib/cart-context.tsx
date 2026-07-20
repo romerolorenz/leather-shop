@@ -20,6 +20,22 @@ export type CartItem = {
   photoUrl?: string | null;
 };
 
+// Result of a successful POST /api/promo-codes/apply — see
+// src/components/PromoCodeField.tsx. Stored alongside the cart so applying
+// a code on /cart carries through automatically to /checkout.
+export type AppliedPromoCode = {
+  code: string;
+  promoCodeId: string;
+  discountCentavos: number;
+  restrictedToCategoryNames: string[] | null;
+  // The code's own terms, not the computed discountCentavos above — shown
+  // alongside the applied code so the shopper can see why they got that
+  // amount (e.g. "10% off, up to ₱500, min. order ₱1,000").
+  discountPercent: number;
+  maxDiscountCentavos: number;
+  minOrderValueCentavos: number;
+};
+
 type CartContextValue = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
@@ -32,11 +48,15 @@ type CartContextValue = {
   clear: () => void;
   totalItems: number;
   totalCentavos: number;
+  appliedPromoCode: AppliedPromoCode | null;
+  applyPromoCode: (result: AppliedPromoCode) => void;
+  removePromoCode: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
 const STORAGE_KEY = "leather-shop-cart";
+const PROMO_STORAGE_KEY = "leather-shop-promo";
 
 // Cart-item identity key: slug + a stable serialization of selectedOptions
 // (sorted by option type name so key order in the object doesn't matter).
@@ -58,6 +78,8 @@ export function formatSelectedOptions(
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [appliedPromoCode, setAppliedPromoCode] =
+    useState<AppliedPromoCode | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -72,6 +94,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // ignore corrupt cart data
       }
     }
+    const rawPromo = window.localStorage.getItem(PROMO_STORAGE_KEY);
+    if (rawPromo) {
+      try {
+        setAppliedPromoCode(JSON.parse(rawPromo));
+      } catch {
+        // ignore corrupt promo data
+      }
+    }
     setHydrated(true);
   }, []);
 
@@ -80,6 +110,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     }
   }, [items, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (appliedPromoCode) {
+      window.localStorage.setItem(
+        PROMO_STORAGE_KEY,
+        JSON.stringify(appliedPromoCode)
+      );
+    } else {
+      window.localStorage.removeItem(PROMO_STORAGE_KEY);
+    }
+  }, [appliedPromoCode, hydrated]);
 
   function addItem(item: Omit<CartItem, "quantity">, quantity = 1) {
     setItems((prev) => {
@@ -128,6 +170,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function clear() {
     setItems([]);
+    setAppliedPromoCode(null);
+  }
+
+  function applyPromoCode(result: AppliedPromoCode) {
+    setAppliedPromoCode(result);
+  }
+
+  function removePromoCode() {
+    setAppliedPromoCode(null);
   }
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -140,6 +191,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{
         items,
+        appliedPromoCode,
+        applyPromoCode,
+        removePromoCode,
         addItem,
         removeItem,
         setQuantity,

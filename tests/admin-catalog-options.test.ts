@@ -16,6 +16,7 @@ import {
   type ProductInput,
 } from "@/lib/admin/catalog";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getOrCreateTestCategoryId } from "./helpers/test-category";
 
 // Runs against the real (dev) Supabase project. Uses scratch products (not
 // the seeded wallet/tote) so mutations here never touch real catalog data.
@@ -26,7 +27,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 const baseInput: ProductInput = {
   name: "Vitest Scratch Product",
   description: "",
-  category: "Test",
+  categoryId: "",
   priceCentavos: 10000,
   leadTimeDays: 1,
   orderingEnabled: true,
@@ -39,6 +40,7 @@ const scratchProductIds: string[] = [];
 const scratchOptionTypeIds: string[] = [];
 
 beforeAll(async () => {
+  baseInput.categoryId = await getOrCreateTestCategoryId();
   const { id } = await createProduct(baseInput);
   productId = id;
   scratchProductIds.push(id);

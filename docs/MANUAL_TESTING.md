@@ -14,9 +14,62 @@ fixed).
 
 ## Outstanding
 
-(none — see Done below)
+### Promo codes + categories (docs/IMPROVEMENTS.md's "Promo code capability")
+
+Migrations `0014_categories.sql`/`0015_promo_codes.sql`/
+`0016_promo_code_limit_one_per_customer.sql` are live. Admin CRUD (both
+categories and promo codes), the shopper-facing apply/carry-through/
+remove flow, category-restricted partial discounts, and all four
+rejection cases are verified — see Done below for the full summary and
+the bugs found/fixed along the way.
+
+Deferred to a later pass — not blocking, just not done yet:
+
+**End-to-end order + usage limits**
+- [ ] Place a full order (cart → checkout → confirm) with a valid code —
+      order confirmation shows the correct discounted total; both the
+      admin-notification and customer-confirmation emails show a
+      "Discount (CODE): -₱X" line that makes the subtotal/shipping/total
+      math add up.
+      Findings:
+- [ ] Using the same email, try to check out again with the same code —
+      rejected as already used by this customer.
+      Findings:
+- [ ] Create a code with a usage limit of 1, redeem it once, then try a
+      second order with a *different* email — rejected as fully redeemed.
+      Findings:
+- [ ] Quick mobile-viewport check of the promo code field on both `/cart`
+      and `/checkout` — usable, not visually broken.
+      Findings:
 
 ## Done
+
+- [x] **Promo codes + categories — admin CRUD and the shopper-facing
+  flow** (docs/IMPROVEMENTS.md's "Promo code capability"; end-to-end
+  order placement + usage-limit enforcement deferred separately, see
+  Outstanding above). Verified across three rounds: categories CRUD
+  including the in-use delete guard; promo-code admin CRUD (create,
+  edit, delete, delete-blocked-while-redeemed, the "Limit to one
+  redemption per customer" checkbox); a shopper applying a code on
+  `/cart` — including its terms (discount %, cap, min. order) shown
+  alongside the computed ₱ amount off — carrying through automatically to
+  `/checkout`, removing it, applying directly on `/checkout`, and
+  rejecting an invalid code; category-restricted partial-discount scoping
+  (Option B — discounts only the eligible items' subtotal, doesn't
+  reject a mixed cart outright); and all four rejection cases (below
+  minimum order, not-yet-started, expired, inactive). Found and fixed
+  five bugs along the way: a category rename correctly saving but the
+  admin dropdown showing the old name (misdiagnosed at first — the real
+  bug was on the product edit page, not the categories page); the promo
+  form's date-picker calendar icon invisible in dark mode (root cause was
+  site-wide — `globals.css` never declared `color-scheme`); a rejected
+  promo-code submission wiping everything typed; and a promo code delete
+  404ing right after (the edit page tried to re-fetch the just-deleted
+  row). The category-dropdown and wiped-input bugs shared a root cause
+  once properly diagnosed — React resets every uncontrolled form field to
+  its mount-time value once any form action completes, success or failure
+  alike — fixed generically via a success-only remount in `ActionForm`
+  plus converting `PromoCodeFormFields` to controlled inputs.
 
 - [x] **`/admin/options` edit-modal pattern + drag-to-reorder.** Both
   fully verified after two rounds of fixes. Edit-modal: single dialog per

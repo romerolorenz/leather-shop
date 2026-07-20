@@ -13,6 +13,7 @@ export type Product = {
   id: string;
   slug: string;
   name: string;
+  categoryId: string;
   category: string;
   priceCentavos: number;
   leadTimeDays: number;
@@ -37,7 +38,7 @@ export type Product = {
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, " +
+  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, " +
   "product_photos(url, position), " +
   "product_options(position, option_types(id, name, display_style), product_option_selections(option_values(value, position)))";
 
@@ -46,7 +47,8 @@ type ProductRow = {
   slug: string;
   name: string;
   description: string;
-  category: string;
+  category_id: string;
+  categories: { name: string } | null;
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
@@ -90,7 +92,8 @@ function mapRow(row: ProductRow): Product {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    category: row.category,
+    categoryId: row.category_id,
+    category: row.categories?.name ?? "",
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,

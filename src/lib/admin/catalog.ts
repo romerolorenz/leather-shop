@@ -36,6 +36,7 @@ export type AdminProduct = {
   slug: string;
   name: string;
   description: string;
+  categoryId: string;
   category: string;
   priceCentavos: number;
   leadTimeDays: number;
@@ -54,7 +55,7 @@ export type AdminProduct = {
 };
 
 const ADMIN_PRODUCT_SELECT =
-  "id, slug, name, description, category, price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, featured, featured_position, " +
+  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, featured, featured_position, " +
   "product_photos(id, url, position), " +
   "product_options(id, position, option_types(id, name, display_style, option_values(id, value, position)), product_option_selections(option_value_id))";
 
@@ -63,7 +64,8 @@ type AdminProductRow = {
   slug: string;
   name: string;
   description: string;
-  category: string;
+  category_id: string;
+  categories: { name: string } | null;
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
@@ -107,7 +109,8 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     slug: row.slug,
     name: row.name,
     description: row.description,
-    category: row.category,
+    categoryId: row.category_id,
+    category: row.categories?.name ?? "",
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
@@ -157,7 +160,7 @@ export function slugify(name: string): string {
 export type ProductInput = {
   name: string;
   description: string;
-  category: string;
+  categoryId: string;
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
@@ -175,7 +178,7 @@ export async function createProduct(
       slug: slugify(input.name),
       name: input.name,
       description: input.description,
-      category: input.category,
+      category_id: input.categoryId,
       price_centavos: input.priceCentavos,
       lead_time_days: input.leadTimeDays,
       ordering_enabled: input.orderingEnabled,
@@ -199,7 +202,7 @@ export async function updateProduct(
     .update({
       name: input.name,
       description: input.description,
-      category: input.category,
+      category_id: input.categoryId,
       price_centavos: input.priceCentavos,
       lead_time_days: input.leadTimeDays,
       ordering_enabled: input.orderingEnabled,

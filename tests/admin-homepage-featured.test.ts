@@ -8,6 +8,7 @@ import {
   type FeaturedProduct,
 } from "@/lib/admin/catalog";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getOrCreateTestCategoryId } from "./helpers/test-category";
 
 // Runs against the real (dev) Supabase project. "featured" is a global
 // max-3 toggle across the whole catalog, not scoped per test — so this
@@ -19,7 +20,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 const baseInput: ProductInput = {
   name: "Vitest Homepage Scratch Product",
   description: "",
-  category: "Test",
+  categoryId: "",
   priceCentavos: 10000,
   leadTimeDays: 1,
   orderingEnabled: true,
@@ -31,6 +32,7 @@ const scratchProductIds: string[] = [];
 let originalFeatured: FeaturedProduct[] = [];
 
 beforeAll(async () => {
+  baseInput.categoryId = await getOrCreateTestCategoryId();
   originalFeatured = await listFeaturedProducts();
   for (const product of originalFeatured) {
     await setProductFeatured(product.id, false);

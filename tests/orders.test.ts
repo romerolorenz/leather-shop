@@ -106,6 +106,9 @@ function buildOrder(
     items,
     subtotalCentavos,
     shippingCentavos,
+    promoCodeId: null,
+    promoCode: null,
+    discountCentavos: 0,
     totalCentavos: subtotalCentavos + shippingCentavos,
   };
 }

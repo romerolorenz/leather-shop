@@ -16,6 +16,7 @@ export function ActionButton({
   ariaLabel,
   className,
   disabled,
+  onSuccess,
   children,
 }: {
   action: () => Promise<ActionResult>;
@@ -27,6 +28,12 @@ export function ActionButton({
   // the FAQ page's move buttons use, just exposed here too since this
   // component can't use a <form> (see the note above).
   disabled?: boolean;
+  // For a delete that removes the very entity the current page is
+  // showing (e.g. a promo code's own edit page) — the page's Server
+  // Component re-renders after any Server Action, so without navigating
+  // away first it would immediately 404 trying to re-fetch the
+  // now-deleted row.
+  onSuccess?: () => void;
   children: React.ReactNode;
 }) {
   const { showToast } = useToast();
@@ -42,6 +49,7 @@ export function ActionButton({
           ? { type: "success", message: result.message ?? "Done." }
           : { type: "error", message: result.error }
       );
+      if (result.success) onSuccess?.();
     });
   }
 

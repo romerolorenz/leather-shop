@@ -100,7 +100,7 @@ failing the order (already true in the current placeholder implementation).
 
 ```
 products
-  id, slug, name, description, category, price_centavos,
+  id, slug, name, description, category_id (fk), price_centavos,
   lead_time_days, ordering_enabled, created_at,
   stock_quantity (a single production-capacity number for the whole
   product — all v1 products are made-to-order, so it's the same
@@ -114,6 +114,13 @@ products
   visible=true; getProductBySlug() deliberately doesn't, since order
   history needs to resolve a since-hidden product's photo — the PDP and
   checkout route check product.visible themselves)
+
+categories
+  id, name (unique) — normalizes what was a free-text products.category
+  column (migration `0014_categories.sql`). Internal-only: no storefront
+  browsing/filtering by category, the shop page stays a flat grid; exists
+  purely so promo codes (and future admin tooling) reference a real id
+  instead of a typo-prone string. Managed at `/admin/categories`.
 
 option_types
   id, name (e.g. "Color", "Thread Color", "Size" — unique, shop-wide),
@@ -153,11 +160,47 @@ product_option_selections
   > option_type_id as its product_options row, checked in app code
   > (src/lib/admin/catalog.ts).
 
+promo_codes
+  id, code (unique), discount_percent, max_discount_centavos,
+  min_order_value_centavos, usage_limit_total, starts_at, expires_at,
+  active, limit_one_per_customer (default true; false lets a code be
+  reused by the same customer, e.g. one shared publicly — the total
+  usage_limit_total cap still applies regardless) — admin-authored
+  discount codes (docs/IMPROVEMENTS.md's "Promo code capability"), managed
+  one at a time at `/admin/promo-codes`. min_order_value_centavos is
+  checked against the shopper's whole cart even when the code is
+  category-restricted below.
+
+  > `0015_promo_codes.sql` and `0016_promo_code_limit_one_per_customer.sql`
+  > (the latter still not yet run, see MANUAL_TASKS.md).
+
+promo_code_categories
+  promo_code_id (fk), category_id (fk) — optional category restriction;
+  no rows for a code = applies to the whole order. When restricted, the
+  code discounts only the eligible items' subtotal (not the whole cart) —
+  a mixed cart with only some items in an eligible category still gets a
+  partial discount, it isn't rejected outright.
+
+promo_code_redemptions
+  id, promo_code_id (fk), customer_email, order_id (fk), redeemed_at —
+  one row per successful redemption (not a counter), so the per-customer
+  (one redemption per email, unless limit_one_per_customer is false) and
+  total-cap rules are checked against real history. Enforced atomically by
+  the `redeem_promo_code()` Postgres function (row-locks the promo_codes
+  row, same idea as decrement_product_stock in
+  `0002_stock_functions.sql`) at order-creation time —
+  src/lib/promo-codes.ts's validatePromoCode() does a non-atomic preview
+  check first (for the cart/checkout "Apply" button), but
+  redeem_promo_code() is the actual enforcement.
+
 orders
   id, status ("pending_payment" | "paid" | "shipped" | "cancelled" | ...),
   customer_name, customer_email, customer_phone,
   shipping_street, shipping_city, subtotal_centavos,
-  shipping_centavos, total_centavos, created_at
+  shipping_centavos, promo_code_id (fk, nullable), discount_centavos
+  (snapshot at order time, same reasoning as unit_price_centavos — a
+  later edit/deactivation of the code shouldn't rewrite a past order's
+  displayed total), total_centavos, created_at
 
 order_items
   id, order_id (fk), product_id (fk), quantity,
