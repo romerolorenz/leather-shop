@@ -164,10 +164,20 @@ export default function CartView({
           <span className="font-medium">{formatPrice(totalCentavos)}</span>
         </div>
         {appliedPromoCode && (
-          <div className="mt-1 flex items-center justify-between text-sm">
-            <span>Promo ({appliedPromoCode.code})</span>
-            <span>-{formatPrice(appliedPromoCode.discountCentavos)}</span>
-          </div>
+          <>
+            <div className="mt-1 flex items-center justify-between text-sm">
+              <span>Promo ({appliedPromoCode.code})</span>
+              <span>-{formatPrice(appliedPromoCode.discountCentavos)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between font-medium">
+              <span>Total</span>
+              <span>
+                {formatPrice(
+                  totalCentavos - appliedPromoCode.discountCentavos
+                )}
+              </span>
+            </div>
+          </>
         )}
         <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
           Shipping ({formatPrice(shippingFeeCentavos)} flat, Metro Manila)
