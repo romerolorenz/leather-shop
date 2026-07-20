@@ -165,6 +165,18 @@ client boundary that knows the route (RootLayout is a Server Component
 and can't call `usePathname()` itself) and skips rendering the
 storefront header/footer for any `/admin/*` path.
 
+- **Content wrapper**: every admin page's `<main>` uses the identical
+  `mx-auto w-full max-w-6xl flex-1 px-6 py-10 sm:px-10` — found by
+  testing that varying it per page (a wider one for the Products table,
+  narrower ones for Categories/Options) made the shared `SectionTabs` bar
+  visibly jump width when switching tabs between sibling pages. One
+  width for every admin page, full stop — content that's naturally
+  narrower (a card list, a form) just doesn't fill it, same as the
+  artifact prototype did. Paper background (`bg-white dark:bg-[#121110]`)
+  is set once on the content wrapper in `admin/layout.tsx`, not per page
+  — the sitewide `--background` CSS var (`#0a0a0a` dark) predates this
+  system and doesn't match the sidebar's `#121110`/`#171513`, a visible
+  seam in dark mode if a page relies on it instead of the explicit token.
 - **`AdminSidebar`** (`src/components/admin/AdminSidebar.tsx`): fixed
   240px sidebar, `bg-[#FBFAF8] dark:bg-[#171513]` (a barely-off-paper
   tone — layering without a new hue, per the neutrals rule above),

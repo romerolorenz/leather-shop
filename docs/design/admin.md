@@ -2,9 +2,20 @@
 
 Status: **Build started 2026-07-20** — see
 [DESIGN_LOG.md](../DESIGN_LOG.md) for the click-through prototype this
-was agreed from. Phase 1 (shell) done and manually verified. Phase 2
-(Dashboard) built, pending a real-login manual check
-(docs/MANUAL_TESTING.md). Phases 3–7 not started.
+was agreed from. Phases 1–3 (shell, Dashboard, Products/Categories/
+Option Library + Product Edit page) done and verified — see
+docs/MANUAL_TESTING.md's Done section, verified both manually and via a
+synthetic test-admin session (see the reference memory on this). Phases
+4–6 not started.
+
+**One scope trim from the brief**: the Catalog table's low-stock
+indicator (originally "amber when at or below the product's threshold")
+was dropped — there's no per-product or shop-wide low-stock threshold in
+the data model, and adding one (new `settings` field + migration) is new
+business logic, out of scope for a visual/structural pass per this
+brief's own "What stays out of scope" section. Only an objective
+zero-stock "Out" chip shipped instead; a configurable threshold can be a
+follow-up if wanted.
 
 ## What this is for
 
@@ -105,14 +116,47 @@ what needed fixing.)
   count, not a red badge — stays in the calm/unhurried tone from
   STYLE_GUIDE.md) when stock is at or below the product's threshold.
 
-## Product edit (`/admin/products/[id]`)
+## Product edit (`/admin/products/[id]`) — built 2026-07-20
 
-- Splits the current single 340-line scrolling form into **tabs**:
-  Details (name/description/category/price/stock), Photos (upload/
-  reorder/delete), Options (attach/detach/reorder option types +
-  toggle values). Same underlying server actions, just grouped so the
-  owner isn't scrolling past photo management to get to price, or vice
-  versa.
+Added to scope per the user, after testing Phase 3's Catalog table and
+noticing the edit page (still the old unstyled 340-line scrolling form)
+was the obvious next gap — and that there's no way to delete a product
+at all today. Agreed via an artifact update before building (drill-in
+view from a Catalog row, same URL as the rest of this brief's prototype).
+
+- **In-page tabs, not a route split**: unlike Products/Content (real
+  sibling routes), this is one dynamic route (`/admin/products/[id]`),
+  so the three groups below are client-state tabs over already-fetched
+  data — the same underlying pattern as `StatusTabs`, generalized to
+  make its count badge optional so it doubles as a plain content-tab
+  primitive instead of adding a fourth tab component for one page.
+  - **Details**: name, description, category, price, lead time, stock,
+    the ordering-enabled and visible toggles — restyled to the same
+    2-column field-grid the New Product modal already uses. 7 fields is
+    light enough not to need its own fieldset sub-grouping.
+  - **Photos**: existing grid + upload, restyled to tokens. Proposing to
+    also add **drag-to-reorder** here (`DragReorderList`, already used
+    for FAQ/option values/featured products) — photos already have a
+    `position` column that nothing currently lets the owner change.
+    Flagging as an addition beyond pure restyle, drop it if not wanted.
+  - **Options**: unchanged structurally (attach/detach/reorder/value
+    toggles already work), just restyled. "Create & attach new option
+    type" becomes a `FormModal` (it's a create flow, same as every other
+    "add" this pass); "Attach existing option" stays an inline
+    dropdown + button — it's selecting an existing record, not creating
+    one, so the "add flow → modal" rule doesn't apply. Photo upload
+    stays inline for the same reason: it's not a list-of-records create,
+    and modal-gating a file picker adds a click for no benefit.
+- **New: Delete product.** There's currently no way to delete a product
+  at all — only hide it. Proposing a "Delete product" danger-ghost
+  button in the page header (next to the title, matching where the
+  Promo Code edit modal puts Delete), guarded the same way
+  `deleteCategory`/`deletePromoCode` already are: blocked with a clear
+  message if the product has any order history (`order_items`
+  referencing it), since deleting a product that's actually been sold
+  would corrupt past orders' line items. This is new business logic,
+  not just a restyle — flagging it explicitly rather than folding it in
+  silently.
 
 ## Orders (`/admin/orders`)
 

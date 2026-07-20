@@ -6,6 +6,7 @@ import { assertAdmin } from "@/lib/admin/auth";
 import {
   createProduct,
   updateProduct,
+  listOptionTypes,
   createOptionType,
   updateOptionType,
   deleteOptionType,
@@ -18,6 +19,8 @@ import {
   reorderProductOptions,
   addProductPhotos,
   deleteProductPhoto,
+  reorderProductPhotos,
+  deleteProduct,
   setProductFeatured,
   reorderFeaturedProducts,
   type ProductInput,
@@ -136,6 +139,15 @@ export async function updateProductAction(
   }, "Product saved.");
 }
 
+export async function deleteProductAction(id: string): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deleteProduct(id);
+    revalidatePath("/admin/products");
+    revalidateStorefront();
+  }, "Product deleted.");
+}
+
 // Shop-wide option library (/admin/options) — see
 // docs/PRODUCT_OPTIONS_DESIGN.md's "Third course correction". Renaming/
 // restyling a type or renaming/deleting a value applies everywhere it's
@@ -213,6 +225,13 @@ export async function updateOptionTypeAction(
 
 // ─── attaching shared options to a product (per-product page) ───────────
 
+// Defaults to every one of the type's values selected — attaching an
+// option almost always means "offer all of these," and unchecking a few
+// afterward (in the product's Options tab) is less friction than starting
+// from nothing and checking each one. Creating a brand-new option type is
+// no longer done from here — only from the Option Library
+// (/admin/options), the single place option types are defined; this page
+// just picks from what already exists.
 export async function attachOptionAction(
   productId: string,
   prevState: ActionResult | null,
@@ -222,29 +241,12 @@ export async function attachOptionAction(
     await assertAdmin();
     const optionTypeId = String(formData.get("optionTypeId") ?? "").trim();
     if (!optionTypeId) throw new Error("Select an option to attach.");
-    await attachOptionToProduct(productId, optionTypeId, []);
+    const optionTypes = await listOptionTypes();
+    const type = optionTypes.find((t) => t.id === optionTypeId);
+    const allValueIds = type?.values.map((v) => v.id) ?? [];
+    await attachOptionToProduct(productId, optionTypeId, allValueIds);
     revalidatePath(`/admin/products/${productId}`);
   }, "Option attached.");
-}
-
-// Creates a brand-new shop-wide type and immediately attaches it to this
-// product — the "create new" shortcut from the product page. Starts with
-// no values selected; add values on /admin/options, then pick the subset
-// here.
-export async function createOptionTypeAndAttachAction(
-  productId: string,
-  prevState: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
-  return runAction(async () => {
-    await assertAdmin();
-    const name = String(formData.get("name") ?? "").trim();
-    if (!name) throw new Error("Option type name is required.");
-    const { id } = await createOptionType(name, parseDisplayStyle(formData));
-    await attachOptionToProduct(productId, id, []);
-    revalidatePath(`/admin/products/${productId}`);
-    revalidatePath("/admin/options");
-  }, "Option type created and attached.");
 }
 
 // productOptionIds is bound at render time from the product's attached-
@@ -360,6 +362,17 @@ export async function deletePhotoAction(
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
   }, "Photo deleted.");
+}
+
+export async function reorderProductPhotosAction(
+  productId: string,
+  orderedIds: string[]
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await reorderProductPhotos(productId, orderedIds);
+    revalidatePath(`/admin/products/${productId}`);
+  }, "Reordered.");
 }
 
 export async function markOrderPaidAction(

@@ -6,13 +6,16 @@ import { useState } from "react";
 // (Orders by status, Promo Codes by active/expired/inactive) — no route
 // change, unlike SectionTabs. The dataset is small enough for a small
 // shop that fetching everything once and filtering in the browser is
-// simpler than paginating per status server-side.
+// simpler than paginating per status server-side. `count` is optional so
+// this doubles as a plain in-page content-tabs primitive too (a
+// product's Details/Photos/Options) — no need for a second, near-
+// identical component just to drop the count badge.
 export function StatusTabs<T extends string>({
   tabs,
   defaultTab,
   children,
 }: {
-  tabs: { key: T; label: string; count: number }[];
+  tabs: { key: T; label: string; count?: number }[];
   defaultTab: T;
   children: (active: T) => React.ReactNode;
 }) {
@@ -36,15 +39,17 @@ export function StatusTabs<T extends string>({
               }`}
             >
               {tab.label}
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-xs tabular-nums ${
-                  isActive
-                    ? "bg-[rgba(85,105,47,.12)] text-[#55692F] dark:bg-[rgba(168,193,126,.16)] dark:text-[#A8C17E]"
-                    : "bg-black/[.05] text-[#6E6A64] dark:bg-white/[.08] dark:text-[#A39C90]"
-                }`}
-              >
-                {tab.count}
-              </span>
+              {tab.count !== undefined && (
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-xs tabular-nums ${
+                    isActive
+                      ? "bg-[rgba(85,105,47,.12)] text-[#55692F] dark:bg-[rgba(168,193,126,.16)] dark:text-[#A8C17E]"
+                      : "bg-black/[.05] text-[#6E6A64] dark:bg-white/[.08] dark:text-[#A39C90]"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              )}
             </button>
           );
         })}

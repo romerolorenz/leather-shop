@@ -72,7 +72,7 @@ export default async function AdminPage() {
     .slice(0, 6);
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10 sm:px-10">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10 sm:px-10">
       <h1 className="mb-1 text-[1.375rem] font-semibold tracking-tight text-[#1C1A18] dark:text-[#F3F1EC]">
         Dashboard
       </h1>

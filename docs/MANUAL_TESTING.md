@@ -44,6 +44,33 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Admin redesign, Phase 3d — toolbar overlap (for real this time)
+  + description cleanup** (docs/design/admin.md). The previous "fix"
+  didn't actually work — root cause was `${FIELD_CLASS} w-40}` fighting
+  a `w-full` baked into the shared `FIELD_CLASS`, which Tailwind doesn't
+  resolve by string order. Fixed by not baking any width into the
+  shared class at all. Self-verified with the test-admin session:
+  selected the longest real category name and measured both elements'
+  bounding boxes directly (no overlap, not just eyeballing a
+  screenshot). Also removed the tab-specific description paragraph from
+  Categories and Option Library.
+
+- [x] **Admin redesign, Phase 3/3b/3c — Products/Categories/Option
+  Library, Product edit page, and three follow-up fixes**
+  (docs/design/admin.md). Verified two ways: manually by the user (tab
+  bar, Catalog search/filter/status chips, New Product modal, Categories
+  disclosures, Options modal, Product edit tabs/save/photos/options,
+  Delete product guard) and self-verified via a synthetic dev-only test
+  admin session (see the "Test admin access for dev testing" reference
+  memory) driving real Playwright screenshots — confirmed the toolbar no
+  longer overlaps, the Options tab's "Create & attach new" is gone with
+  attach-defaults-to-all-ticked working, and the photo delete button
+  sits correctly in its corner (the fix works; an earlier full-page
+  screenshot had made it look broken mid-fade-in — a screenshot timing
+  artifact, not a real bug, ruled out with a dedicated close-up
+  screenshot + a `naturalWidth`/`complete` check on the image element).
+  No outstanding issues.
+
 - [x] **Admin redesign, Phase 2 — Dashboard** (docs/design/admin.md).
   Stat tiles and the "needs attention" list (pending/paid-unshipped
   orders only, oldest first, correct chip/price/relative-time, correct

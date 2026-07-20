@@ -16,6 +16,29 @@ export async function listCategories(): Promise<Category[]> {
   return data;
 }
 
+export type CategoryWithProducts = Category & {
+  products: { id: string; name: string }[];
+};
+
+// Powers the Categories page's per-category tagged-products disclosure —
+// the owner needs to see what's attached to a category before renaming or
+// deleting it, not just its bare name.
+export async function listCategoriesWithProducts(): Promise<
+  CategoryWithProducts[]
+> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name, products(id, name)")
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return (data as unknown as CategoryWithProducts[]).map((row) => ({
+    ...row,
+    products: [...row.products].sort((a, b) => a.name.localeCompare(b.name)),
+  }));
+}
+
 export async function createCategory(name: string): Promise<void> {
   const supabase = getSupabaseServerClient();
   const { error } = await supabase.from("categories").insert({ name });

@@ -252,6 +252,44 @@ export async function deleteProductPhoto(photoId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function reorderProductPhotos(
+  productId: string,
+  orderedIds: string[]
+): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  await setPositions(
+    supabase,
+    "product_photos",
+    { product_id: productId },
+    "id",
+    "position",
+    orderedIds
+  );
+}
+
+// order_items.product_id has no ON DELETE behavior configured, so a
+// product that's actually been ordered would fail at the database level
+// anyway — this just gives the admin a clearer error than a raw
+// FK-violation message, same pattern as deleteCategory/deletePromoCode.
+export async function deleteProduct(id: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
+
+  const { count, error: countErr } = await supabase
+    .from("order_items")
+    .select("id", { count: "exact", head: true })
+    .eq("product_id", id);
+
+  if (countErr) throw countErr;
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      `Can't delete — this product appears in ${count} past order(s). Hide it instead.`
+    );
+  }
+
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ─── shop-wide option library (/admin/options) ─────────────────────────
 
 export async function listOptionTypes(): Promise<OptionType[]> {

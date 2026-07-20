@@ -17,7 +17,13 @@ export default async function AdminLayout({
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       <AdminSidebar email={user?.email ?? null} />
-      <div className="min-w-0 flex-1">{children}</div>
+      {/* Explicit paper token instead of relying on the sitewide
+          --background var — that's a pre-Quiet&Confident value
+          (#0a0a0a) that doesn't match the sidebar's dark tone
+          (#121110/#171513), a visible seam in dark mode otherwise. */}
+      <div className="min-w-0 flex-1 bg-white dark:bg-[#121110]">
+        {children}
+      </div>
     </div>
   );
 }

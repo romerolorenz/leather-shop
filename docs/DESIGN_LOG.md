@@ -51,11 +51,106 @@
   `AdminSidebar`, generic `FormModal`, `SectionTabs`, `StatusTabs`, and a
   `StorefrontChrome` split so `/admin` no longer inherits the storefront
   header/footer. Manually verified, no issues found, committed.
-  **Phase 2 (Dashboard) built**: stat tiles restyled to tokens; the
-  plain section-link list is gone, replaced with a "needs attention"
-  list of pending-payment/paid-unshipped orders (oldest first, same
-  warning-tone chip for both since both need the owner's action, caption
-  text says which). Pending a real-login manual check before Phase 3.
+  **Phase 2 (Dashboard) built and verified, committed**: stat tiles
+  restyled to tokens; the plain section-link list is gone, replaced with
+  a "needs attention" list of pending-payment/paid-unshipped orders
+  (oldest first, same warning-tone chip for both since both need the
+  owner's action, caption text says which).
+  **Phase 3 (Products/Categories/Option Library) built**: all three now
+  share a `SectionTabs` header (Catalog/Categories/Option Library).
+  Catalog is a real client-filterable table (search + category filter)
+  with status chips (Visible/Paused/Hidden) and an "Out" chip at zero
+  stock — the "low stock" amber tier from the brief was dropped, no
+  configurable threshold exists in the data model (see
+  docs/design/admin.md's note). "New product" is now a `FormModal` with
+  just name/category/price/stock/description, still redirecting to the
+  full edit page afterward for photos/options — the old
+  `/admin/products/new` page is deleted, nothing linked to it anymore.
+  Categories got a new `listCategoriesWithProducts()` query so each card
+  can show its tagged products in the closed-by-default disclosure.
+  "Add category" and "Add option type" both moved to `FormModal`s.
+  Pending a real-login manual check before Phase 4.
+  **Revised same day**: three fixes from real-login testing feedback —
+  the admin content background now comes from an explicit paper token
+  set once in `admin/layout.tsx` instead of the sitewide legacy
+  `--background` var (a visible dark-mode seam against the sidebar); all
+  four restyled pages now share one `max-w-6xl` container instead of
+  varying per page (the shared tab bar was jumping width switching
+  tabs); Catalog's search + category filter are now a locked
+  non-wrapping group so the "New product" button is the only thing that
+  drops to its own line on narrow viewports. Also added **Product edit**
+  to scope (was stubbed in the original brief, fleshed out now after the
+  user hit two real gaps testing Phase 3: the edit page was still the
+  old unstyled scrolling form, and there's no way to delete a product at
+  all). Artifact updated with a new drill-in view from a Catalog row —
+  Details/Photos/Options tabs (in-page client tabs, not routes, since
+  it's one dynamic page not siblings), a "Delete product" button in the
+  header, and drag-handle photo reordering (photos already have a
+  `position` column nothing currently lets the owner change). Not yet
+  built into the real app — see docs/design/admin.md's Product Edit
+  section for the full proposal, pending agreement.
+  **Fixed a real artifact bug found in review**: the Product Edit
+  view's "Back to Products" link rendered as a bare unstyled gray
+  `<button>` — its `.back-link` CSS rule had been deleted during the
+  Promo Codes revision pass (when the old detail-panel that used it got
+  replaced by tabs+modal) and never re-added when the same class got
+  reused here. Restored.
+  **Built 2026-07-20** (`/admin/products/[id]`): Details/Photos/Options
+  as in-page tabs (`StatusTabs`, with its count badge made optional so
+  it doubles as a plain content-tabs primitive rather than adding a
+  fourth tab component). Photo drag-reorder reuses the existing
+  `DragReorderList` component as-is — its grip sits beside each item
+  rather than as a corner overlay on the thumbnail like the artifact
+  showed, since forcing an absolutely-positioned overlay grip into that
+  shared component's fixed row layout wasn't worth diverging from the
+  one interaction pattern already used consistently for FAQ/option-value/
+  featured-product reordering. New `deleteProduct()`/`deleteProductAction`
+  guard the same way `deleteCategory`/`deletePromoCode` already do
+  (blocked with a friendly message if the product has order history —
+  `order_items.product_id` has no cascade, so an unguarded delete would
+  hit a raw FK-violation otherwise). `ProductFormFields.tsx` — now only
+  used by this page since `/admin/products/new` was removed in Phase 3 —
+  restyled in place to the 2-column field-grid convention. Pending a
+  real-login manual check before Phase 4.
+  **Revised same day**: three fixes from real-login testing. Photo
+  delete button was misaligned — its wrapper div wasn't sized to the
+  image, so the absolute-positioned delete icon anchored to a wider
+  invisible box instead of the photo's actual corner; fixed by giving
+  the wrapper an explicit width matching the image. Per the user,
+  "Create & attach new option type" is removed from the product edit
+  page entirely — Option Library is now the only place option types get
+  created, this page only attaches existing ones — and attaching now
+  defaults every value to ticked instead of none, since "offer all of
+  these, uncheck a few" is less friction than the reverse. The now-fully
+  -unused `createOptionTypeAndAttachAction` was deleted rather than left
+  as dead code. Catalog's toolbar no longer wraps/overlaps — the
+  category filter is a fixed width (`w-40`) instead of growing with the
+  selected category name's length, which was pushing into "New product."
+  **Self-verified 2026-07-20**: the user set up a synthetic dev-only test
+  admin session (no Google OAuth needed — see the "Test admin access"
+  reference memory) letting Claude drive real Playwright screenshots
+  against `/admin` for the first time this whole effort. Confirmed all
+  three fixes above actually work, including catching that a first
+  screenshot of the photo delete button looked broken (image not
+  visible) — turned out to be a screenshot-timing artifact (mid
+  fade-in), not a real bug, ruled out with a close-up shot plus an
+  element `naturalWidth`/`complete` check. Phase 3/3b/3c fully verified,
+  ready to commit.
+  **Fixed a real bug found by the user right after**: the Catalog
+  toolbar's category filter was still overlapping "New product" with a
+  long category name selected — root cause was `${FIELD_CLASS} w-40}`,
+  where `FIELD_CLASS` already baked in `w-full`. Tailwind doesn't
+  resolve two conflicting width utilities in one class string by
+  string order (cascade order is internal to Tailwind's generated
+  stylesheet), so `w-full` was winning and the select really was
+  stretching to fill the row. Fixed by not baking any width into the
+  shared `FIELD_CLASS` at all — every usage now sets its own width
+  explicitly. Self-verified with the test-admin session (selected the
+  longest real category, "Watch Straps", measured both elements'
+  bounding boxes — no overlap). Also removed the tab-specific
+  description paragraph from Categories and Option Library per the
+  user (the shared "The catalog, its categories, and shop-wide options."
+  intro above the tab bar stays, since it's common to all three tabs).
 
 - **2026-07-09 — Branding test: "Hiraya"**
   [artifact](https://claude.ai/code/artifact/e8f3bbe5-8ccf-492c-b1f8-9d398bd6b735) —
