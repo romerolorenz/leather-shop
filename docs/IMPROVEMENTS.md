@@ -5,6 +5,73 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
+- [ ] **Admin-triggered "payment details" email, with admin-editable
+  payment info.** Scoped via user Q&A on 2026-07-20; not designed/built
+  yet. Today `src/lib/email.ts`'s order confirmation just says "we'll
+  reach out shortly with payment instructions (bank transfer / GCash /
+  Maya)" — the actual account/QR details live nowhere in the app, handled
+  entirely off-platform. This replaces that gap with a real, admin-
+  editable email.
+  - **Trigger**: manual, per-order — a new "Send payment details" action
+    on `/admin/orders` alongside the existing `markOrderPaidAction`/
+    `markOrderShippedAction`/`cancelOrderAction` (`src/app/admin/actions.ts`
+    lines 365-384), not automatic on order placement. Admin decides when
+    to send it (e.g. after manually reviewing the order), can presumably
+    resend if needed.
+  - **Content, all admin-editable and shop-wide (same for every order,
+    not per-order)**:
+    - Multiple bank transfer entries (bank name, account name, account
+      number) — a list, not a single fixed set of fields.
+    - Multiple e-wallet entries (e.g. GCash/Maya — provider label,
+      account name, number) — also a list.
+    - One uploadable QR code image, shown in the email.
+    - One free-form instructions text block (deadlines, reference-number
+      format, anything else) — same "admin discretion" pattern as the
+      Product Details free-text field above.
+  - **Data model**: since bank/e-wallet entries are variable-length lists
+    (not single values), this doesn't fit the plain `settings` key-value
+    table — needs a proper `payment_methods` table (id, type: `'bank' |
+    'ewallet'`, account_name, account_number, label, position for
+    ordering) with admin CRUD, likely a new `/admin/payment-methods` page
+    following the `/admin/options` list pattern. The QR image and
+    free-form text fit as two `settings` keys instead (`paymentQrImageUrl`
+    — upload following `HeroImagePicker.tsx`'s pattern into the existing
+    `site-images` bucket; `paymentInstructionsText`).
+  - **Email**: new `buildPaymentDetailsEmail()` in `src/lib/email.ts`
+    (alongside `buildOrderConfirmationEmail`/`buildOrderNotificationEmail`),
+    pulling the bank/e-wallet list + QR image + instructions text at
+    send-time (not snapshotted), sent via the existing `sendEmail`/Resend
+    helper. New `sendPaymentDetailsEmailAction(orderId)` bound per-row in
+    `/admin/orders`, `ActionButton`-wrapped for the existing toast-on-
+    success/failure convention.
+- [ ] **"Product Details" section on the storefront product page.** Scoped
+  via user Q&A on 2026-07-20; not designed/built yet. Two new nullable
+  per-product fields, admin-editable, shown on the storefront:
+  - **Dimensions & weight** — a short text field (e.g. "32 × 24 × 14 cm ·
+    620g"), free-form string rather than separate numeric L/W/H/weight
+    columns — simplest fit for display-only data with no calculations
+    done on it.
+  - **Details** — one open free-form rich-text/paragraph block, admin's
+    discretion what goes in it (materials, craftsmanship, care
+    instructions, etc.) rather than fixed separate fields for each.
+  - Both optional — a product with neither set shows no "Product Details"
+    section at all rather than an empty one.
+  - **Data model**: two new nullable columns on `products` (current
+    columns per `supabase/migrations/0014_categories.sql`:
+    `id, slug, name, description, category_id, price_centavos,
+    lead_time_days, ordering_enabled, in_stock, visible, featured,
+    featured_position, created_at`) — e.g. `dimensions text`, `details
+    text`. Needs the usual four-spot update in `src/lib/products.ts`
+    (`ProductRow` type, `PRODUCT_SELECT`, `Product` type, `mapRow()` —
+    lines 12-110).
+  - **Admin UI**: new fields in `src/app/admin/products/ProductFormFields.tsx`
+    following the existing `name`/`description` input/textarea convention
+    (lines 27-46) — a short text input for dimensions, a textarea for
+    details.
+  - **Storefront rendering**: new section in
+    `src/app/products/[slug]/ProductDetail.tsx`, after the existing
+    description block (~line 68-71) — conditionally rendered only when at
+    least one of the two fields is set.
 - [ ] **Audit the app for actions missing success/error feedback.** Per
   CLAUDE.md's new rule ("every user-triggered action gets visible
   feedback — never a silent success or a bare error page"), sweep both
@@ -17,6 +84,21 @@ later work. Not started until explicitly requested — see items below.
   Remove-item buttons, which also don't toast), but worth a second look
   as part of this pass rather than assuming. Not started — no other
   candidates surveyed yet.
+- [ ] **Pre-select the first value for "buttons"-style product options, not
+  just dropdowns.** `ProductDetail.tsx`'s `selectedOptions` seeding (lines
+  17-27) only pre-fills `type.values[0]` when `type.displayStyle ===
+  "dropdown"` — a "buttons"-style option type gets no default, so its key
+  stays absent from `selectedOptions` and every button renders unpressed
+  (`aria-pressed`, line 104) until the customer clicks one. Since
+  `canAddToCart` (lines 30-33) requires every option type to have a
+  selected value, a product with any buttons-style option keeps "Add to
+  cart" disabled on first load even though a dropdown-only product doesn't
+  need interaction at all — asymmetric behavior between the two display
+  styles for the same underlying concept. Fix: seed the first value for
+  both `"dropdown"` and `"buttons"` types the same way, so the first
+  option's button renders pressed/highlighted by default (customer can
+  still change it) instead of requiring an explicit click before Add to
+  Cart is enabled.
 - [ ] **Checkout order summary: list each item's selected options one per
   line, not comma-joined in parentheses.** `CheckoutForm.tsx`'s order
   summary (~lines 276-286) renders `formatSelectedOptions(item.selectedOptions)`
