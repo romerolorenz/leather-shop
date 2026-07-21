@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useCart, formatSelectedOptions } from "@/lib/cart-context";
+import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trackEvent } from "@/lib/track-event";
@@ -274,17 +274,27 @@ export default function CheckoutForm({
           <h2 className="text-sm font-medium">Order summary</h2>
           <ul className="mt-2 divide-y divide-black/[.08] dark:divide-white/[.145]">
             {items.map((item) => {
-              const optionsLabel = formatSelectedOptions(item.selectedOptions);
+              const optionEntries = Object.entries(item.selectedOptions);
               return (
                 <li
                   key={`${item.slug}-${JSON.stringify(item.selectedOptions)}`}
-                  className="flex justify-between py-2 text-sm"
+                  className="flex justify-between gap-4 py-2 text-sm"
                 >
-                  <span>
-                    {item.quantity}x {item.name}
-                    {optionsLabel && ` (${optionsLabel})`}
-                  </span>
-                  <span>
+                  <div>
+                    <p>
+                      {item.quantity}x {item.name}
+                    </p>
+                    {optionEntries.length > 0 && (
+                      <div className="mt-0.5 flex flex-col gap-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                        {optionEntries.map(([type, value]) => (
+                          <p key={type}>
+                            {type}: {value}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span className="flex-none">
                     {formatPrice(item.priceCentavos * item.quantity)}
                   </span>
                 </li>

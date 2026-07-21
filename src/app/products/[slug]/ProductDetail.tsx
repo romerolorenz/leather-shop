@@ -9,17 +9,17 @@ import { useToast } from "@/components/ToastProvider";
 export default function ProductDetail({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
-  // Dropdowns default to their first value here, matching what the browser
-  // already shows visually — otherwise a dropdown with exactly one value
-  // can never fire onChange (there's nothing else to select), so its entry
-  // in this state would stay unset forever and permanently block
-  // canAddToCart with no way for the shopper to satisfy it.
+  // Every option type defaults to its first value — dropdowns need this
+  // since a single-value dropdown can never fire onChange (there's nothing
+  // else to select), and buttons-style types get the same treatment so
+  // Add to Cart isn't disabled until the shopper clicks something that's
+  // already visually the obvious default.
   const [selectedOptions, setSelectedOptions] = useState<
     Record<string, string>
   >(() => {
     const initial: Record<string, string> = {};
     for (const type of product.optionTypes) {
-      if (type.displayStyle === "dropdown" && type.values.length > 0) {
+      if (type.values.length > 0) {
         initial[type.name] = type.values[0];
       }
     }

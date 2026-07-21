@@ -84,33 +84,6 @@ later work. Not started until explicitly requested — see items below.
   Remove-item buttons, which also don't toast), but worth a second look
   as part of this pass rather than assuming. Not started — no other
   candidates surveyed yet.
-- [ ] **Pre-select the first value for "buttons"-style product options, not
-  just dropdowns.** `ProductDetail.tsx`'s `selectedOptions` seeding (lines
-  17-27) only pre-fills `type.values[0]` when `type.displayStyle ===
-  "dropdown"` — a "buttons"-style option type gets no default, so its key
-  stays absent from `selectedOptions` and every button renders unpressed
-  (`aria-pressed`, line 104) until the customer clicks one. Since
-  `canAddToCart` (lines 30-33) requires every option type to have a
-  selected value, a product with any buttons-style option keeps "Add to
-  cart" disabled on first load even though a dropdown-only product doesn't
-  need interaction at all — asymmetric behavior between the two display
-  styles for the same underlying concept. Fix: seed the first value for
-  both `"dropdown"` and `"buttons"` types the same way, so the first
-  option's button renders pressed/highlighted by default (customer can
-  still change it) instead of requiring an explicit click before Add to
-  Cart is enabled.
-- [ ] **Checkout order summary: list each item's selected options one per
-  line, not comma-joined in parentheses.** `CheckoutForm.tsx`'s order
-  summary (~lines 276-286) renders `formatSelectedOptions(item.selectedOptions)`
-  (`src/lib/cart-context.tsx:65-71`, which joins every `"Type: Value"` pair
-  with `", "`) appended in parentheses after the item name/qty on one
-  `<span>` — e.g. `2x Leather Tote (Color: Brown, Size: Large)`. Instead,
-  each option should get its own line under the item (e.g. a small `<ul>`/
-  stacked `<div>`s: "Color: Brown" / "Size: Large"), matching how options
-  are already broken out per-line elsewhere (cart page, order confirmation
-  email, `/admin/orders`) rather than staying a single run-on string —
-  most items only have one option today so this is easy to miss, but it
-  matters once an item has two or more.
 - [ ] **Promo code capability.** Customer-entered discount codes, applicable
   on both the cart page and the checkout page (same code field/validation
   logic reused in both places, since either can be the last stop before
@@ -228,6 +201,22 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **Pre-select the first value for "buttons"-style product options, not
+  just dropdowns.** `ProductDetail.tsx`'s `selectedOptions` now seeds
+  `type.values[0]` for every option type regardless of `displayStyle`,
+  instead of only `"dropdown"` — a buttons-style option's first value now
+  renders pressed/highlighted by default and no longer blocks "Add to
+  cart" until an explicit click. Verified live: `/products/heritage-messenger-bag`
+  (Size + Color both buttons-style) loaded with both pre-selected and Add
+  to cart already enabled.
+- [x] **Checkout order summary: list each item's selected options one per
+  line, not comma-joined in parentheses.** `CheckoutForm.tsx`'s order
+  summary now renders each `selectedOptions` entry as its own line under
+  the item name/qty (matching the cart page, order confirmation email,
+  and `/admin/orders`) instead of one comma-joined string in parentheses;
+  dropped the now-unused `formatSelectedOptions` import. Verified live: a
+  3-option cart item (Thread Color/Size/Color) showed three separate
+  lines on `/checkout`.
 - [x] **Show a toast when an item is added to cart.** `ProductDetail.tsx`'s
   `handleAddToCart` now calls `showToast({ type: "success", message: "Added
   to cart" })` (from the existing app-wide `useToast()`) right alongside the
