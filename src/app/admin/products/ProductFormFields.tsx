@@ -9,6 +9,8 @@ type Defaults = {
   orderingEnabled?: boolean;
   visible?: boolean;
   stockQuantity?: number;
+  dimensions?: string | null;
+  details?: string | null;
 };
 
 const FIELD_CLASS =
@@ -133,6 +135,37 @@ export function ProductFormFields({
           One capacity number for the whole product — the same regardless of
           which option combination a customer picks. Never shown to
           customers.
+        </p>
+      </div>
+
+      <div className="col-span-2 flex flex-col gap-1 sm:col-span-1">
+        <label className={LABEL_CLASS} htmlFor="dimensions">
+          Dimensions &amp; weight
+        </label>
+        <input
+          id="dimensions"
+          name="dimensions"
+          placeholder="e.g. 32 × 24 × 14 cm · 620g"
+          defaultValue={defaultValues.dimensions ?? ""}
+          className={FIELD_CLASS}
+        />
+      </div>
+
+      <div className="col-span-2 flex flex-col gap-1">
+        <label className={LABEL_CLASS} htmlFor="details">
+          Details
+        </label>
+        <textarea
+          id="details"
+          name="details"
+          rows={4}
+          placeholder="Materials, craftsmanship, care instructions, etc."
+          defaultValue={defaultValues.details ?? ""}
+          className={FIELD_CLASS}
+        />
+        <p className="text-xs text-[#6E6A64] dark:text-[#A39C90]">
+          Both fields are optional — shown on the storefront as a &quot;Product
+          Details&quot; section only when at least one is filled in.
         </p>
       </div>
 

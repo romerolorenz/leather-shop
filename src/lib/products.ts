@@ -34,11 +34,16 @@ export type Product = {
   featuredPosition: number | null;
   optionTypes: ProductOptionType[];
   description: string;
+  // Both optional and independent — admin's discretion what goes in each,
+  // no fixed sub-fields. Null/absent means the storefront's "Product
+  // Details" section doesn't render at all rather than showing empty.
+  dimensions: string | null;
+  details: string | null;
   photos: string[];
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, " +
+  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, dimensions, details, " +
   "product_photos(url, position), " +
   "product_options(position, option_types(id, name, display_style), product_option_selections(option_values(value, position)))";
 
@@ -56,6 +61,8 @@ type ProductRow = {
   in_stock: boolean;
   featured: boolean;
   featured_position: number | null;
+  dimensions: string | null;
+  details: string | null;
   product_photos: { url: string; position: number }[];
   product_options: {
     position: number;
@@ -102,6 +109,8 @@ function mapRow(row: ProductRow): Product {
     featured: row.featured,
     featuredPosition: row.featured_position,
     description: row.description,
+    dimensions: row.dimensions,
+    details: row.details,
     photos: [...row.product_photos]
       .sort((a, b) => a.position - b.position)
       .map((p) => p.url),

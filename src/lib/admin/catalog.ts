@@ -50,12 +50,16 @@ export type AdminProduct = {
   // moveFeaturedProduct and setProductFeatured below.
   featured: boolean;
   featuredPosition: number | null;
+  // Both optional, shown on the storefront PDP only when set — see
+  // docs/IMPROVEMENTS.md's "Product Details" section.
+  dimensions: string | null;
+  details: string | null;
   photos: AdminProductPhoto[];
   options: AdminProductOption[];
 };
 
 const ADMIN_PRODUCT_SELECT =
-  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, featured, featured_position, " +
+  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, featured, featured_position, dimensions, details, " +
   "product_photos(id, url, position), " +
   "product_options(id, position, option_types(id, name, display_style, option_values(id, value, position)), product_option_selections(option_value_id))";
 
@@ -73,6 +77,8 @@ type AdminProductRow = {
   stock_quantity: number;
   featured: boolean;
   featured_position: number | null;
+  dimensions: string | null;
+  details: string | null;
   product_photos: { id: string; url: string; position: number }[];
   product_options: {
     id: string;
@@ -118,6 +124,8 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     stockQuantity: row.stock_quantity,
     featured: row.featured,
     featuredPosition: row.featured_position,
+    dimensions: row.dimensions,
+    details: row.details,
     photos: [...row.product_photos].sort((a, b) => a.position - b.position),
     options,
   };
@@ -166,6 +174,10 @@ export type ProductInput = {
   orderingEnabled: boolean;
   visible: boolean;
   stockQuantity: number;
+  // Optional — omitted/undefined (e.g. the quick-create modal, which
+  // doesn't collect these) leaves the column null rather than clearing it.
+  dimensions?: string | null;
+  details?: string | null;
 };
 
 export async function createProduct(
@@ -184,6 +196,8 @@ export async function createProduct(
       ordering_enabled: input.orderingEnabled,
       visible: input.visible,
       stock_quantity: input.stockQuantity,
+      dimensions: input.dimensions ?? null,
+      details: input.details ?? null,
     })
     .select("id")
     .single();
@@ -208,6 +222,8 @@ export async function updateProduct(
       ordering_enabled: input.orderingEnabled,
       visible: input.visible,
       stock_quantity: input.stockQuantity,
+      dimensions: input.dimensions ?? null,
+      details: input.details ?? null,
     })
     .eq("id", id);
 

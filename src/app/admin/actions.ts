@@ -55,6 +55,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runAction, type ActionResult } from "@/lib/action-result";
 
 function parseProductInput(formData: FormData): ProductInput {
+  const dimensions = String(formData.get("dimensions") ?? "").trim();
+  const details = String(formData.get("details") ?? "").trim();
   return {
     name: String(formData.get("name") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
@@ -64,6 +66,8 @@ function parseProductInput(formData: FormData): ProductInput {
     orderingEnabled: formData.get("orderingEnabled") === "on",
     visible: formData.get("visible") === "on",
     stockQuantity: Number(formData.get("stockQuantity")),
+    dimensions: dimensions || null,
+    details: details || null,
   };
 }
 

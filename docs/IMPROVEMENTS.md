@@ -44,34 +44,6 @@ later work. Not started until explicitly requested — see items below.
     helper. New `sendPaymentDetailsEmailAction(orderId)` bound per-row in
     `/admin/orders`, `ActionButton`-wrapped for the existing toast-on-
     success/failure convention.
-- [ ] **"Product Details" section on the storefront product page.** Scoped
-  via user Q&A on 2026-07-20; not designed/built yet. Two new nullable
-  per-product fields, admin-editable, shown on the storefront:
-  - **Dimensions & weight** — a short text field (e.g. "32 × 24 × 14 cm ·
-    620g"), free-form string rather than separate numeric L/W/H/weight
-    columns — simplest fit for display-only data with no calculations
-    done on it.
-  - **Details** — one open free-form rich-text/paragraph block, admin's
-    discretion what goes in it (materials, craftsmanship, care
-    instructions, etc.) rather than fixed separate fields for each.
-  - Both optional — a product with neither set shows no "Product Details"
-    section at all rather than an empty one.
-  - **Data model**: two new nullable columns on `products` (current
-    columns per `supabase/migrations/0014_categories.sql`:
-    `id, slug, name, description, category_id, price_centavos,
-    lead_time_days, ordering_enabled, in_stock, visible, featured,
-    featured_position, created_at`) — e.g. `dimensions text`, `details
-    text`. Needs the usual four-spot update in `src/lib/products.ts`
-    (`ProductRow` type, `PRODUCT_SELECT`, `Product` type, `mapRow()` —
-    lines 12-110).
-  - **Admin UI**: new fields in `src/app/admin/products/ProductFormFields.tsx`
-    following the existing `name`/`description` input/textarea convention
-    (lines 27-46) — a short text input for dimensions, a textarea for
-    details.
-  - **Storefront rendering**: new section in
-    `src/app/products/[slug]/ProductDetail.tsx`, after the existing
-    description block (~line 68-71) — conditionally rendered only when at
-    least one of the two fields is set.
 - [ ] **Audit the app for actions missing success/error feedback.** Per
   CLAUDE.md's new rule ("every user-triggered action gets visible
   feedback — never a silent success or a bare error page"), sweep both
@@ -201,6 +173,26 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **"Product Details" section on the storefront product page.** Two
+  new nullable `products` columns (`dimensions text`, `details text`,
+  migration `0017_product_details.sql`, run against the dev DB), both
+  optional and independent. Wired through the usual four spots
+  (`src/lib/products.ts`'s `ProductRow`/`PRODUCT_SELECT`/`Product`/
+  `mapRow`) plus the admin equivalents in `src/lib/admin/catalog.ts`
+  (`AdminProductRow`/`ADMIN_PRODUCT_SELECT`/`AdminProduct`/`mapAdminRow`/
+  `ProductInput`/`createProduct`/`updateProduct`). New "Dimensions &
+  weight" (short text) and "Details" (textarea) fields added to
+  `ProductFormFields.tsx` — edit-page only, matching the existing pattern
+  where the quick-create modal (`ProductsCatalog.tsx`) defers secondary
+  fields to the edit page. `ProductDetail.tsx` renders a "Product
+  Details" section after the description block, only when at least one
+  field is set. New `products.test.ts` cases (defaults to null,
+  round-trips through `createProduct`/`updateProduct`, clears back to
+  null) pass clean against the live dev DB. Verified end-to-end via a
+  synthetic-admin-session Playwright run: filled both fields on
+  `/admin/products/<id>`, saved, confirmed the section rendered
+  correctly on the storefront PDP, then cleared the scratch data back
+  to null.
 - [x] **Pre-select the first value for "buttons"-style product options, not
   just dropdowns.** `ProductDetail.tsx`'s `selectedOptions` now seeds
   `type.values[0]` for every option type regardless of `displayStyle`,

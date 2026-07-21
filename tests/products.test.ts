@@ -57,3 +57,34 @@ describe("product visibility", () => {
     expect((await getProducts()).map((p) => p.id)).toContain(id);
   });
 });
+
+describe("product details (dimensions/details)", () => {
+  it("defaults to null when omitted, and round-trips when set", async () => {
+    const detailsInput: ProductInput = {
+      ...baseInput,
+      name: `Vitest Products Lib Details Product ${Date.now()}`,
+    };
+    const detailsSlug = slugify(detailsInput.name);
+    const { id } = await createProduct(detailsInput);
+    scratchProductIds.push(id);
+
+    const created = await getProductBySlug(detailsSlug);
+    expect(created?.dimensions).toBeNull();
+    expect(created?.details).toBeNull();
+
+    await updateProduct(id, {
+      ...detailsInput,
+      dimensions: "32 × 24 × 14 cm · 620g",
+      details: "Full-grain leather, brass hardware.",
+    });
+
+    const updated = await getProductBySlug(detailsSlug);
+    expect(updated?.dimensions).toBe("32 × 24 × 14 cm · 620g");
+    expect(updated?.details).toBe("Full-grain leather, brass hardware.");
+
+    await updateProduct(id, detailsInput);
+    const cleared = await getProductBySlug(detailsSlug);
+    expect(cleared?.dimensions).toBeNull();
+    expect(cleared?.details).toBeNull();
+  });
+});

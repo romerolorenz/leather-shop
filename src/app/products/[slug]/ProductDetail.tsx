@@ -69,6 +69,22 @@ export default function ProductDetail({ product }: { product: Product }) {
         {product.description}
       </p>
 
+      {(product.dimensions || product.details) && (
+        <div className="mt-6">
+          <h2 className="text-sm font-medium">Product Details</h2>
+          {product.dimensions && (
+            <p className="mt-2 text-sm text-[#6E6A64] dark:text-[#A39C90]">
+              {product.dimensions}
+            </p>
+          )}
+          {product.details && (
+            <p className="mt-2 whitespace-pre-wrap text-sm text-[#6E6A64] dark:text-[#A39C90]">
+              {product.details}
+            </p>
+          )}
+        </div>
+      )}
+
       {product.optionTypes.map((type) =>
         type.displayStyle === "dropdown" ? (
           <div key={type.id} className="mt-6">

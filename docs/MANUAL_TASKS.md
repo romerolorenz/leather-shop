@@ -106,3 +106,10 @@ blockers, then items that don't block any phase.
   redemption per customer" checkbox (default on, existing codes
   unaffected); new cases in `promo-codes.test.ts`/`api-orders-promo.test.ts`
   pass clean against it.
+- [x] Run `supabase/migrations/0017_product_details.sql` against the dev
+  DB — restored `/products` and every PDP from the 500 they'd been
+  throwing since `PRODUCT_SELECT` started requesting the (until-now
+  nonexistent) `dimensions`/`details` columns; full `npm test` back to
+  only the two pre-existing unrelated seed-data failures; new
+  `products.test.ts` cases pass; live-verified end-to-end via the admin
+  edit page → storefront PDP.

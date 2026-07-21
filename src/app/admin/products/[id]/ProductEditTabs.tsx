@@ -79,6 +79,8 @@ export function ProductEditTabs({
                   orderingEnabled: product.orderingEnabled,
                   visible: product.visible,
                   stockQuantity: product.stockQuantity,
+                  dimensions: product.dimensions,
+                  details: product.details,
                 }}
               />
               <div className={`mt-2 flex justify-end border-t ${HAIRLINE} pt-4`}>
