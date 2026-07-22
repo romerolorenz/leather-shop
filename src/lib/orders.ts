@@ -40,7 +40,10 @@ export type Order = {
   };
   shippingAddress: {
     street: string;
+    address2: string;
+    barangay: string;
     city: string;
+    postalCode: string;
   };
   items: OrderItem[];
   subtotalCentavos: number;
@@ -90,7 +93,10 @@ export async function createOrder(input: NewOrder): Promise<Order> {
       customer_email: input.customer.email,
       customer_phone: input.customer.phone,
       shipping_street: input.shippingAddress.street,
+      shipping_address2: input.shippingAddress.address2 || null,
+      shipping_barangay: input.shippingAddress.barangay,
       shipping_city: input.shippingAddress.city,
+      shipping_postal_code: input.shippingAddress.postalCode,
       subtotal_centavos: input.subtotalCentavos,
       shipping_centavos: input.shippingCentavos,
       promo_code_id: input.promoCodeId,
@@ -269,7 +275,10 @@ type OrderRow = {
   customer_email: string;
   customer_phone: string;
   shipping_street: string;
+  shipping_address2: string | null;
+  shipping_barangay: string | null;
   shipping_city: string;
+  shipping_postal_code: string | null;
   subtotal_centavos: number;
   shipping_centavos: number;
   discount_centavos: number;
@@ -299,7 +308,10 @@ function mapOrderRow(row: OrderRow): Order {
     },
     shippingAddress: {
       street: row.shipping_street,
+      address2: row.shipping_address2 ?? "",
+      barangay: row.shipping_barangay ?? "",
       city: row.shipping_city,
+      postalCode: row.shipping_postal_code ?? "",
     },
     items: row.order_items.map((item) => ({
       slug: item.products?.slug ?? "",
@@ -322,7 +334,7 @@ function mapOrderRow(row: OrderRow): Order {
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_city, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_postal_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
 export async function listOrdersForAdmin(): Promise<Order[]> {
   const supabase = getSupabaseServerClient();

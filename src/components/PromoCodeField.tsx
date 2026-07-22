@@ -96,7 +96,7 @@ export function PromoCodeField({ customerEmail }: { customerEmail?: string }) {
     ].join(", ");
 
     return (
-      <div className="mt-4 flex items-center justify-between gap-3 rounded-md border border-black/[.15] px-3 py-2 text-sm dark:border-white/[.2]">
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-md border border-[rgba(28,26,24,.12)] px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]">
         <span>
           <span>
             Code <strong>{appliedPromoCode.code}</strong> applied
@@ -110,14 +110,14 @@ export function PromoCodeField({ customerEmail }: { customerEmail?: string }) {
             {" — "}
             -{formatPrice(appliedPromoCode.discountCentavos)}
           </span>
-          <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="block text-xs text-[#6E6A64] dark:text-[#A39C90]">
             {terms}
           </span>
         </span>
         <button
           type="button"
           onClick={removePromoCode}
-          className="flex-none underline"
+          className="flex-none text-[#6E6A64] underline underline-offset-4 hover:no-underline hover:text-[#8C3B32] dark:text-[#A39C90]"
         >
           Remove
         </button>
@@ -133,13 +133,13 @@ export function PromoCodeField({ customerEmail }: { customerEmail?: string }) {
           onChange={(e) => setCode(e.target.value)}
           placeholder="Promo code"
           aria-label="Promo code"
-          className="flex-1 rounded-md border border-black/[.15] bg-transparent px-3 py-2 text-sm uppercase dark:border-white/[.2]"
+          className="flex-1 rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm uppercase dark:border-[rgba(243,241,236,.14)]"
         />
         <button
           type="button"
           disabled={pending || !code.trim()}
           onClick={() => attemptApply(code, false)}
-          className="whitespace-nowrap rounded-full border border-black/[.15] px-4 py-2 text-sm disabled:opacity-50 dark:border-white/[.2]"
+          className="whitespace-nowrap rounded-full border border-[rgba(28,26,24,.12)] px-4 py-2 text-sm disabled:opacity-50 dark:border-[rgba(243,241,236,.14)]"
         >
           {pending ? "Applying…" : "Apply"}
         </button>

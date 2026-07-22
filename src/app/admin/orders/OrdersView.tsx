@@ -62,7 +62,14 @@ function OrderCard({ order }: { order: Order }) {
             {order.customer.email} · {order.customer.phone}
           </p>
           <p className={`text-sm ${INK_SOFT}`}>
-            {order.shippingAddress.street}, {order.shippingAddress.city}
+            {order.shippingAddress.street}
+            {order.shippingAddress.address2 &&
+              `, ${order.shippingAddress.address2}`}
+            {order.shippingAddress.barangay &&
+              ` · Brgy. ${order.shippingAddress.barangay}`}
+            {`, ${order.shippingAddress.city}`}
+            {order.shippingAddress.postalCode &&
+              ` ${order.shippingAddress.postalCode}`}
           </p>
           <div className="mt-2 flex flex-col gap-0.5">
             {order.items.map((item, index) => {

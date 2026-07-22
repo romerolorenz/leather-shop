@@ -7,37 +7,38 @@ explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Migrate `/checkout` to the "Quiet & Confident" system.**
-  `src/app/checkout/CheckoutForm.tsx` is explicitly called out in
-  [STYLE_GUIDE.md](design/STYLE_GUIDE.md) as still on the "before" look —
-  system font, `zinc` text colors, plain `rounded-md border-black/[.15]`
-  inputs, `max-w-3xl` container missing the `sm:px-10` step every
-  restyled page has. It sits directly next to `/cart` (already migrated)
-  in the shopper's flow, so the mismatch is visible mid-checkout. Also
-  covers the shared `PromoCodeField.tsx` (`src/components/
-  PromoCodeField.tsx`, rendered on both `/cart` and `/checkout`) — it was
-  built after the cart/account restyle pass and never got the token
-  treatment, so it's currently an unstyled patch on both pages. Visual
-  restyle only — no change to validation, submit flow, saved-address
-  logic, or promo-code behavior. Per CLAUDE.md, needs a design doc under
-  `docs/design/` agreed with the user before building.
-- [ ] **City dropdown's arrow sits too far right, and doesn't look nice
-  on mobile.** In `AddressFormModal.tsx`'s city `<select>` (~line 133),
-  the element is a bare native `<select>` — no `appearance-none` or
-  custom chevron — so the browser's default arrow renders flush against
-  the far edge of the `w-full` box, well away from the selected text. On
-  mobile this is worse: the OS's native select styling (bigger tap
-  target, platform-default arrow/inset) reads even more out of place
-  against the rest of the restyled UI. Every `<select>` in the app
-  (`ProductDetail.tsx`, `admin/options/page.tsx`,
-  `admin/products/[id]/page.tsx`, `CheckoutForm.tsx`) is styled the same
-  bare way, so this is a systemic gap, not a one-off — worth fixing with a
-  shared pattern (`appearance-none` + a positioned SVG chevron, e.g. as a
-  small reusable `<Select>` wrapper) rather than patching just this one
-  instance.
+- [ ] **Make Barangay a dropdown, scoped to the selected City**, instead
+  of free text (`CheckoutForm.tsx` and `AddressFormModal.tsx`'s manual
+  address fields). Needs a real per-city barangay dataset first — Metro
+  Manila has ~1,700+ barangays total (Manila City alone ~896), too many
+  to hand-type reliably. Agreed approach: seed a dedicated `barangays`
+  table (city, name, PSGC code) from the official PSA PSGC publication
+  (https://psa.gov.ph/classification/psgc/regions), scoped to just the
+  17 cities already in `deliveryCities` — not a live API call (PSA
+  doesn't offer one) and not stuffed into the `settings` table (too
+  large/hierarchical a dataset for that). Deferred: needs either the
+  user to supply the relevant PSGC rows, or a websearch pass to find a
+  structured (CSV/JSON) mirror of the official data to seed from.
 
 ## Done
 
+- [x] **Migrated `/checkout` to the "Quiet & Confident" system**
+  (`docs/design/checkout.md`). `CheckoutForm.tsx` now uses the same
+  Archivo/tokens/`max-w-3xl px-6 py-16 sm:px-10` container as `/cart` and
+  `/account`; `PromoCodeField.tsx` (shared with `/cart`) restyled too.
+  Went beyond a straight reskin with two agreed structural changes:
+  saved addresses render as selectable cards instead of a dropdown that
+  silently pre-filled editable fields, and the order summary moves above
+  the form on mobile so shoppers see the total before filling anything
+  in. Along the way the address shape itself grew to a fuller Philippine
+  format (Full name/Phone/Address 1/Apartment (optional)/City/Barangay/
+  Postal code, replacing a single street line) — new `customer_addresses`/
+  `orders` columns, threaded through account addresses, order emails, and
+  admin's order view. Checkout also now offers to save a freshly-entered
+  address to the customer's account (logged-in only, opt-in checkbox).
+  Barangay is currently free text — making it a dropdown sourced from the
+  city selection is a separate follow-up, deferred pending a real PSGC
+  barangay dataset (not part of this item's original scope).
 - [x] Removed FAQ and Contact Us icons from the header navbar
   (`SiteHeader.tsx`) — Shop/account/Cart remain; both pages stay reachable
   via the footer.

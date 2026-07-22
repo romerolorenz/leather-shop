@@ -52,7 +52,12 @@ describe("POST /api/orders", () => {
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "t@example.com", phone: "123" },
-        shippingAddress: { street: "1 St", city: "Cebu City" },
+        shippingAddress: {
+          street: "1 St",
+          barangay: "Test Barangay",
+          city: "Cebu City",
+          postalCode: "6000",
+        },
         items: [
           {
             slug: wallet.slug,
@@ -69,7 +74,12 @@ describe("POST /api/orders", () => {
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "t@example.com", phone: "123" },
-        shippingAddress: { street: "1 St", city: "Pasig" },
+        shippingAddress: {
+          street: "1 St",
+          barangay: "Test Barangay",
+          city: "Pasig",
+          postalCode: "1600",
+        },
         items: [],
       })
     );
@@ -80,7 +90,12 @@ describe("POST /api/orders", () => {
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "t@example.com", phone: "123" },
-        shippingAddress: { street: "1 St", city: "Pasig" },
+        shippingAddress: {
+          street: "1 St",
+          barangay: "Test Barangay",
+          city: "Pasig",
+          postalCode: "1600",
+        },
         items: [
           {
             slug: wallet.slug,
@@ -111,7 +126,12 @@ describe("POST /api/orders", () => {
       const res = await POST(
         makeRequest({
           customer: { name: "Test", email: "t@example.com", phone: "123" },
-          shippingAddress: { street: "1 St", city: "Pasig" },
+          shippingAddress: {
+            street: "1 St",
+            barangay: "Test Barangay",
+            city: "Pasig",
+            postalCode: "1600",
+          },
           items: [
             {
               slug: tote.slug,
@@ -134,7 +154,12 @@ describe("POST /api/orders", () => {
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "vitest-api@example.com", phone: "123" },
-        shippingAddress: { street: "1 St", city: "Pasig" },
+        shippingAddress: {
+          street: "1 St",
+          barangay: "Test Barangay",
+          city: "Pasig",
+          postalCode: "1600",
+        },
         items: [
           {
             slug: wallet.slug,

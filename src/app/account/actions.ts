@@ -15,9 +15,20 @@ function parseAddressInput(formData: FormData): AddressInput {
   const recipientName = String(formData.get("recipientName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const street = String(formData.get("street") ?? "").trim();
+  const address2 = String(formData.get("address2") ?? "").trim();
+  const barangay = String(formData.get("barangay") ?? "").trim();
   const city = String(formData.get("city") ?? "").trim();
+  const postalCode = String(formData.get("postalCode") ?? "").trim();
 
-  if (!label || !recipientName || !phone || !street || !city) {
+  if (
+    !label ||
+    !recipientName ||
+    !phone ||
+    !street ||
+    !barangay ||
+    !city ||
+    !postalCode
+  ) {
     throw new Error("All address fields are required.");
   }
 
@@ -26,7 +37,10 @@ function parseAddressInput(formData: FormData): AddressInput {
     recipientName,
     phone,
     street,
+    address2,
+    barangay,
     city,
+    postalCode,
     isDefault: formData.get("isDefault") === "on",
   };
 }

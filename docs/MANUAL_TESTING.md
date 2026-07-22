@@ -65,6 +65,19 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Checkout redesign** (docs/design/checkout.md, PR #11). Verified
+  two ways: self-verified via the test-admin session (which turns out to
+  double as a customer session too — `assertCustomer()` accepts any
+  authenticated user, no allow-list like admin has — placed two real
+  test orders end-to-end, one per saved address, confirmed both landed
+  correctly in `/admin/orders` with the fuller shipping address, cleaned
+  up after), then a full human pass covering the rest: guest checkout
+  (manual fields, no card picker, order succeeds), logged-in checkout's
+  address cards and saved-address submission, `/account/addresses`
+  display, a real mobile device (order summary above the form, cards/
+  fields usable at narrow width), admin's order view, and both order
+  emails' delivery-address section. No outstanding issues.
+
 - [x] **Admin redesign, Phase 4 — Orders button styling** (docs/design/admin.md).
   Confirmed Mark paid/Mark shipped/Cancel button styling against a real
   pending/paid order. No outstanding items.

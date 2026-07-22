@@ -113,3 +113,14 @@ blockers, then items that don't block any phase.
   only the two pre-existing unrelated seed-data failures; new
   `products.test.ts` cases pass; live-verified end-to-end via the admin
   edit page → storefront PDP.
+- [x] Run `supabase/migrations/0018_ph_address_fields.sql` against the
+  dev DB — adds `address2`/`barangay`/`postal_code` to
+  `customer_addresses` and the `shipping_`-prefixed equivalents to
+  `orders` (docs/design/checkout.md "Fuller Philippine address shape").
+  Verified live: existing 8 orders / 3 addresses untouched (new columns
+  came back `null`, no backfill needed); `/account/addresses` shows the
+  fuller address; checkout's address cards submit correctly (placed two
+  real test orders via the synthetic session, both landed in admin's
+  Orders view with the full shipping address, then cleaned up — stock
+  and row counts back to exactly where they started); `npm test` back to
+  only the two pre-existing unrelated seed-data failures (69 passed).

@@ -7,7 +7,10 @@ type AddressFormValues = {
   recipientName: string;
   phone: string;
   street: string;
+  address2: string;
+  barangay: string;
   city: string;
+  postalCode: string;
   isDefault: boolean;
 };
 
@@ -126,8 +129,14 @@ export default function AddressFormModal({
           <input
             name="street"
             defaultValue={defaultValues?.street}
-            placeholder="Street address"
+            placeholder="Address 1 (house/unit no., street name)"
             required
+            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+          />
+          <input
+            name="address2"
+            defaultValue={defaultValues?.address2}
+            placeholder="Apartment, suite, building (optional)"
             className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
           />
           <select
@@ -145,6 +154,24 @@ export default function AddressFormModal({
               </option>
             ))}
           </select>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              name="barangay"
+              defaultValue={defaultValues?.barangay}
+              placeholder="Barangay"
+              required
+              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            />
+            <input
+              name="postalCode"
+              defaultValue={defaultValues?.postalCode}
+              placeholder="Postal code"
+              inputMode="numeric"
+              maxLength={4}
+              required
+              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            />
+          </div>
           <label className="flex items-center gap-2 text-sm text-[#6E6A64] dark:text-[#A39C90]">
             <input
               type="checkbox"
