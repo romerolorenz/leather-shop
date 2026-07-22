@@ -32,7 +32,9 @@ import {
   markOrderPaid,
   markOrderShipped,
   cancelOrderAndRestoreStock,
+  getOrderById,
 } from "@/lib/orders";
+import { sendOrderShippedEmail } from "@/lib/email";
 import { updateSettings } from "@/lib/settings";
 import {
   createFaqItem,
@@ -399,6 +401,21 @@ export async function markOrderShippedAction(
     await markOrderShipped(orderId);
     revalidatePath("/admin/orders");
     revalidatePath("/admin");
+
+    // Best-effort — an email hiccup shouldn't undo the status change or
+    // fail the admin's success toast (same pattern as the two sends in
+    // POST /api/orders).
+    try {
+      const order = await getOrderById(orderId);
+      if (order) {
+        await sendOrderShippedEmail(order);
+      }
+    } catch (err) {
+      console.error(
+        `[email] Failed to send shipped notice for order ${orderId}:`,
+        err
+      );
+    }
   }, "Order marked as shipped.");
 }
 

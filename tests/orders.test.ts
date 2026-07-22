@@ -3,6 +3,7 @@ import {
   cancelOrderAndRestoreStock,
   createOrder,
   getExpiredPendingOrderIds,
+  getOrderById,
   listOrdersForCustomer,
   InsufficientStockError,
   type NewOrder,
@@ -259,6 +260,22 @@ describe("getExpiredPendingOrderIds", () => {
 
     expect(await getExpiredPendingOrderIds(48)).toContain(order.id);
     expect(await getExpiredPendingOrderIds(72)).not.toContain(order.id);
+  });
+});
+
+describe("getOrderById", () => {
+  it("returns the full order for a real id, null for a missing one", async () => {
+    const order = await createOrder(buildOrder([walletItem(1)]));
+    cleanupOrderIds.push(order.id);
+
+    const found = await getOrderById(order.id);
+    expect(found?.id).toBe(order.id);
+    expect(found?.items[0].options).toEqual([
+      { optionTypeName: "Color", optionValue: "Chestnut Brown" },
+    ]);
+
+    const missing = await getOrderById("00000000-0000-0000-0000-000000000000");
+    expect(missing).toBeNull();
   });
 });
 

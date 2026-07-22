@@ -336,6 +336,21 @@ function mapOrderRow(row: OrderRow): Order {
 const ORDER_SELECT =
   "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_postal_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
+// Single-order lookup — needed by markOrderShippedAction to build the
+// shipped email, which needs the full order (items, address), not just the
+// id that markOrderShipped's status update touches.
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select(ORDER_SELECT)
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapOrderRow(data as unknown as OrderRow) : null;
+}
+
 export async function listOrdersForAdmin(): Promise<Order[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase

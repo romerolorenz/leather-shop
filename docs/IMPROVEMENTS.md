@@ -5,6 +5,41 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
+- [ ] **Use PSGC (Philippine Standard Geographic Code) data for
+  region/city/barangay address fields, instead of the current flat
+  admin-typed city list.** Today's address model is much simpler:
+  `customer_addresses`/orders only store free-standing `street` + `city`
+  text columns (`src/lib/customer/addresses.ts`), and `city` is validated
+  against `settings.deliveryCities` — a flat admin-editable string array
+  (`src/lib/settings.ts`, key `delivery_cities`) rendered as a plain
+  `<select>` in `AddressFormModal.tsx` and `CheckoutForm.tsx`. There's no
+  region or barangay concept anywhere in the schema. This replaces that
+  with real PSGC-sourced reference data (region → province/HUC → city/
+  municipality → barangay) so address entry becomes cascading
+  region/city/barangay dropdowns instead of one hand-maintained flat
+  list.
+  - **Phase 1 scope**: NCR only, matching the current Metro-Manila-only
+    delivery area — the region level may not even need a selector yet if
+    it's a single fixed value, but city and barangay should be real PSGC
+    entities for NCR's cities/municipalities from day one so the later PH
+    expansion doesn't need a data-model rework, just more rows.
+  - **Expandable to PH**: the schema (likely a `psgc_regions`/
+    `psgc_cities`/`psgc_barangays` reference table set, seeded from the
+    published PSGC dataset) should support the full hierarchy nationwide
+    even though delivery is currently NCR-only — `settings.deliveryCities`
+    (or its replacement) then becomes "which PSGC city codes are
+    deliverable" rather than a free-typed list, so opening a new delivery
+    area later is admin config, not a schema change.
+  - **Touches**: `customer_addresses` + orders' shipping-address columns
+    (add region/city/barangay code references, likely alongside or
+    replacing the plain `city` text), `AddressFormModal.tsx` and
+    `CheckoutForm.tsx`'s city `<select>` (become cascading selects), admin
+    delivery-area configuration (`/admin/settings`'s delivery cities
+    field), and anywhere shipping address is displayed (`/admin/orders`,
+    order confirmation emails, `/account/addresses`).
+  - Not scoped in detail yet — needs a data-source decision (bundling a
+    PSGC dataset snapshot vs. an API) and a proper migration plan before
+    building.
 - [ ] **Admin-triggered "payment details" email, with admin-editable
   payment info.** Scoped via user Q&A on 2026-07-20; not designed/built
   yet. Today `src/lib/email.ts`'s order confirmation just says "we'll
@@ -173,6 +208,39 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **"Order shipped" email, matching the order-confirmation email's
+  aesthetic.** New `buildOrderShippedEmail()`/`sendOrderShippedEmail()`
+  (`src/lib/email.ts`) — same HTML shell/tokens as
+  `buildOrderConfirmationEmail` (Arial-stack, `max-w:560px` card, item
+  photo rows with placeholder fallback, delivery-address block, `Order
+  ID: …` footer), but shipped-specific headline/copy and no cost
+  breakdown table. New `getOrderById(orderId)` in `src/lib/orders.ts`
+  (same `ORDER_SELECT`/`mapOrderRow` plumbing as the list-returning
+  lookups) since `markOrderShipped` only touches the `status` column.
+  Wired into `markOrderShippedAction` (`src/app/admin/actions.ts`) right
+  after the status update succeeds, wrapped in try/catch/log-and-swallow
+  (same pattern as the two sends in `POST /api/orders`) so an email
+  hiccup can't undo the status change or fail the admin's success toast.
+  Selected product options are shown per item, one per line — both
+  emails' HTML (small gray text under the item name) and shared text
+  builder (indented lines) were updated together with the confirmation
+  email to match, since they'd shared the older comma-in-parentheses
+  format and this was the same one-per-line convention just applied to
+  the checkout page. New tests: `buildOrderShippedEmail`/
+  `buildOrderConfirmationEmail` cases in `tests/email.test.ts` (photo
+  embed, placeholder fallback, HTML-escaping, no cost breakdown,
+  one-option-per-line in text and HTML) and a `getOrderById` case in
+  `tests/orders.test.ts` (full order for a real id, `null` for a missing
+  one) — all pass clean; full `npm test` otherwise unaffected (75
+  passed, only the two pre-existing unrelated seed-data failures).
+  Live-verified end-to-end via a scratch order (create → mark paid →
+  `markOrderShipped` → `sendOrderShippedEmail`) — status flips correctly
+  and Resend accepts the send with no error, sent to the account owner's
+  inbox (sandbox sender restriction); a second scratch order with two
+  option values confirmed both text and HTML list them one per line, not
+  comma-joined. Actual rendered-email look and a real click-through of
+  "Mark as shipped" in `/admin/orders` need a human pass — see
+  `docs/MANUAL_TESTING.md`.
 - [x] **"Product Details" section on the storefront product page.** Two
   new nullable `products` columns (`dimensions text`, `details text`,
   migration `0017_product_details.sql`, run against the dev DB), both

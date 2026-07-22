@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { formatPrice } from "@/lib/products";
-import { getOrderItemPhotos, formatItemOptions, type Order } from "@/lib/orders";
+import { getOrderItemPhotos, type Order } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
 
 type EmailContent = {
@@ -11,13 +11,21 @@ type EmailContent = {
   replyTo?: string;
 };
 
+// One option per indented line under the item, matching the one-per-line
+// convention used by the cart, checkout, and /admin/orders (rather than the
+// older comma-joined-in-parentheses style).
 function formatOrderItems(order: Order): string {
   return order.items
     .map((item) => {
-      const options = formatItemOptions(item.options);
-      return `${item.quantity}x ${item.name}${
-        options ? ` (${options})` : ""
-      } — ${formatPrice(item.priceCentavos * item.quantity)}`;
+      const optionLines = item.options.map(
+        (o) => `  ${o.optionTypeName}: ${o.optionValue}`
+      );
+      return [
+        `${item.quantity}x ${item.name} — ${formatPrice(
+          item.priceCentavos * item.quantity
+        )}`,
+        ...optionLines,
+      ].join("\n");
     })
     .join("\n");
 }
@@ -41,6 +49,17 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// One option per line in small gray text under the item name — HTML
+// counterpart to formatOrderItems' indented text lines.
+function formatOptionRowsHtml(options: Order["items"][number]["options"]): string {
+  return options
+    .map(
+      (o) =>
+        `<div style="margin-top:2px;font-size:12px;color:#71717a;">${escapeHtml(o.optionTypeName)}: ${escapeHtml(o.optionValue)}</div>`
+    )
+    .join("");
 }
 
 // Pure content builders — no network calls, so they're unit-testable
@@ -85,7 +104,7 @@ export function buildOrderConfirmationEmail(
     .map((item) => {
       const photoUrl = itemPhotos[item.slug];
       const name = escapeHtml(item.name);
-      const options = escapeHtml(formatItemOptions(item.options));
+      const optionRows = formatOptionRowsHtml(item.options);
       const lineTotal = formatPrice(item.priceCentavos * item.quantity);
 
       const photoCell = photoUrl
@@ -95,7 +114,7 @@ export function buildOrderConfirmationEmail(
       return `
         <tr>
           <td style="padding:8px 12px 8px 0;">${photoCell}</td>
-          <td style="padding:8px 0;font-size:14px;color:#171717;">${item.quantity}x ${name}${options ? ` (${options})` : ""}</td>
+          <td style="padding:8px 0;font-size:14px;color:#171717;">${item.quantity}x ${name}${optionRows}</td>
           <td style="padding:8px 0;font-size:14px;color:#171717;text-align:right;white-space:nowrap;">${lineTotal}</td>
         </tr>`;
     })
@@ -174,6 +193,67 @@ export function buildOrderConfirmationEmail(
   };
 }
 
+// Same visual shell as buildOrderConfirmationEmail (item photo rows,
+// delivery address, Order ID footer) but no cost breakdown table — a
+// shipping notice's job is confirming what's coming and where, not
+// repeating a receipt already sent at confirmation.
+export function buildOrderShippedEmail(
+  order: Order,
+  itemPhotos: ItemPhotos = {}
+): EmailContent {
+  const itemRows = order.items
+    .map((item) => {
+      const photoUrl = itemPhotos[item.slug];
+      const name = escapeHtml(item.name);
+      const optionRows = formatOptionRowsHtml(item.options);
+
+      const photoCell = photoUrl
+        ? `<img src="${escapeHtml(photoUrl)}" alt="${name}" width="64" height="64" style="display:block;width:64px;height:64px;border-radius:8px;object-fit:cover;" />`
+        : `<div style="width:64px;height:64px;border-radius:8px;background:#f4f4f5;"></div>`;
+
+      return `
+        <tr>
+          <td style="padding:8px 12px 8px 0;">${photoCell}</td>
+          <td style="padding:8px 0;font-size:14px;color:#171717;">${item.quantity}x ${name}${optionRows}</td>
+        </tr>`;
+    })
+    .join("");
+
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#171717;">
+      <h1 style="font-size:20px;font-weight:600;margin:0 0 8px;">Your order is on its way, ${escapeHtml(order.customer.name)}!</h1>
+      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order #${order.id.slice(0, 8)} has shipped.</p>
+
+      <table style="width:100%;border-collapse:collapse;">${itemRows}
+      </table>
+
+      <p style="font-size:14px;color:#52525b;margin:20px 0 0;">
+        <strong style="color:#171717;">Delivery address</strong><br />
+        ${formatAddressLines(order.shippingAddress).map(escapeHtml).join("<br />")}
+      </p>
+
+      <p style="font-size:12px;color:#71717a;margin:24px 0 0;">Order ID: ${order.id}</p>
+    </div>
+  `;
+
+  return {
+    to: order.customer.email,
+    subject: `Order shipped — #${order.id.slice(0, 8)}`,
+    html,
+    text: [
+      `Hi ${order.customer.name},`,
+      "",
+      "Good news — your order has shipped! Here's what's coming:",
+      "",
+      formatOrderItems(order),
+      "",
+      `Delivery address: ${formatAddressLines(order.shippingAddress).join(", ")}`,
+      "",
+      `Order ID: ${order.id}`,
+    ].join("\n"),
+  };
+}
+
 export type ContactMessageInput = {
   name: string;
   email: string;
@@ -246,6 +326,14 @@ export async function sendOrderConfirmationEmail(order: Order) {
   await sendEmail(
     buildOrderConfirmationEmail(order, itemPhotos),
     `order confirmation for order ${order.id}`
+  );
+}
+
+export async function sendOrderShippedEmail(order: Order) {
+  const itemPhotos: ItemPhotos = await getOrderItemPhotos([order]);
+  await sendEmail(
+    buildOrderShippedEmail(order, itemPhotos),
+    `shipped notice for order ${order.id}`
   );
 }
 

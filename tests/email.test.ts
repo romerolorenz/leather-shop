@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildOrderNotificationEmail,
   buildOrderConfirmationEmail,
+  buildOrderShippedEmail,
   buildContactMessageEmail,
 } from "@/lib/email";
 import type { Order } from "@/lib/orders";
@@ -47,7 +48,8 @@ describe("buildOrderNotificationEmail", () => {
     expect(email.text).toContain("Juan Dela Cruz");
     expect(email.text).toContain("juan@example.com");
     expect(email.text).toContain("123 Rizal St, Brgy. Bel-Air, Makati 1209");
-    expect(email.text).toContain("2x Classic Bifold Wallet (Color: Chestnut Brown)");
+    expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
+    expect(email.text).toContain("  Color: Chestnut Brown");
     expect(email.text).toContain("₱3,948.00");
   });
 
@@ -70,7 +72,8 @@ describe("buildOrderConfirmationEmail", () => {
     expect(email.to).toBe("juan@example.com");
     expect(email.subject).toContain(order.id.slice(0, 8));
     expect(email.text).toContain("Hi Juan Dela Cruz");
-    expect(email.text).toContain("2x Classic Bifold Wallet (Color: Chestnut Brown)");
+    expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
+    expect(email.text).toContain("  Color: Chestnut Brown");
     expect(email.text).toContain("₱3,948.00");
     expect(email.text).toContain("Metro Manila only");
     expect(email.text).toContain(order.id);
@@ -83,6 +86,24 @@ describe("buildOrderConfirmationEmail", () => {
 
     expect(email.html).toContain("https://example.com/wallet.jpg");
     expect(email.html).toContain("Classic Bifold Wallet");
+  });
+
+  it("lists each selected option on its own line in the HTML version", () => {
+    const email = buildOrderConfirmationEmail({
+      ...order,
+      items: [
+        {
+          ...order.items[0],
+          options: [
+            { optionTypeName: "Color", optionValue: "Chestnut Brown" },
+            { optionTypeName: "Size", optionValue: "Large" },
+          ],
+        },
+      ],
+    });
+
+    expect(email.html).toContain("Color: Chestnut Brown</div>");
+    expect(email.html).toContain("Size: Large</div>");
   });
 
   it("falls back to a placeholder box when no photo is available", () => {
@@ -122,6 +143,77 @@ describe("buildOrderConfirmationEmail", () => {
     };
 
     const email = buildOrderConfirmationEmail(maliciousOrder);
+
+    expect(email.html).not.toContain("<script>");
+    expect(email.html).toContain("&lt;script&gt;");
+    expect(email.html).not.toContain("<b>evil</b>");
+  });
+});
+
+describe("buildOrderShippedEmail", () => {
+  it("addresses the customer and includes items + delivery address, no cost breakdown", () => {
+    const email = buildOrderShippedEmail(order);
+
+    expect(email.to).toBe("juan@example.com");
+    expect(email.subject).toContain(order.id.slice(0, 8));
+    expect(email.text).toContain("Hi Juan Dela Cruz");
+    expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
+    expect(email.text).toContain("  Color: Chestnut Brown");
+    expect(email.text).toContain("123 Rizal St, Brgy. Bel-Air, Makati 1209");
+    expect(email.text).toContain(order.id);
+    expect(email.html).not.toContain("Subtotal");
+    expect(email.html).not.toContain("Total");
+  });
+
+  it("embeds the product photo in the HTML version when provided", () => {
+    const email = buildOrderShippedEmail(order, {
+      "classic-bifold-wallet": "https://example.com/wallet.jpg",
+    });
+
+    expect(email.html).toContain("https://example.com/wallet.jpg");
+    expect(email.html).toContain("Classic Bifold Wallet");
+  });
+
+  it("falls back to a placeholder box when no photo is available", () => {
+    const email = buildOrderShippedEmail(order, {
+      "classic-bifold-wallet": null,
+    });
+
+    expect(email.html).not.toContain("<img");
+  });
+
+  it("lists each selected option on its own line in the HTML version", () => {
+    const email = buildOrderShippedEmail({
+      ...order,
+      items: [
+        {
+          ...order.items[0],
+          options: [
+            { optionTypeName: "Color", optionValue: "Chestnut Brown" },
+            { optionTypeName: "Size", optionValue: "Large" },
+          ],
+        },
+      ],
+    });
+
+    expect(email.html).toContain("Color: Chestnut Brown</div>");
+    expect(email.html).toContain("Size: Large</div>");
+  });
+
+  it("escapes HTML in user-submitted fields", () => {
+    const maliciousOrder: Order = {
+      ...order,
+      customer: { ...order.customer, name: '<script>alert(1)</script>' },
+      shippingAddress: {
+        street: '<b>evil</b>',
+        address2: "",
+        barangay: "Bel-Air",
+        city: "Makati",
+        postalCode: "1209",
+      },
+    };
+
+    const email = buildOrderShippedEmail(maliciousOrder);
 
     expect(email.html).not.toContain("<script>");
     expect(email.html).toContain("&lt;script&gt;");

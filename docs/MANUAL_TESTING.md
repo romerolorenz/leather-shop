@@ -14,6 +14,23 @@ fixed).
 
 ## Outstanding
 
+### "Order shipped" email (docs/IMPROVEMENTS.md)
+
+Self-verified end-to-end via a scratch order (created → marked paid →
+`markOrderShipped` → `sendOrderShippedEmail`, no error, cleaned up after) —
+confirms the plumbing works and Resend accepts the send. What's left needs
+a human eye on the actual rendered email:
+
+- [ ] Check the real inbox (`marcolorenzoromero@gmail.com`) for a shipped
+      notice sent during self-testing — confirm the HTML renders correctly
+      (item photo/placeholder box, delivery address, no cost breakdown
+      table) and reads clearly next to the existing order-confirmation
+      email.
+      Findings:
+- [ ] Click "Mark as shipped" on a real order in `/admin/orders` and
+      confirm the toast still shows success and the customer email arrives.
+      Findings:
+
 ### Admin redesign, Phase 6 — Content (Homepage/FAQ) + Settings (docs/design/admin.md)
 
 Self-verified via the test-admin session, including full functional
