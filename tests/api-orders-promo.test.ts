@@ -105,7 +105,12 @@ function makeRequest(body: unknown) {
 function orderBody(email: string, code?: string) {
   return {
     customer: { name: "Vitest", email, phone: "123" },
-    shippingAddress: { street: "1 Test St", city: "Pasig" },
+    shippingAddress: {
+      street: "1 Test St",
+      barangay: "Test Barangay",
+      city: "Pasig",
+      postalCode: "1600",
+    },
     items: [{ slug: productSlug, selectedOptions: {}, quantity: 1 }],
     promoCode: code,
   };

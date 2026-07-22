@@ -22,6 +22,18 @@ function formatOrderItems(order: Order): string {
     .join("\n");
 }
 
+// Two lines: "{street}, {address2}" (address2 omitted if empty), then
+// "Brgy. {barangay}, {city} {postalCode}" — same shape used on
+// /account/addresses and the checkout address cards, so an order's
+// delivery address reads the same way everywhere it's shown.
+function formatAddressLines(address: Order["shippingAddress"]): [string, string] {
+  const line1 = address.address2
+    ? `${address.street}, ${address.address2}`
+    : address.street;
+  const line2 = `Brgy. ${address.barangay}, ${address.city} ${address.postalCode}`;
+  return [line1, line2];
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -44,7 +56,7 @@ export function buildOrderNotificationEmail(
       `New order placed: ${order.id}`,
       "",
       `Customer: ${order.customer.name} (${order.customer.email}, ${order.customer.phone})`,
-      `Deliver to: ${order.shippingAddress.street}, ${order.shippingAddress.city}`,
+      `Deliver to: ${formatAddressLines(order.shippingAddress).join(", ")}`,
       "",
       "Items:",
       formatOrderItems(order),
@@ -122,7 +134,7 @@ export function buildOrderConfirmationEmail(
 
       <p style="font-size:14px;color:#52525b;margin:20px 0 0;">
         <strong style="color:#171717;">Delivery address</strong><br />
-        ${escapeHtml(order.shippingAddress.street)}, ${escapeHtml(order.shippingAddress.city)}
+        ${formatAddressLines(order.shippingAddress).map(escapeHtml).join("<br />")}
       </p>
 
       <p style="font-size:14px;color:#52525b;margin:16px 0 0;">
@@ -152,7 +164,7 @@ export function buildOrderConfirmationEmail(
       `Shipping: ${formatPrice(order.shippingCentavos)}`,
       `Total: ${formatPrice(order.totalCentavos)}`,
       "",
-      `Delivery address: ${order.shippingAddress.street}, ${order.shippingAddress.city}`,
+      `Delivery address: ${formatAddressLines(order.shippingAddress).join(", ")}`,
       "",
       "Next steps: we'll reach out shortly with payment instructions " +
         "(bank transfer / GCash / Maya). Delivery is Metro Manila only.",

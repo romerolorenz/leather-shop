@@ -27,7 +27,10 @@ function buildAddress(overrides: Partial<AddressInput> = {}): AddressInput {
     recipientName: "Vitest Tester",
     phone: "0917 000 0000",
     street: "1 Test St",
+    address2: "",
+    barangay: "Test Barangay",
     city: "Pasig",
+    postalCode: "1600",
     isDefault: false,
     ...overrides,
   };

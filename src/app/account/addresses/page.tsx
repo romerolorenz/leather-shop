@@ -68,7 +68,10 @@ export default async function AddressesPage() {
                         recipientName: address.recipientName,
                         phone: address.phone,
                         street: address.street,
+                        address2: address.address2,
+                        barangay: address.barangay,
                         city: address.city,
+                        postalCode: address.postalCode,
                         isDefault: address.isDefault,
                       }}
                     />
@@ -101,7 +104,10 @@ export default async function AddressesPage() {
                   {address.recipientName} · {address.phone}
                 </p>
                 <p className="text-sm text-[#6E6A64] dark:text-[#A39C90]">
-                  {address.street}, {address.city}
+                  {address.street}
+                  {address.address2 && `, ${address.address2}`}
+                  <br />
+                  Brgy. {address.barangay}, {address.city} {address.postalCode}
                 </p>
               </li>
             );

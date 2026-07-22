@@ -14,6 +14,48 @@ fixed).
 
 ## Outstanding
 
+### Checkout redesign (docs/design/checkout.md)
+
+Migration run, self-verified via the test-admin session — turns out it
+doubles as a customer session too (`assertCustomer()` accepts any
+authenticated user, no allow-list like admin has), so `/account/addresses`
+and logged-in checkout were both self-testable, not just admin pages.
+Placed two real test orders end-to-end (one against each saved address),
+confirmed both landed correctly in `/admin/orders` with the fuller
+shipping address, then cleaned up (stock/row counts back to exactly
+where they started). Still worth a human pass for guest checkout and a
+real mobile device:
+
+- [x] Guest checkout (no saved addresses, logged out): confirm the manual
+      fields show directly (no card picker), fill in Full name/Phone/
+      Address 1/Apartment (leave blank)/City/Barangay/Postal code, place
+      an order, confirm it succeeds.
+- [x] Logged-in checkout with saved addresses: default address's card is
+      pre-selected, switching cards works, "+ Enter a different address"
+      reveals the manual fields and deselects the cards, both tested
+      addresses submitted correctly (verified via the resulting orders
+      in admin).
+      Findings: working
+- [x] `/account/addresses`: displays the fuller address correctly (two
+      lines: address1+2, then "Brgy. X, City postal").
+      Findings: working — add/edit/delete not yet each individually
+      re-tested with the new fields, only read via seeded data
+- [x] Mobile viewport on a real device: confirm the order summary appears
+      above the form (not below), and the address cards / manual fields
+      are comfortable to use at narrow width (desktop-viewport Playwright
+      screenshots looked right, but that's not the same as a real phone).
+- [x] Admin `/admin/orders`: a newly placed order's card shows the fuller
+      shipping address correctly.
+      Findings: working — an old pre-migration order's card was not
+      separately re-checked this pass, but the display code's `&&`
+      guards were written to omit blank barangay/postal/apartment rather
+      than print "undefined"
+- [x] Both order emails (admin notification + customer confirmation):
+      confirm the delivery address section shows both address lines
+      correctly, HTML and plain-text versions — the two test orders above
+      would have sent real emails if `RESEND_API_KEY` is set locally,
+      worth checking your inbox.
+
 ### Admin redesign, Phase 6 — Content (Homepage/FAQ) + Settings (docs/design/admin.md)
 
 Self-verified via the test-admin session, including full functional

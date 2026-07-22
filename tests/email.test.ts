@@ -15,7 +15,13 @@ const order: Order = {
     email: "juan@example.com",
     phone: "09171234567",
   },
-  shippingAddress: { street: "123 Rizal St", city: "Makati" },
+  shippingAddress: {
+    street: "123 Rizal St",
+    address2: "",
+    barangay: "Bel-Air",
+    city: "Makati",
+    postalCode: "1209",
+  },
   items: [
     {
       slug: "classic-bifold-wallet",
@@ -40,7 +46,7 @@ describe("buildOrderNotificationEmail", () => {
     expect(email.subject).toContain(order.id);
     expect(email.text).toContain("Juan Dela Cruz");
     expect(email.text).toContain("juan@example.com");
-    expect(email.text).toContain("123 Rizal St, Makati");
+    expect(email.text).toContain("123 Rizal St, Brgy. Bel-Air, Makati 1209");
     expect(email.text).toContain("2x Classic Bifold Wallet (Color: Chestnut Brown)");
     expect(email.text).toContain("₱3,948.00");
   });
@@ -106,7 +112,13 @@ describe("buildOrderConfirmationEmail", () => {
     const maliciousOrder: Order = {
       ...order,
       customer: { ...order.customer, name: '<script>alert(1)</script>' },
-      shippingAddress: { street: '<b>evil</b>', city: "Makati" },
+      shippingAddress: {
+        street: '<b>evil</b>',
+        address2: "",
+        barangay: "Bel-Air",
+        city: "Makati",
+        postalCode: "1209",
+      },
     };
 
     const email = buildOrderConfirmationEmail(maliciousOrder);

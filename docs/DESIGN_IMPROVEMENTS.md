@@ -21,20 +21,6 @@ explicitly requested — see items below.
   restyle only — no change to validation, submit flow, saved-address
   logic, or promo-code behavior. Per CLAUDE.md, needs a design doc under
   `docs/design/` agreed with the user before building.
-- [ ] **City dropdown's arrow sits too far right, and doesn't look nice
-  on mobile.** In `AddressFormModal.tsx`'s city `<select>` (~line 133),
-  the element is a bare native `<select>` — no `appearance-none` or
-  custom chevron — so the browser's default arrow renders flush against
-  the far edge of the `w-full` box, well away from the selected text. On
-  mobile this is worse: the OS's native select styling (bigger tap
-  target, platform-default arrow/inset) reads even more out of place
-  against the rest of the restyled UI. Every `<select>` in the app
-  (`ProductDetail.tsx`, `admin/options/page.tsx`,
-  `admin/products/[id]/page.tsx`, `CheckoutForm.tsx`) is styled the same
-  bare way, so this is a systemic gap, not a one-off — worth fixing with a
-  shared pattern (`appearance-none` + a positioned SVG chevron, e.g. as a
-  small reusable `<Select>` wrapper) rather than patching just this one
-  instance.
 
 ## Done
 

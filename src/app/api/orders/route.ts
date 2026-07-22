@@ -19,7 +19,13 @@ import { logEvent } from "@/lib/events";
 
 type OrderRequestBody = {
   customer?: { name?: string; email?: string; phone?: string };
-  shippingAddress?: { street?: string; city?: string };
+  shippingAddress?: {
+    street?: string;
+    address2?: string;
+    barangay?: string;
+    city?: string;
+    postalCode?: string;
+  };
   items?: {
     slug?: string;
     selectedOptions?: Record<string, string>;
@@ -36,7 +42,10 @@ export async function POST(request: Request) {
   const email = body.customer?.email?.trim();
   const phone = body.customer?.phone?.trim();
   const street = body.shippingAddress?.street?.trim();
+  const address2 = body.shippingAddress?.address2?.trim() ?? "";
+  const barangay = body.shippingAddress?.barangay?.trim();
   const city = body.shippingAddress?.city;
+  const postalCode = body.shippingAddress?.postalCode?.trim();
 
   if (!name || !email || !phone) {
     return NextResponse.json(
@@ -48,6 +57,20 @@ export async function POST(request: Request) {
   if (!street || !city || !settings.deliveryCities.includes(city)) {
     return NextResponse.json(
       { error: "A valid Metro Manila shipping address is required." },
+      { status: 400 }
+    );
+  }
+
+  if (!barangay) {
+    return NextResponse.json(
+      { error: "Barangay is required." },
+      { status: 400 }
+    );
+  }
+
+  if (!postalCode || !/^\d{4}$/.test(postalCode)) {
+    return NextResponse.json(
+      { error: "A valid 4-digit postal code is required." },
       { status: 400 }
     );
   }
@@ -150,7 +173,7 @@ export async function POST(request: Request) {
   try {
     order = await createOrder({
       customer: { name, email, phone },
-      shippingAddress: { street, city },
+      shippingAddress: { street, address2, barangay, city, postalCode },
       items: orderItems,
       subtotalCentavos,
       shippingCentavos: settings.shippingFeeCentavos,

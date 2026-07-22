@@ -1,5 +1,61 @@
 # Design Log — Leather Shop
 
+- **2026-07-21 — Checkout redesign**
+  [artifact](https://claude.ai/code/artifact/9e0fc171-9c5d-42f8-833a-f05af5ab321c) —
+  brief: [docs/design/checkout.md](design/checkout.md). Click-through
+  preview of `/checkout` migrated to the "Quiet & Confident" tokens
+  already used on `/cart` and `/account` (straight extension, no new
+  visual language — Archivo stand-in since the artifact sandbox can't
+  load font CDNs; production uses the real font via `next/font`). Two
+  structural changes agreed with the user beyond the token swap: saved
+  addresses render as selectable cards (reusing `/account/addresses`'
+  visual language) instead of a dropdown that silently pre-fills
+  editable fields, with a "+ Enter a different address" card revealing
+  manual entry; and the order summary moves above the form on mobile via
+  CSS `order` (desktop keeps the side-by-side layout) so shoppers see
+  the total before filling anything in. Preview includes a small
+  dev-only state switcher (Checkout / Empty cart / Order placed) so all
+  three of `CheckoutForm.tsx`'s states could be reviewed in one page.
+  Not yet built into the real app.
+  **Revised same day**: expanded the address fields to a fuller
+  Philippine shipping shape per user request — Full name, Phone, Address
+  1, Apartment/suite/building (optional), Barangay, City, Postal code,
+  replacing the old single "Street address" line. This is a real data
+  model change, not just UI (`customer_addresses`/`orders` need new
+  columns, `AddressFormModal.tsx` needs the same fields to stay in sync
+  with checkout) — captured in the brief's new "Fuller Philippine
+  address shape" section, migration not yet written.
+  **Revised again same day**: reordered the manual-entry fields so City
+  comes before Barangay (Barangay's free-text entry reads better with
+  the city already narrowed down, even though City is technically the
+  parent of Barangay in the data itself) — Postal code stays paired with
+  Barangay in the two-column row.
+  **Built same day**: implemented for real, matching the artifact and
+  brief. `supabase/migrations/0018_ph_address_fields.sql` adds
+  `address2`/`barangay`/`postal_code` to `customer_addresses` and the
+  `shipping_`-prefixed equivalents to `orders` (nullable, no backfill —
+  8 existing orders / 3 addresses keep working, "required" is enforced
+  in the checkout/account-address forms and `/api/orders` validation,
+  not as a DB constraint). Threaded through
+  `src/lib/customer/addresses.ts`, `src/lib/orders.ts`,
+  `src/app/api/orders/route.ts`, `AddressFormModal.tsx` (account address
+  book gets the same field set, City-above-Barangay, so it stays in sync
+  with checkout's cards), admin's `OrdersView.tsx`, and both order email
+  templates (`src/lib/email.ts`, new `formatAddressLines()` helper — same
+  two-line shape everywhere an address is shown). `CheckoutForm.tsx`
+  rewritten: Archivo + ink/paper/hairline/accent tokens, `max-w-3xl
+  px-6 py-16 sm:px-10` container matching `/cart`, selectable
+  `AddressCard` components (hidden inputs submit the chosen address's
+  data directly, no more copying values into visible fields via refs),
+  mobile order-summary-first via `order-1 sm:order-2`/`order-2
+  sm:order-1`. `PromoCodeField.tsx` (shared with `/cart`) restyled to
+  the same tokens. Blocked on the migration being run before it's
+  live-verified — `npm test` currently shows exactly the 9 new failures
+  expected from the missing columns ("Could not find the
+  'shipping_address2' column…") plus the 2 pre-existing unrelated
+  seed-data failures; nothing else regressed (60 passed). Not yet
+  committed.
+
 - **2026-07-20 — Admin redesign**
   [artifact](https://claude.ai/code/artifact/6f2c9696-ffc2-4533-87e2-4c50d6dab7e9) —
   brief: [docs/design/admin.md](design/admin.md). Click-through prototype
