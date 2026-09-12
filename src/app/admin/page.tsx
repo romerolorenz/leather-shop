@@ -22,31 +22,39 @@ function StatTile({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-// Both pending-payment and paid-unshipped orders need the owner's action
-// (confirm payment, then ship) — same warning tone for both, the label and
-// caption text say which action is waiting.
+// pending-payment, payment-details-sent, and paid-unshipped orders all
+// need the owner's action (send details or confirm payment, then ship) —
+// same warning tone for all three, the label and caption text say which
+// action is waiting.
 const ATTENTION_CHIP =
   "bg-[rgba(138,100,21,.12)] text-[#8A6415] dark:bg-[rgba(224,176,82,.16)] dark:text-[#E0B052]";
 
+const ATTENTION_LABEL: Record<"pending_payment" | "payment_details_sent" | "paid", string> = {
+  pending_payment: "Pending",
+  payment_details_sent: "Details Sent",
+  paid: "Paid",
+};
+
 function AttentionRow({ order }: { order: Order }) {
-  const isPending = order.status === "pending_payment";
+  const status = order.status as "pending_payment" | "payment_details_sent" | "paid";
+  const caption =
+    status === "paid"
+      ? `awaiting shipment, ${relativeDays(order.createdAt)}`
+      : `placed ${relativeDays(order.createdAt)}`;
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[rgba(28,26,24,.12)] py-3 dark:border-[rgba(243,241,236,.14)]">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={`flex-none rounded-full px-2 py-0.5 text-[.6875rem] font-semibold uppercase tracking-[.05em] ${ATTENTION_CHIP}`}
         >
-          {isPending ? "Pending" : "Paid"}
+          {ATTENTION_LABEL[status]}
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
             #{order.id.slice(0, 8)} · {order.customer.name}
           </p>
           <p className="text-[.8125rem] text-[#6E6A64] dark:text-[#A39C90]">
-            {formatPrice(order.totalCentavos)} ·{" "}
-            {isPending
-              ? `placed ${relativeDays(order.createdAt)}`
-              : `awaiting shipment, ${relativeDays(order.createdAt)}`}
+            {formatPrice(order.totalCentavos)} · {caption}
           </p>
         </div>
       </div>
@@ -65,7 +73,12 @@ export default async function AdminPage() {
     await Promise.all([getSalesSummary(), listOrdersForAdmin()]);
 
   const needsAttention = orders
-    .filter((order) => order.status === "pending_payment" || order.status === "paid")
+    .filter(
+      (order) =>
+        order.status === "pending_payment" ||
+        order.status === "payment_details_sent" ||
+        order.status === "paid"
+    )
     .sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     )

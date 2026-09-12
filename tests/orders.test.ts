@@ -5,6 +5,8 @@ import {
   getExpiredPendingOrderIds,
   getOrderById,
   listOrdersForCustomer,
+  markOrderPaid,
+  markPaymentDetailsSent,
   InsufficientStockError,
   type NewOrder,
   type NewOrderItem,
@@ -244,6 +246,85 @@ describe("cancelOrderAndRestoreStock", () => {
       .single();
     expect(afterCancel!.stock_quantity).toBe(beforeCancel!.stock_quantity);
   });
+
+  it("also cancels and restores stock for a payment_details_sent order", async () => {
+    const order = await createOrder(buildOrder([walletItem(1)]));
+    cleanupOrderIds.push(order.id);
+    await markPaymentDetailsSent(order.id);
+
+    const supabase = getSupabaseServerClient();
+    const { data: decremented } = await supabase
+      .from("products")
+      .select("stock_quantity")
+      .eq("id", wallet.id)
+      .single();
+
+    const wasCancelled = await cancelOrderAndRestoreStock(order.id);
+    expect(wasCancelled).toBe(true);
+
+    const { data: restored } = await supabase
+      .from("products")
+      .select("stock_quantity")
+      .eq("id", wallet.id)
+      .single();
+    expect(restored!.stock_quantity).toBe(decremented!.stock_quantity + 1);
+  });
+});
+
+describe("markPaymentDetailsSent", () => {
+  it("advances pending_payment to payment_details_sent and sets status_updated_at", async () => {
+    const order = await createOrder(buildOrder([walletItem(1)]));
+    cleanupOrderIds.push(order.id);
+    expect(order.statusUpdatedAt).toBeNull();
+
+    await markPaymentDetailsSent(order.id);
+
+    const updated = await getOrderById(order.id);
+    expect(updated?.status).toBe("payment_details_sent");
+    expect(updated?.statusUpdatedAt).not.toBeNull();
+  });
+
+  it("a resend refreshes status_updated_at without moving status backward", async () => {
+    const order = await createOrder(buildOrder([walletItem(1)]));
+    cleanupOrderIds.push(order.id);
+
+    await markPaymentDetailsSent(order.id);
+    const firstSend = await getOrderById(order.id);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    await markPaymentDetailsSent(order.id);
+    const resend = await getOrderById(order.id);
+
+    expect(resend?.status).toBe("payment_details_sent");
+    expect(new Date(resend!.statusUpdatedAt!).getTime()).toBeGreaterThan(
+      new Date(firstSend!.statusUpdatedAt!).getTime()
+    );
+  });
+
+  it("resending after the order is already paid doesn't revert its status", async () => {
+    const order = await createOrder(buildOrder([walletItem(1)]));
+    cleanupOrderIds.push(order.id);
+    await markPaymentDetailsSent(order.id);
+    await markOrderPaid(order.id);
+
+    await markPaymentDetailsSent(order.id);
+
+    const updated = await getOrderById(order.id);
+    expect(updated?.status).toBe("paid");
+  });
+});
+
+describe("markOrderPaid", () => {
+  it("accepts a payment_details_sent order, not just pending_payment", async () => {
+    const order = await createOrder(buildOrder([walletItem(1)]));
+    cleanupOrderIds.push(order.id);
+    await markPaymentDetailsSent(order.id);
+
+    await markOrderPaid(order.id);
+
+    const updated = await getOrderById(order.id);
+    expect(updated?.status).toBe("paid");
+  });
 });
 
 describe("getExpiredPendingOrderIds", () => {
@@ -260,6 +341,21 @@ describe("getExpiredPendingOrderIds", () => {
 
     expect(await getExpiredPendingOrderIds(48)).toContain(order.id);
     expect(await getExpiredPendingOrderIds(72)).not.toContain(order.id);
+  });
+
+  it("also finds a payment_details_sent order past the hold window — sending details doesn't pause the clock", async () => {
+    const order = await createOrder(buildOrder([walletItem(1)]));
+    cleanupOrderIds.push(order.id);
+    await markPaymentDetailsSent(order.id);
+
+    const supabase = getSupabaseServerClient();
+    const backdated = new Date(Date.now() - 49 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from("orders")
+      .update({ created_at: backdated })
+      .eq("id", order.id);
+
+    expect(await getExpiredPendingOrderIds(48)).toContain(order.id);
   });
 });
 

@@ -27,7 +27,18 @@ export function formatItemOptions(options: OrderItemOption[]): string {
     .join(", ");
 }
 
-export type OrderStatus = "pending_payment" | "paid" | "shipped" | "cancelled";
+// payment_details_sent sits between pending_payment and paid — the
+// admin-triggered "payment details" email (docs/IMPROVEMENTS.md) advances
+// an order into this state; markOrderPaid/cancelOrderAndRestoreStock/the
+// order-expiry job all treat it the same as pending_payment (still
+// awaiting payment), just with the extra fact recorded that details were
+// sent.
+export type OrderStatus =
+  | "pending_payment"
+  | "payment_details_sent"
+  | "paid"
+  | "shipped"
+  | "cancelled";
 
 export type Order = {
   id: string;
@@ -54,6 +65,12 @@ export type Order = {
   promoCode: string | null;
   discountCentavos: number;
   totalCentavos: number;
+  // Single shared timestamp for whatever status-changing action happened
+  // most recently on this order — payment details sent, mark paid, mark
+  // shipped, or cancel — rather than one timestamp per status/event. Null
+  // for an order that's never had one of those actions applied (still
+  // just freshly-placed pending_payment).
+  statusUpdatedAt: string | null;
 };
 
 export type NewOrder = {
@@ -205,26 +222,27 @@ export async function createOrder(input: NewOrder): Promise<Order> {
     promoCode: input.promoCode,
     discountCentavos: input.discountCentavos,
     totalCentavos: input.totalCentavos,
+    statusUpdatedAt: null,
   };
 }
 
 // Manual cancel (admin, before the hold expires) and automatic expiry
 // (scheduled job) both funnel through this. Returns false if the order
-// wasn't in pending_payment (already paid/shipped/cancelled) — guards
-// against double-restoring stock.
+// wasn't still awaiting payment (pending_payment or payment_details_sent —
+// already paid/shipped/cancelled) — guards against double-restoring stock.
 export async function cancelOrderAndRestoreStock(
   orderId: string
 ): Promise<boolean> {
   const supabase = getSupabaseServerClient();
 
   // Guarded status update happens FIRST — only restore stock if this order
-  // was actually still pending_payment. Restoring unconditionally would add
-  // stock back for an order that's already paid/shipped/cancelled.
+  // was actually still awaiting payment. Restoring unconditionally would
+  // add stock back for an order that's already paid/shipped/cancelled.
   const { data: updated, error: statusErr } = await supabase
     .from("orders")
-    .update({ status: "cancelled" })
+    .update({ status: "cancelled", status_updated_at: new Date().toISOString() })
     .eq("id", orderId)
-    .eq("status", "pending_payment")
+    .in("status", ["pending_payment", "payment_details_sent"])
     .select("id");
 
   if (statusErr) throw statusErr;
@@ -251,6 +269,9 @@ export async function cancelOrderAndRestoreStock(
 }
 
 // Used by the order-expiry scheduled job (POST /api/orders/expire).
+// payment_details_sent orders are still awaiting payment just like
+// pending_payment ones, so they expire on the same hold-duration clock —
+// having sent the details doesn't pause it.
 export async function getExpiredPendingOrderIds(
   holdHours: number
 ): Promise<string[]> {
@@ -260,7 +281,7 @@ export async function getExpiredPendingOrderIds(
   const { data, error } = await supabase
     .from("orders")
     .select("id")
-    .eq("status", "pending_payment")
+    .in("status", ["pending_payment", "payment_details_sent"])
     .lt("created_at", cutoff);
 
   if (error) throw error;
@@ -284,6 +305,7 @@ type OrderRow = {
   discount_centavos: number;
   promo_codes: { code: string } | null;
   total_centavos: number;
+  status_updated_at: string | null;
   order_items: {
     quantity: number;
     unit_price_centavos: number;
@@ -330,11 +352,12 @@ function mapOrderRow(row: OrderRow): Order {
     promoCode: row.promo_codes?.code ?? null,
     discountCentavos: row.discount_centavos,
     totalCentavos: row.total_centavos,
+    statusUpdatedAt: row.status_updated_at,
   };
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_postal_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_postal_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, status_updated_at, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
 // Single-order lookup — needed by markOrderShippedAction to build the
 // shipped email, which needs the full order (items, address), not just the
@@ -396,13 +419,16 @@ export async function getOrderItemPhotos(
   return Object.fromEntries(entries);
 }
 
+// A customer can be marked paid whether or not the admin ever used "Send
+// payment details" (e.g. payment arranged off-platform) — accepts either
+// pre-payment status.
 export async function markOrderPaid(orderId: string): Promise<void> {
   const supabase = getSupabaseServerClient();
   const { error } = await supabase
     .from("orders")
-    .update({ status: "paid" })
+    .update({ status: "paid", status_updated_at: new Date().toISOString() })
     .eq("id", orderId)
-    .eq("status", "pending_payment");
+    .in("status", ["pending_payment", "payment_details_sent"]);
 
   if (error) throw error;
 }
@@ -411,10 +437,36 @@ export async function markOrderShipped(orderId: string): Promise<void> {
   const supabase = getSupabaseServerClient();
   const { error } = await supabase
     .from("orders")
-    .update({ status: "shipped" })
+    .update({ status: "shipped", status_updated_at: new Date().toISOString() })
     .eq("id", orderId)
     .eq("status", "paid");
 
+  if (error) throw error;
+}
+
+// Advances pending_payment -> payment_details_sent on the first successful
+// send. A resend (order's already payment_details_sent, or already
+// paid/shipped) doesn't move status backward/sideways — it just refreshes
+// status_updated_at, since the action is resendable any time an order is
+// pending_payment/payment_details_sent/paid (see
+// sendPaymentDetailsEmailAction).
+export async function markPaymentDetailsSent(orderId: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  const now = new Date().toISOString();
+
+  const { data: advanced, error: advanceErr } = await supabase
+    .from("orders")
+    .update({ status: "payment_details_sent", status_updated_at: now })
+    .eq("id", orderId)
+    .eq("status", "pending_payment")
+    .select("id");
+  if (advanceErr) throw advanceErr;
+  if ((advanced?.length ?? 0) > 0) return;
+
+  const { error } = await supabase
+    .from("orders")
+    .update({ status_updated_at: now })
+    .eq("id", orderId);
   if (error) throw error;
 }
 
@@ -436,8 +488,11 @@ export async function getSalesSummary(): Promise<{
   );
 
   return {
-    pendingCount: data.filter((row) => row.status === "pending_payment")
-      .length,
+    // payment_details_sent is still "awaiting payment" from the dashboard
+    // stat tile's point of view, same as pending_payment.
+    pendingCount: data.filter(
+      (row) => row.status === "pending_payment" || row.status === "payment_details_sent"
+    ).length,
     paidCount: data.filter((row) => row.status === "paid").length,
     shippedCount: data.filter((row) => row.status === "shipped").length,
     revenueCentavos: paidAndShipped.reduce(

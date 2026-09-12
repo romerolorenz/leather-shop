@@ -124,3 +124,50 @@ blockers, then items that don't block any phase.
   Orders view with the full shipping address, then cleaned up — stock
   and row counts back to exactly where they started); `npm test` back to
   only the two pre-existing unrelated seed-data failures (69 passed).
+- [x] Run `supabase/migrations/0019_payment_methods.sql` against the dev
+  DB — adds the `payment_methods` table (bank/e-wallet entries, each with
+  an optional per-row QR image) and `settings.payment_instructions_text`,
+  powering the new "Send payment details" order action and
+  `/admin/payment-methods` admin page (docs/IMPROVEMENTS.md).
+  `tests/payment-methods.test.ts` (create/list/update/delete both types,
+  independent per-type positioning, reorder) now passes clean against it;
+  live-verified `sendPaymentDetailsEmail()` end-to-end via a scratch bank
+  + e-wallet entry and a real order (Resend accepted the send, scratch
+  entries cleaned up after). `npm test` back to only the two pre-existing
+  unrelated seed-data failures plus one pre-existing flaky
+  `promo-codes.test.ts` `afterAll` cleanup hook timeout (confirmed via
+  `git stash` to reproduce identically without this feature's changes) —
+  84 passed.
+- [x] Run `supabase/migrations/0020_payment_methods_drop_type.sql` against
+  the dev DB — course correction to `0019` (dropped the bank-vs-e-wallet
+  `type` distinction, one flat payment-methods list instead). Table was
+  empty in production, so this was a plain column drop, no data to
+  migrate — confirmed live: a real `payment_methods` row you'd already
+  added through `/admin/payment-methods` (a GCash entry with a real QR
+  image) came through with no `type` column and wasn't touched.
+  `tests/payment-methods.test.ts` updated for the flat design now passes
+  clean against it (2 tests); live-verified `sendPaymentDetailsEmail()`
+  end-to-end again using that real entry + a real order (read-only, Resend
+  accepted the send). `npm test` back to only the two pre-existing
+  unrelated seed-data failures — 82 passed (test count dropped from 84 to
+  82 since the flat design collapsed the "both types" test into one).
+- [x] Run `supabase/migrations/0021_orders_status_tracking.sql` against
+  the dev DB — adds `payment_details_sent` as a real order status
+  (between `pending_payment` and `paid`) and a single `status_updated_at`
+  timestamp shared by every status-changing action, powering the
+  "Payment details sent" status + date shown on `/admin/orders` and the
+  `/admin` dashboard's "Needs attention" list. Fully verified end-to-end
+  this time, not just confirmed-blocked: a real manual click-through pass
+  (`docs/MANUAL_TESTING.md`'s "Payment methods + 'Send payment details'
+  email" checklist) exercised send, resend, mark paid, cancel, the
+  dashboard's Needs Attention list, and `/account`'s "Payment details
+  sent" grouping against real orders — all transition logic
+  (`markPaymentDetailsSent`/`markOrderPaid`/`cancelOrderAndRestoreStock`/
+  `getExpiredPendingOrderIds`) confirmed correct. That pass did surface
+  two real UI bugs (status timestamp shows date only, no time; "Send
+  payment details" button still shows on `paid` orders) — tracked as
+  their own follow-up tickets in `docs/IMPROVEMENTS.md` rather than as
+  something wrong with this migration. `tests/orders.test.ts`'s new
+  lifecycle test cases remain skipped, same as that file's pre-existing
+  cases — blocked on the unrelated missing-seed-data item above, not on
+  this migration; `npm test` is otherwise unchanged (82 passed).

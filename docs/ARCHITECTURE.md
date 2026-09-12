@@ -194,13 +194,25 @@ promo_code_redemptions
   redeem_promo_code() is the actual enforcement.
 
 orders
-  id, status ("pending_payment" | "paid" | "shipped" | "cancelled" | ...),
-  customer_name, customer_email, customer_phone,
+  id, status ("pending_payment" | "payment_details_sent" | "paid" |
+  "shipped" | "cancelled"), status_updated_at (nullable; single shared
+  timestamp for whichever status-changing action happened most recently —
+  payment details sent, mark paid, mark shipped, or cancel — overwritten
+  each time rather than tracked per status/event; null until the first
+  one happens), customer_name, customer_email, customer_phone,
   shipping_street, shipping_city, subtotal_centavos,
   shipping_centavos, promo_code_id (fk, nullable), discount_centavos
   (snapshot at order time, same reasoning as unit_price_centavos — a
   later edit/deactivation of the code shouldn't rewrite a past order's
   displayed total), total_centavos, created_at
+
+  > `payment_details_sent` is a status between pending_payment and paid —
+  > the admin-triggered "payment details" email (docs/IMPROVEMENTS.md)
+  > advances an order into it; markOrderPaid, cancelOrderAndRestoreStock,
+  > and the order-expiry job all treat it the same as pending_payment
+  > (still awaiting payment). Added in
+  > `0021_orders_status_tracking.sql`, run against the dev DB (see
+  > MANUAL_TASKS.md).
 
 order_items
   id, order_id (fk), product_id (fk), quantity,
@@ -221,11 +233,28 @@ order_item_options
   > values is orderable, with no admin-created variant row gating which
   > combinations are allowed.
 
+payment_methods
+  id, label, account_name, account_number, qr_image_url (nullable — a QR
+  code is per entry, not one shared image, since one entry's QR is
+  independent of another's), position. One flat, admin-orderable list —
+  no bank-vs-e-wallet distinction (a `type` column existed briefly, see
+  below). Admin-authored, shop-wide content for the "Send payment
+  details" email (docs/IMPROVEMENTS.md), managed at
+  `/admin/payment-methods`. Default-deny RLS, same as categories/faq_items.
+
+  > `0019_payment_methods.sql` added the table with a `type
+  > IN ('bank','ewallet')` column; `0020_payment_methods_drop_type.sql`
+  > drops it — the distinction turned out not to matter, and the table
+  > was still empty in production at that point so there was no data to
+  > migrate. Both run against the dev DB.
+
 settings
   key, value — single-row or key/value table holding admin-editable shop
   config: shipping_fee_centavos, delivery_cities, admin_notification_email,
-  order_payment_hold_hours (default 48). Read by /api/orders,
-  /api/orders/expire, and the checkout UI; written only via /api/admin/*.
+  order_payment_hold_hours (default 48), payment_instructions_text
+  (free-form text shown in the payment details email, alongside the
+  payment_methods list above). Read by /api/orders, /api/orders/expire,
+  and the checkout UI; written only via /api/admin/*.
 ```
 
 `unit_price_centavos` is snapshotted onto the order item at order time so a

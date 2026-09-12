@@ -75,6 +75,12 @@ beforeAll(async () => {
   scratchProductIds.push(ineligibleProductId);
 });
 
+// This file accumulates a lot of scratch rows (one promo code per `it`,
+// each needing two sequential deletes for its redemptions), which
+// regularly blew past vitest's default 10s hook timeout — the hook then
+// gets killed mid-cleanup, leaving orphaned "VITEST*"/"Vitest Promo *"
+// rows in the dev DB on every run that hit it. Passing an explicit
+// timeout here lets the full cleanup actually finish instead.
 afterAll(async () => {
   const supabase = getSupabaseServerClient();
   for (const id of scratchPromoCodeIds) {
@@ -90,7 +96,7 @@ afterAll(async () => {
   for (const id of scratchCategoryIds) {
     await supabase.from("categories").delete().eq("id", id);
   }
-});
+}, 30000);
 
 // A minimal real order row — promo_code_redemptions.order_id is a required
 // FK, so exercising the delete-guard needs a real referenced order, not

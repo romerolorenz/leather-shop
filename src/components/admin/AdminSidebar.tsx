@@ -102,7 +102,16 @@ const NAV_ITEMS: NavItem[] = [
       { label: "FAQ", href: "/admin/faq" },
     ],
   },
-  { label: "Settings", href: "/admin/settings", icon: GearIcon, matchPrefixes: ["/admin/settings"] },
+  {
+    label: "Settings",
+    href: "/admin/settings",
+    icon: GearIcon,
+    matchPrefixes: ["/admin/settings", "/admin/payment-methods"],
+    subItems: [
+      { label: "Settings", href: "/admin/settings" },
+      { label: "Payment Methods", href: "/admin/payment-methods" },
+    ],
+  },
 ];
 
 // Dashboard's prefix is just "/admin", which would also match every other

@@ -14,6 +14,60 @@ fixed).
 
 ## Outstanding
 
+### Payment methods + "Send payment details" email (docs/IMPROVEMENTS.md)
+
+Migrations `0019`/`0020`/`0021` are all live. Every item below is now
+checked off, but this section stays in Outstanding (not collapsed to a
+Done summary) rather than moving up to the Done list below — two of the
+checked-off items have **Findings** that are real unresolved bugs, not
+just confirmations, per this file's own convention that a phase only
+collapses once everything is "checked off and resolved." Both are now
+tracked as their own tickets in `docs/IMPROVEMENTS.md` (order-status
+timestamp needs time, not just date; "Send payment details" button
+shouldn't show on `paid` orders). This section moves to Done once both
+ship and get re-verified here.
+
+- [x] `/admin/payment-methods`: add a payment method (with and without a
+      QR image), confirm it appears in the list.
+      Findings: working
+- [x] Drag to reorder the list.
+      Findings: working
+- [x] Edit an existing entry's label/account name/account number and
+      replace its QR image — confirm the new QR shows in the list and the
+      old one is really replaced (not just added alongside).
+      Findings: working
+- [x] Save the free-form instructions text, confirm it persists.
+      Findings: working
+- [x] Delete an entry, confirm it disappears from the list and (if you
+      check the email below afterward) is not included.
+      Findings: working
+- [x] On a real `pending_payment` order in `/admin/orders`, click "Send
+      payment details" — confirm the toast shows success, the order moves
+      to the new "Details Sent" tab with today's date shown, and check the
+      real inbox (`marcolorenzoromero@gmail.com`) for the email: the
+      payment methods list renders correctly, each entry's QR image (if
+      set) shows inline, instructions text preserves line breaks, no cost
+      breakdown table.
+      Findings:
+- [x] Click "Send payment details" again on the same (now Details Sent)
+      order — confirm it's not blocked, a second email arrives, and the
+      shown date updates to the new send time.
+      Findings: add time, UI currently only shows date
+- [x] "Mark paid" a Details Sent order — confirm it moves to Paid (not
+      blocked by having skipped straight from Pending, and not blocked by
+      having gone through Details Sent first) and the date updates.
+      Findings: remove "send payment details" button on orders under paid status
+- [x] "Cancel order" a Details Sent order — confirm it cancels and
+      restores stock, same as cancelling a plain Pending order.
+      Findings: working
+- [x] Check the `/admin` dashboard's "Needs attention" list and stat
+      tiles — a Details Sent order should show a "Details Sent" chip and
+      still count toward "Pending payment".
+      Findings: working
+- [x] Check `/account` (as the customer) — a Details Sent order should
+      show under a "Payment details sent" group.
+      Findings: working
+
 ### "Order shipped" email (docs/IMPROVEMENTS.md)
 
 Self-verified end-to-end via a scratch order (created → marked paid →

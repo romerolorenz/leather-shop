@@ -33,9 +33,17 @@ import {
   markOrderShipped,
   cancelOrderAndRestoreStock,
   getOrderById,
+  markPaymentDetailsSent,
 } from "@/lib/orders";
-import { sendOrderShippedEmail } from "@/lib/email";
+import { sendOrderShippedEmail, sendPaymentDetailsEmail } from "@/lib/email";
 import { updateSettings } from "@/lib/settings";
+import {
+  createPaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod,
+  reorderPaymentMethods,
+  uploadPaymentMethodQrImage,
+} from "@/lib/admin/payment-methods";
 import {
   createFaqItem,
   updateFaqItem,
@@ -419,6 +427,25 @@ export async function markOrderShippedAction(
   }, "Order marked as shipped.");
 }
 
+// Unlike markOrderShippedAction's best-effort send (a side effect of a
+// status change), sending IS the point of this action — a thrown error
+// (e.g. Resend rejects the send) must surface as the action's failure
+// result instead of being logged and swallowed, so the admin's toast
+// shows the real failure rather than a false success.
+export async function sendPaymentDetailsEmailAction(
+  orderId: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const order = await getOrderById(orderId);
+    if (!order) throw new Error("Order not found.");
+    await sendPaymentDetailsEmail(order);
+    await markPaymentDetailsSent(orderId);
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+  }, "Payment details sent.");
+}
+
 export async function cancelOrderAction(
   orderId: string
 ): Promise<ActionResult> {
@@ -717,4 +744,89 @@ export async function deletePromoCodeAction(
     await deletePromoCode(id);
     revalidatePath("/admin/promo-codes");
   }, "Promo code deleted.");
+}
+
+// ─── Payment methods (supabase/migrations/0019_payment_methods.sql) ────
+
+function parsePaymentMethodInput(formData: FormData) {
+  const label = String(formData.get("label") ?? "").trim();
+  const accountName = String(formData.get("accountName") ?? "").trim();
+  const accountNumber = String(formData.get("accountNumber") ?? "").trim();
+  if (!label || !accountName || !accountNumber) {
+    throw new Error("Label, account name, and account number are all required.");
+  }
+  return { label, accountName, accountNumber };
+}
+
+// QR upload is optional and per-row — `qrImage`'s file input isn't
+// `required` (see PaymentMethodFields), so an empty/absent file just means
+// "no QR for this entry" rather than a validation error.
+async function uploadOptionalPaymentMethodQr(
+  id: string,
+  formData: FormData
+): Promise<void> {
+  const file = formData.get("qrImage");
+  if (file instanceof File && file.size > 0) {
+    await uploadPaymentMethodQrImage(id, file);
+  }
+}
+
+export async function createPaymentMethodAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const { id } = await createPaymentMethod(parsePaymentMethodInput(formData));
+    await uploadOptionalPaymentMethodQr(id, formData);
+    revalidatePath("/admin/payment-methods");
+  }, "Payment method added.");
+}
+
+export async function updatePaymentMethodAction(
+  id: string,
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updatePaymentMethod(id, parsePaymentMethodInput(formData));
+    await uploadOptionalPaymentMethodQr(id, formData);
+    revalidatePath("/admin/payment-methods");
+  }, "Payment method saved.");
+}
+
+export async function deletePaymentMethodAction(
+  id: string
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await deletePaymentMethod(id);
+    revalidatePath("/admin/payment-methods");
+  }, "Payment method deleted.");
+}
+
+export async function reorderPaymentMethodsAction(
+  orderedIds: string[]
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await reorderPaymentMethods(orderedIds);
+    revalidatePath("/admin/payment-methods");
+  }, "Reordered.");
+}
+
+export async function updatePaymentInstructionsAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateSettings({
+      paymentInstructionsText: String(
+        formData.get("paymentInstructionsText") ?? ""
+      ).trim(),
+    });
+    revalidatePath("/admin/payment-methods");
+  }, "Instructions saved.");
 }
