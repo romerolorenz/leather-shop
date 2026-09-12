@@ -2,6 +2,10 @@ import { Resend } from "resend";
 import { formatPrice } from "@/lib/products";
 import { getOrderItemPhotos, type Order } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
+import {
+  listPaymentMethods,
+  type PaymentMethod,
+} from "@/lib/admin/payment-methods";
 
 type EmailContent = {
   to: string;
@@ -254,6 +258,94 @@ export function buildOrderShippedEmail(
   };
 }
 
+function formatPaymentMethodLines(methods: PaymentMethod[]): string[] {
+  return methods.map(
+    (m) => `  ${m.label} — ${m.accountName}, ${m.accountNumber}`
+  );
+}
+
+// Each entry renders its own QR image inline (omitted if that entry has
+// none) — QR codes are per-payment-method, not one shared image.
+function formatPaymentMethodsHtml(methods: PaymentMethod[]): string {
+  return methods
+    .map(
+      (m) => `
+        <tr>
+          <td style="padding:6px 0;font-size:14px;color:#171717;">
+            <strong>${escapeHtml(m.label)}</strong><br />
+            <span style="color:#52525b;">${escapeHtml(m.accountName)} — ${escapeHtml(m.accountNumber)}</span>
+            ${
+              m.qrImageUrl
+                ? `<br /><img src="${escapeHtml(m.qrImageUrl)}" alt="${escapeHtml(m.label)} QR code" width="140" style="display:block;margin-top:6px;width:140px;max-width:100%;border-radius:8px;" />`
+                : ""
+            }
+          </td>
+        </tr>`
+    )
+    .join("");
+}
+
+// Same visual shell as buildOrderShippedEmail (Arial-stack, max-width:560px
+// card, delivery-address block, Order ID footer) but the item rows are
+// swapped for the shop's payment info instead — this email's job is
+// telling the customer how/where to pay, not what's in the order. One
+// flat payment-methods list (no bank-vs-e-wallet distinction), each entry
+// optionally with its own QR image. All content is admin-editable and
+// shop-wide, pulled at send time rather than snapshotted onto the order,
+// so `paymentMethods`/`instructionsText` are passed in fresh by the caller
+// (sendPaymentDetailsEmail) on every send.
+export function buildPaymentDetailsEmail(
+  order: Order,
+  paymentMethods: PaymentMethod[],
+  instructionsText: string
+): EmailContent {
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#171717;">
+      <h1 style="font-size:20px;font-weight:600;margin:0 0 8px;">Payment details for your order, ${escapeHtml(order.customer.name)}</h1>
+      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order #${order.id.slice(0, 8)} — here's how to complete your payment.</p>
+
+      ${
+        paymentMethods.length > 0
+          ? `<table style="width:100%;border-collapse:collapse;">${formatPaymentMethodsHtml(paymentMethods)}
+      </table>`
+          : ""
+      }
+
+      ${
+        instructionsText
+          ? `<p style="font-size:14px;color:#52525b;white-space:pre-wrap;margin:20px 0 0;">${escapeHtml(instructionsText)}</p>`
+          : ""
+      }
+
+      <p style="font-size:14px;color:#52525b;margin:20px 0 0;">
+        <strong style="color:#171717;">Delivery address</strong><br />
+        ${formatAddressLines(order.shippingAddress).map(escapeHtml).join("<br />")}
+      </p>
+
+      <p style="font-size:12px;color:#71717a;margin:24px 0 0;">Order ID: ${order.id}</p>
+    </div>
+  `;
+
+  return {
+    to: order.customer.email,
+    subject: `Payment details — Order #${order.id.slice(0, 8)}`,
+    html,
+    text: [
+      `Hi ${order.customer.name},`,
+      "",
+      "Here are the payment details for your order:",
+      ...(paymentMethods.length > 0
+        ? ["", ...formatPaymentMethodLines(paymentMethods)]
+        : []),
+      ...(instructionsText ? ["", instructionsText] : []),
+      "",
+      `Delivery address: ${formatAddressLines(order.shippingAddress).join(", ")}`,
+      "",
+      `Order ID: ${order.id}`,
+    ].join("\n"),
+  };
+}
+
 export type ContactMessageInput = {
   name: string;
   email: string;
@@ -334,6 +426,22 @@ export async function sendOrderShippedEmail(order: Order) {
   await sendEmail(
     buildOrderShippedEmail(order, itemPhotos),
     `shipped notice for order ${order.id}`
+  );
+}
+
+// Unlike the order emails (a side effect of an already-successful order),
+// sending IS the point of this action (an admin explicitly clicked "Send
+// payment details") — a failure here must propagate to the caller rather
+// than being logged and swallowed, so the admin's toast shows the real
+// error instead of a false success.
+export async function sendPaymentDetailsEmail(order: Order) {
+  const [settings, paymentMethods] = await Promise.all([
+    getSettings(),
+    listPaymentMethods(),
+  ]);
+  await sendEmail(
+    buildPaymentDetailsEmail(order, paymentMethods, settings.paymentInstructionsText),
+    `payment details for order ${order.id}`
   );
 }
 

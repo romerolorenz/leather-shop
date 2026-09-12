@@ -17,6 +17,10 @@ export type Settings = {
   homepageFeaturedHeading: string;
   homepageStudioHeading: string;
   homepageStudioBody: string;
+  // QR images live per-payment-method (payment_methods.qr_image_url) since
+  // each bank/e-wallet entry can carry its own — this is only the
+  // free-form text block, shop-wide.
+  paymentInstructionsText: string;
 };
 
 // Admin-editable shop configuration (CLAUDE.md: settings are configurable,
@@ -45,6 +49,7 @@ export async function getSettings(): Promise<Settings> {
     homepage_featured_heading: string;
     homepage_studio_heading: string;
     homepage_studio_body: string;
+    payment_instructions_text: string;
   };
 
   return {
@@ -64,6 +69,7 @@ export async function getSettings(): Promise<Settings> {
     homepageFeaturedHeading: map.homepage_featured_heading,
     homepageStudioHeading: map.homepage_studio_heading,
     homepageStudioBody: map.homepage_studio_body,
+    paymentInstructionsText: map.payment_instructions_text,
   };
 }
 
@@ -84,6 +90,7 @@ const SETTINGS_KEYS: Record<keyof Settings, string> = {
   homepageFeaturedHeading: "homepage_featured_heading",
   homepageStudioHeading: "homepage_studio_heading",
   homepageStudioBody: "homepage_studio_body",
+  paymentInstructionsText: "payment_instructions_text",
 };
 
 export async function updateSettings(input: Partial<Settings>): Promise<void> {

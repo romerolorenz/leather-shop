@@ -18,6 +18,7 @@ const archivo = Archivo({
 
 const STATUS_ORDER: OrderStatus[] = [
   "pending_payment",
+  "payment_details_sent",
   "paid",
   "shipped",
   "cancelled",
@@ -25,6 +26,7 @@ const STATUS_ORDER: OrderStatus[] = [
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   pending_payment: "Pending payment",
+  payment_details_sent: "Payment details sent",
   paid: "Paid",
   shipped: "Shipped",
   cancelled: "Cancelled",

@@ -7,6 +7,7 @@ import {
   markOrderPaidAction,
   markOrderShippedAction,
   cancelOrderAction,
+  sendPaymentDetailsEmailAction,
 } from "../actions";
 import { ActionButton } from "@/components/ActionButton";
 import { StatusTabs } from "@/components/admin/StatusTabs";
@@ -16,6 +17,7 @@ const INK_SOFT = "text-[#6E6A64] dark:text-[#A39C90]";
 
 const STATUS_ORDER: OrderStatus[] = [
   "pending_payment",
+  "payment_details_sent",
   "paid",
   "shipped",
   "cancelled",
@@ -23,10 +25,21 @@ const STATUS_ORDER: OrderStatus[] = [
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   pending_payment: "Pending",
+  payment_details_sent: "Details Sent",
   paid: "Paid",
   shipped: "Shipped",
   cancelled: "Cancelled",
 };
+
+// order.statusUpdatedAt is a single shared timestamp for whichever
+// status-changing action happened most recently (see src/lib/orders.ts) —
+// null until the first one (mark paid/shipped/cancel, or send payment
+// details) happens, so a freshly-placed pending_payment order falls back
+// to its creation date instead.
+function statusDateLabel(order: Order): string {
+  const date = order.statusUpdatedAt ?? order.createdAt;
+  return `${STATUS_LABEL[order.status]} · ${new Date(date).toLocaleString()}`;
+}
 
 function SearchIcon() {
   return (
@@ -50,6 +63,7 @@ function OrderCard({ order }: { order: Order }) {
   const markPaid = markOrderPaidAction.bind(null, order.id);
   const markShipped = markOrderShippedAction.bind(null, order.id);
   const cancelOrder = cancelOrderAction.bind(null, order.id);
+  const sendPaymentDetails = sendPaymentDetailsEmailAction.bind(null, order.id);
 
   return (
     <li className={`rounded-lg border ${HAIRLINE} p-4`}>
@@ -58,6 +72,7 @@ function OrderCard({ order }: { order: Order }) {
           <p className="font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
             #{order.id.slice(0, 8)} — {order.customer.name}
           </p>
+          <p className={`text-sm ${INK_SOFT}`}>{statusDateLabel(order)}</p>
           <p className={`text-sm ${INK_SOFT}`}>
             {order.customer.email} · {order.customer.phone}
           </p>
@@ -92,9 +107,12 @@ function OrderCard({ order }: { order: Order }) {
         </p>
       </div>
 
-      {(order.status === "pending_payment" || order.status === "paid") && (
+      {(order.status === "pending_payment" ||
+        order.status === "payment_details_sent" ||
+        order.status === "paid") && (
         <div className="mt-3 flex gap-2">
-          {order.status === "pending_payment" && (
+          {(order.status === "pending_payment" ||
+            order.status === "payment_details_sent") && (
             <>
               <ActionButton
                 action={markPaid}
@@ -108,6 +126,12 @@ function OrderCard({ order }: { order: Order }) {
                 className="rounded-full border border-[rgba(28,26,24,.12)] px-3 py-1.5 text-sm text-[#8C3B32] disabled:opacity-50 dark:border-[rgba(243,241,236,.14)] dark:text-[#E08A78]"
               >
                 Cancel order
+              </ActionButton>
+              <ActionButton
+                action={sendPaymentDetails}
+                className={`rounded-full border ${HAIRLINE} px-3 py-1.5 text-sm disabled:opacity-50`}
+              >
+                Send payment details
               </ActionButton>
             </>
           )}

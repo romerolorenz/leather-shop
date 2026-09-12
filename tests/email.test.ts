@@ -3,9 +3,11 @@ import {
   buildOrderNotificationEmail,
   buildOrderConfirmationEmail,
   buildOrderShippedEmail,
+  buildPaymentDetailsEmail,
   buildContactMessageEmail,
 } from "@/lib/email";
 import type { Order } from "@/lib/orders";
+import type { PaymentMethod } from "@/lib/admin/payment-methods";
 
 const order: Order = {
   id: "abcd1234-0000-0000-0000-000000000000",
@@ -37,6 +39,7 @@ const order: Order = {
   promoCode: null,
   discountCentavos: 0,
   totalCentavos: 394800,
+  statusUpdatedAt: null,
 };
 
 describe("buildOrderNotificationEmail", () => {
@@ -214,6 +217,97 @@ describe("buildOrderShippedEmail", () => {
     };
 
     const email = buildOrderShippedEmail(maliciousOrder);
+
+    expect(email.html).not.toContain("<script>");
+    expect(email.html).toContain("&lt;script&gt;");
+    expect(email.html).not.toContain("<b>evil</b>");
+  });
+});
+
+describe("buildPaymentDetailsEmail", () => {
+  const bankMethod: PaymentMethod = {
+    id: "method-1",
+    label: "BDO",
+    accountName: "Hiraya Leather Co.",
+    accountNumber: "001234567890",
+    qrImageUrl: null,
+    position: 0,
+  };
+  const ewalletMethod: PaymentMethod = {
+    id: "method-2",
+    label: "GCash",
+    accountName: "Hiraya Leather Co.",
+    accountNumber: "09171234567",
+    qrImageUrl: "https://example.com/gcash-qr.png",
+    position: 1,
+  };
+
+  it("addresses the customer and lists every payment method, no cost breakdown", () => {
+    const email = buildPaymentDetailsEmail(
+      order,
+      [bankMethod, ewalletMethod],
+      ""
+    );
+
+    expect(email.to).toBe("juan@example.com");
+    expect(email.subject).toContain(order.id.slice(0, 8));
+    expect(email.text).toContain("Hi Juan Dela Cruz");
+    expect(email.text).toContain("BDO");
+    expect(email.text).toContain("Hiraya Leather Co.");
+    expect(email.text).toContain("001234567890");
+    expect(email.text).toContain("GCash");
+    expect(email.text).toContain("09171234567");
+    expect(email.text).toContain(order.id);
+    expect(email.html).toContain("BDO");
+    expect(email.html).toContain("GCash");
+    expect(email.html).not.toContain("Subtotal");
+    expect(email.html).not.toContain("Total");
+  });
+
+  it("includes a payment method's QR image in the HTML version when set, omits it when not", () => {
+    const email = buildPaymentDetailsEmail(
+      order,
+      [bankMethod, ewalletMethod],
+      ""
+    );
+
+    expect(email.html).toContain("https://example.com/gcash-qr.png");
+    // Only one entry has a QR — only one <img> total.
+    expect(email.html?.match(/<img/g)?.length).toBe(1);
+  });
+
+  it("omits the payment methods table entirely when there are none", () => {
+    const email = buildPaymentDetailsEmail(order, [], "");
+
+    expect(email.html).not.toContain("<img");
+    expect(email.html).not.toContain("<table");
+  });
+
+  it("preserves line breaks and escapes HTML in the instructions text", () => {
+    const instructions = "Pay within 24 hours.\nUse your order ID as reference.\n<b>Important</b>";
+    const email = buildPaymentDetailsEmail(order, [bankMethod], instructions);
+
+    expect(email.html).toContain("white-space:pre-wrap");
+    expect(email.html).toContain("Pay within 24 hours.\nUse your order ID as reference.");
+    expect(email.html).not.toContain("<b>Important</b>");
+    expect(email.html).toContain("&lt;b&gt;Important&lt;/b&gt;");
+    expect(email.text).toContain("Pay within 24 hours.");
+  });
+
+  it("escapes HTML in user-submitted fields", () => {
+    const maliciousOrder: Order = {
+      ...order,
+      customer: { ...order.customer, name: '<script>alert(1)</script>' },
+      shippingAddress: {
+        street: '<b>evil</b>',
+        address2: "",
+        barangay: "Bel-Air",
+        city: "Makati",
+        postalCode: "1209",
+      },
+    };
+
+    const email = buildPaymentDetailsEmail(maliciousOrder, [bankMethod], "");
 
     expect(email.html).not.toContain("<script>");
     expect(email.html).toContain("&lt;script&gt;");
