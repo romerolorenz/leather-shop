@@ -3,6 +3,10 @@
 import { useActionState, useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import type { ActionResult } from "@/lib/action-result";
+import {
+  uploadFormDataFiles,
+  type DirectUploadConfig,
+} from "@/lib/direct-upload";
 
 // <form> counterpart to ActionButton — for actions that take FormData
 // (saves, not the zero-arg deletes ActionButton handles) and need the same
@@ -14,6 +18,7 @@ import type { ActionResult } from "@/lib/action-result";
 // must stay plain ReactNode.
 export function ActionForm({
   action,
+  directUpload,
   className,
   children,
 }: {
@@ -21,11 +26,35 @@ export function ActionForm({
     prevState: ActionResult | null,
     formData: FormData
   ) => Promise<ActionResult>;
+  // Optional: upload this file input's files browser → Supabase Storage
+  // before calling `action`, which then receives `${field}Path` storage
+  // paths instead of file bytes (Vercel's 4.5 MB function body cap — see
+  // src/lib/direct-upload.ts). Plain data, so Server Components can pass it.
+  directUpload?: DirectUploadConfig;
   className?: string;
   children: React.ReactNode;
 }) {
   const { showToast } = useToast();
-  const [state, formAction] = useActionState(action, null);
+  // Wrapping inside the action (rather than an onSubmit handler) keeps
+  // useFormStatus pending — and SubmitButton's "Uploading…" label —
+  // covering the upload too, and routes upload failures into the same
+  // error toast as a failed save.
+  const [state, formAction] = useActionState(
+    async (prevState: ActionResult | null, formData: FormData) => {
+      if (directUpload) {
+        try {
+          await uploadFormDataFiles(formData, directUpload);
+        } catch (err) {
+          return {
+            success: false as const,
+            error: err instanceof Error ? err.message : "Upload failed.",
+          };
+        }
+      }
+      return action(prevState, formData);
+    },
+    null
+  );
   const [remountKey, setRemountKey] = useState(0);
 
   useEffect(() => {

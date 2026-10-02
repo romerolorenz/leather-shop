@@ -27,7 +27,13 @@ import {
   type ProductInput,
   type OptionDisplayStyle,
 } from "@/lib/admin/catalog";
-import { uploadHeroImage } from "@/lib/admin/homepage";
+import { setHeroImageFromUpload } from "@/lib/admin/homepage";
+import {
+  createSignedImageUploads,
+  resolveUploadedImageUrls,
+  type SignedImageUpload,
+  type UploadFileMeta,
+} from "@/lib/admin/image-uploads";
 import {
   markOrderPaid,
   markOrderShipped,
@@ -42,7 +48,7 @@ import {
   updatePaymentMethod,
   deletePaymentMethod,
   reorderPaymentMethods,
-  uploadPaymentMethodQrImage,
+  setPaymentMethodQrImageFromUpload,
 } from "@/lib/admin/payment-methods";
 import {
   createFaqItem,
@@ -312,6 +318,30 @@ export async function reorderProductOptionsAction(
   }, "Reordered.");
 }
 
+// Step 1 of every admin image upload (see src/lib/admin/image-uploads.ts):
+// hands the browser one signed Storage upload URL per file so the bytes
+// go straight to Supabase instead of through this function's 4.5 MB-capped
+// request body on Vercel. Called by ActionForm/FormModal's `directUpload`
+// wrapper (src/lib/direct-upload.ts), never by a form directly.
+export async function createImageUploadUrlsAction(
+  target: unknown,
+  files: UploadFileMeta[]
+): Promise<
+  { success: true; uploads: SignedImageUpload[] } | { success: false; error: string }
+> {
+  try {
+    await assertAdmin();
+    return { success: true, uploads: await createSignedImageUploads(target, files) };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Couldn't start the upload.",
+    };
+  }
+}
+
+// Receives storage paths (`photosPath`), not files — the browser already
+// uploaded them directly (ProductEditTabs' ActionForm `directUpload`).
 export async function uploadPhotoAction(
   productId: string,
   prevState: ActionResult | null,
@@ -319,38 +349,15 @@ export async function uploadPhotoAction(
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const files = formData
-      .getAll("photos")
-      .filter((f): f is File => f instanceof File && f.size > 0);
-
-    if (files.length === 0) {
+    const paths = formData.getAll("photosPath").map(String);
+    if (paths.length === 0) {
       throw new Error("Choose at least one photo to upload.");
     }
 
-    const supabase = getSupabaseServerClient();
-    const urls: string[] = [];
-
-    for (const file of files) {
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${productId}/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("product-photos")
-        .upload(path, await file.arrayBuffer(), {
-          contentType: file.type,
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("product-photos").getPublicUrl(path);
-      urls.push(publicUrl);
-    }
-
+    const urls = await resolveUploadedImageUrls(
+      { kind: "product", productId },
+      paths
+    );
     await addProductPhotos(productId, urls);
     revalidatePath(`/admin/products/${productId}`);
     revalidateStorefront();
@@ -609,12 +616,14 @@ export async function uploadHeroImageAction(
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const file = formData.get("heroImage");
-    if (!(file instanceof File) || file.size === 0) {
+    // A storage path, not a file — uploaded browser → Storage directly
+    // (homepage page's ActionForm `directUpload`).
+    const path = formData.get("heroImagePath");
+    if (typeof path !== "string" || !path) {
       throw new Error("Choose an image to upload.");
     }
 
-    await uploadHeroImage(file);
+    await setHeroImageFromUpload(path);
     await updateSettings({ heroFocalX: 50, heroFocalY: 50 });
     revalidatePath("/admin/homepage");
     revalidateHomepage();
@@ -759,15 +768,17 @@ function parsePaymentMethodInput(formData: FormData) {
 }
 
 // QR upload is optional and per-row — `qrImage`'s file input isn't
-// `required` (see PaymentMethodFields), so an empty/absent file just means
-// "no QR for this entry" rather than a validation error.
+// `required` (see PaymentMethodFields), so an absent path just means
+// "no QR for this entry" rather than a validation error. The file itself
+// was already uploaded browser → Storage (FormModal `directUpload`); only
+// its storage path (`qrImagePath`) reaches this action.
 async function uploadOptionalPaymentMethodQr(
   id: string,
   formData: FormData
 ): Promise<void> {
-  const file = formData.get("qrImage");
-  if (file instanceof File && file.size > 0) {
-    await uploadPaymentMethodQrImage(id, file);
+  const path = formData.get("qrImagePath");
+  if (typeof path === "string" && path) {
+    await setPaymentMethodQrImageFromUpload(id, path);
   }
 }
 

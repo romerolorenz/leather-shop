@@ -133,7 +133,14 @@ export function ProductEditTabs({
                 shown on the shop grid.
               </p>
 
-              <ActionForm action={uploadPhoto} className="mt-4 flex items-center gap-3">
+              <ActionForm
+                action={uploadPhoto}
+                directUpload={{
+                  field: "photos",
+                  target: { kind: "product", productId: product.id },
+                }}
+                className="mt-4 flex items-center gap-3"
+              >
                 <input
                   type="file"
                   name="photos"

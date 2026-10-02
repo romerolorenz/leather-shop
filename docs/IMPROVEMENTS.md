@@ -40,143 +40,6 @@ later work. Not started until explicitly requested — see items below.
   - Not scoped in detail yet — needs a data-source decision (bundling a
     PSGC dataset snapshot vs. an API) and a proper migration plan before
     building.
-- [ ] **Admin-triggered "payment details" email, with admin-editable
-  payment info — plus an order-status-tracking extension.** Scoped via
-  user Q&A on 2026-07-20; the email itself (migrations `0019`/`0020`) is
-  fully built and was live-verified twice, and a follow-up ask ("track if
-  payment details have been sent, with a date") turned into a real
-  addition to the order status lifecycle (migration `0021`, also now
-  live) — see below for its manual-testing status. Today's order
-  confirmation used to just say
-  "we'll reach out shortly with payment instructions (bank transfer /
-  GCash / Maya)" — the actual account/QR details lived nowhere in the app,
-  handled entirely off-platform. This replaces that gap with a real,
-  admin-editable email, plus visible tracking of whether/when it was sent.
-  - **Trigger**: manual, per-order — a new "Send payment details"
-    `ActionButton` on `/admin/orders` (`OrdersView.tsx`'s `OrderCard`,
-    visible for `pending_payment`, `payment_details_sent`, and `paid`
-    orders, same block as Mark paid/Cancel/Mark shipped), not automatic on
-    order placement. Admin decides when to send it, and it's resendable
-    any time in that window (not gated on "not sent before").
-  - **Content, all admin-editable and shop-wide (same for every order,
-    not per-order)**: one flat, admin-orderable list of payment methods
-    (label, account name, account number, each optionally with its own QR
-    image) plus one free-form instructions text block (deadlines,
-    reference-number format, anything else).
-  - **Course corrections mid-build** (each after the previous version had
-    already been run against the dev DB): (1) QR codes are per
-    payment-method entry, not one shared image — replaced the original
-    single `settings.paymentQrImageUrl` sketch with an optional
-    `payment_methods.qr_image_url` per row. (2) Dropped the bank-vs-
-    e-wallet `type` distinction entirely — originally two independently
-    reorderable lists (`type IN ('bank','ewallet')`), collapsed to one
-    flat list since the distinction wasn't needed. (3) After the email
-    itself was done, a follow-up ask added order-status tracking: first
-    sketched as a `payment_details_sent_at` timestamp on `orders`, then a
-    `payment_details_sent` boolean + shared `status_updated_at` timestamp,
-    settled on treating "payment details sent" as a real status in the
-    order lifecycle (`pending_payment` → `payment_details_sent` → `paid`
-    → `shipped`, or `cancelled` at any point before paid) with the shared
-    `status_updated_at` timestamp for whichever status change happened
-    most recently — one column, not one per status/event.
-  - **Built (email)**: `supabase/migrations/0019_payment_methods.sql` +
-    `0020_payment_methods_drop_type.sql` (both run against the dev DB) —
-    see git history for the full rundown; unchanged since. `src/lib/admin/payment-methods.ts`,
-    `settings.paymentInstructionsText`, `/admin/payment-methods` page,
-    `buildPaymentDetailsEmail()`/`sendPaymentDetailsEmail()`
-    (`src/lib/email.ts`), `sendPaymentDetailsEmailAction`
-    (`src/app/admin/actions.ts`). Tests `tests/payment-methods.test.ts` +
-    `buildPaymentDetailsEmail` cases in `tests/email.test.ts` pass clean.
-  - **Built (status tracking)**: `supabase/migrations/0021_orders_status_tracking.sql`
-    widens `orders.status`'s check constraint to allow
-    `payment_details_sent` and adds `status_updated_at timestamptz`
-    (nullable) — run against the dev DB (see `docs/MANUAL_TASKS.md`).
-    `src/lib/orders.ts`: `OrderStatus` gains the
-    new value; `markPaymentDetailsSent(orderId)` advances
-    `pending_payment` → `payment_details_sent` on first send, and just
-    refreshes `status_updated_at` on a resend (whether still
-    `payment_details_sent` or already `paid`) rather than moving status
-    backward; `markOrderPaid`/`cancelOrderAndRestoreStock`/
-    `getExpiredPendingOrderIds` all now treat `payment_details_sent` the
-    same as `pending_payment` (still awaiting payment — cancellable,
-    auto-expires on the same hold-duration clock, payable directly).
-    `sendPaymentDetailsEmailAction` calls `markPaymentDetailsSent` after a
-    successful send. `/admin/orders` (`OrdersView.tsx`) gets a new
-    "Details Sent" tab and shows `"{Status} · {date}"` per order (using
-    `status_updated_at`, falling back to `created_at` for a still-fresh
-    `pending_payment` order); the `/admin` dashboard's "Needs attention"
-    list and "Pending payment" stat tile, and `/account`'s customer-facing
-    status grouping, were all updated for the new status too. New test
-    cases in `tests/orders.test.ts` (advance/resend/no-regression for
-    `markPaymentDetailsSent`, `markOrderPaid` accepting
-    `payment_details_sent`, cancel + expiry both covering the new status)
-    — still skipped along with that file's other cases (pre-existing
-    seed-data issue, see `docs/MANUAL_TASKS.md`'s Outstanding list); a
-    full `npm test` run post-`0021` (2026-09-12) confirms this is the
-    only thing still blocking them (82 passed, only the pre-existing
-    seed-data + flaky-cleanup failures, no new failures). The transition
-    logic itself was verified end-to-end via the real manual pass instead
-    — see `docs/MANUAL_TESTING.md` — which is how the two bugs below were
-    found.
-  - **Resolved regression**: `sendPaymentDetailsEmailAction` calling
-    `markPaymentDetailsSent` right after the email send briefly reported a
-    false failure (toast said failed, email had actually sent) while
-    `0021` hadn't run yet. Moot now that `0021` is live — noted here only
-    so it isn't mistaken for a new bug if it's seen in old notes.
-  - **Status**: migration `0021` is live and the first real manual
-    click-through pass is done (`docs/MANUAL_TESTING.md`), which found two
-    real bugs — tracked as their own tickets immediately below. This entry
-    moves to Done once both ship and are re-verified.
-- [ ] **`/admin/orders` order-status timestamp shows date only, no time —
-  can't tell a resend apart from the original send.** Found during the
-  "payment methods + Send payment details" manual pass
-  (`docs/MANUAL_TESTING.md`): resending payment details on an
-  already-"Details Sent" order correctly refreshes `status_updated_at`,
-  but the order card only ever shows a date, so a same-day resend looks
-  identical to the original send — there's no way to confirm from the UI
-  alone that a resend actually happened.
-  - **Where**: `src/app/admin/orders/OrdersView.tsx`'s `statusDateLabel()`
-    (line 41) — `` `${STATUS_LABEL[order.status]} · ${new
-    Date(date).toLocaleDateString()}` ``, date-only.
-  - **Fix**: show date + time (e.g. swap `toLocaleDateString()` for
-    `toLocaleString()`, or an explicit date+time format) so two
-    status-change events on the same day read as distinct.
-  - **Out of scope / no change needed**: the `/admin` dashboard's "Needs
-    attention" list (`src/app/admin/page.tsx`'s `relativeDays()`) shows a
-    relative "N days ago" caption derived from `order.createdAt`, not
-    `status_updated_at` — it doesn't display an absolute timestamp at all,
-    so this particular bug doesn't reproduce there. (Separately, that
-    caption not reflecting `status_updated_at` — e.g. still saying "placed
-    3 days ago" right after a same-day resend — is arguably its own gap,
-    but it wasn't part of the owner's finding and the dashboard checklist
-    item was already signed off as "working"; flagging only so it isn't
-    forgotten, not opening a ticket for it.)
-  - **Done when**: on `/admin/orders`, sending then resending payment
-    details a few minutes apart shows two visibly different timestamps on
-    the order card.
-- [ ] **"Send payment details" button still shows on `paid` orders — should
-  only show for `pending_payment`/`payment_details_sent`.** Found during
-  the same manual pass: after marking a "Details Sent" order Paid, the
-  "Send payment details" button is still visible and clickable on that
-  now-`paid` order card, which no longer makes sense once payment is
-  confirmed.
-  - **Where**: `src/app/admin/orders/OrdersView.tsx`, lines 110-146. The
-    `sendPaymentDetails` `ActionButton` (140-145) sits inside a wrapper
-    `<div>` gated on `pending_payment || payment_details_sent || paid`
-    (110-112), but — unlike Mark Paid/Cancel right above it, which are
-    additionally scoped to the inner `pending_payment ||
-    payment_details_sent` condition (114-115) — it renders unconditionally
-    within that outer div, so it also shows for `paid`.
-  - **Fix**: move the `sendPaymentDetails` `ActionButton` inside that same
-    inner `pending_payment || payment_details_sent` condition (or an
-    equivalent check), so it only renders for those two statuses.
-  - **Note**: this narrows this doc's "Trigger" bullet above, which
-    currently still says the button is "visible for `pending_payment`,
-    `payment_details_sent`, and `paid` orders" — update that line to drop
-    `paid` once this ships.
-  - **Done when**: a `paid` order's card shows only "Mark shipped" (no
-    "Send payment details"); `pending_payment`/`payment_details_sent`
-    orders are unaffected and keep showing it.
 - [ ] **Audit the app for actions missing success/error feedback.** Per
   CLAUDE.md's new rule ("every user-triggered action gets visible
   feedback — never a silent success or a bare error page"), sweep both
@@ -306,6 +169,37 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **Bug: image uploads over ~4.5 MB failed with `413 (Content Too
+  Large)` on Vercel** (reported 2026-10-03, fixed 2026-10-03). All admin
+  image uploads (product photos, hero, payment-method QR) now go **browser
+  → Supabase Storage directly** via signed upload URLs, so file bytes
+  never pass through a Vercel Function (4.5 MB hard body cap):
+  - `src/lib/admin/image-uploads.ts` — `createSignedImageUploads(target,
+    files)` (image/* only, ≤20 per batch, one for hero/QR) issues
+    `{bucket, path, token}` per file under the target's prefix
+    (`<productId>/`, `hero-`, `payment-qr-`); `resolveUploadedImageUrls`
+    re-validates each returned path (bucket, prefix, generated-name shape)
+    and that an image object exists before its public URL is saved.
+  - `createImageUploadUrlsAction` (admin-checked) in
+    `src/app/admin/actions.ts`; `uploadPhotoAction` /
+    `uploadHeroImageAction` / payment-method create+update now take
+    `photosPath` / `heroImagePath` / `qrImagePath` strings instead of
+    files. Lib: `setHeroImageFromUpload`, `setPaymentMethodQrImageFromUpload`.
+  - `ActionForm` / `FormModal` gained an optional serializable
+    `directUpload={{ field, target }}` prop (`src/lib/direct-upload.ts`)
+    that downscales, uploads, and swaps files for paths inside the form
+    action — same "Uploading…" pending state and toast feedback.
+  - Client-side downscaling (`src/lib/image-resize.ts`): long edge > 2400px
+    or > 2 MB → JPEG 0.85; PNG stays PNG (QR codes); GIF/SVG untouched;
+    undecodable HEIC (Chrome) gets a clear "export as JPEG" error, Safari
+    converts it. Parameters hardcoded with an exception comment (technical,
+    not a business setting).
+  - Removed `serverActions.bodySizeLimit: "8mb"` from `next.config.ts`
+    (default 1 MB is plenty now). Tests: `tests/admin-image-uploads.test.ts`,
+    `tests/image-resize.test.ts`, updated
+    `tests/admin-homepage-hero-upload.test.ts`. Browser checks in
+    `docs/MANUAL_TESTING.md`.
+
 - [x] **"Order shipped" email, matching the order-confirmation email's
   aesthetic.** New `buildOrderShippedEmail()`/`sendOrderShippedEmail()`
   (`src/lib/email.ts`) — same HTML shell/tokens as
@@ -339,6 +233,90 @@ later work. Not started until explicitly requested — see items below.
   comma-joined. Actual rendered-email look and a real click-through of
   "Mark as shipped" in `/admin/orders` need a human pass — see
   `docs/MANUAL_TESTING.md`.
+- [x] **Admin-triggered "payment details" email, with admin-editable
+  payment info — plus an order-status-tracking extension.** Scoped via
+  user Q&A on 2026-07-20. Today's order confirmation used to just say
+  "we'll reach out shortly with payment instructions (bank transfer /
+  GCash / Maya)" — the actual account/QR details lived nowhere in the
+  app, handled entirely off-platform. This replaced that gap with a real,
+  admin-editable email plus visible tracking of whether/when it was sent.
+  - **Trigger**: manual, per-order — a "Send payment details"
+    `ActionButton` on `/admin/orders` (`OrdersView.tsx`'s `OrderCard`,
+    same block as Mark paid/Cancel), not automatic on order placement.
+    Admin decides when to send it, and it's resendable any time in that
+    window (not gated on "not sent before").
+  - **Content, all admin-editable and shop-wide (same for every order,
+    not per-order)**: one flat, admin-orderable list of payment methods
+    (label, account name, account number, each optionally with its own QR
+    image) plus one free-form instructions text block (deadlines,
+    reference-number format, anything else).
+  - **Course corrections mid-build** (each after the previous version had
+    already been run against the dev DB): (1) QR codes are per
+    payment-method entry, not one shared image — replaced the original
+    single `settings.paymentQrImageUrl` sketch with an optional
+    `payment_methods.qr_image_url` per row. (2) Dropped the bank-vs-
+    e-wallet `type` distinction entirely — originally two independently
+    reorderable lists (`type IN ('bank','ewallet')`), collapsed to one
+    flat list since the distinction wasn't needed. (3) After the email
+    itself was done, a follow-up ask added order-status tracking: first
+    sketched as a `payment_details_sent_at` timestamp on `orders`, then a
+    `payment_details_sent` boolean + shared `status_updated_at` timestamp,
+    settled on treating "payment details sent" as a real status in the
+    order lifecycle (`pending_payment` → `payment_details_sent` → `paid`
+    → `shipped`, or `cancelled` at any point before paid) with the shared
+    `status_updated_at` timestamp for whichever status change happened
+    most recently — one column, not one per status/event.
+  - **Built (email)**: `supabase/migrations/0019_payment_methods.sql` +
+    `0020_payment_methods_drop_type.sql` (both run against the dev DB).
+    `src/lib/admin/payment-methods.ts`, `settings.paymentInstructionsText`,
+    `/admin/payment-methods` page,
+    `buildPaymentDetailsEmail()`/`sendPaymentDetailsEmail()`
+    (`src/lib/email.ts`), `sendPaymentDetailsEmailAction`
+    (`src/app/admin/actions.ts`). Tests `tests/payment-methods.test.ts` +
+    `buildPaymentDetailsEmail` cases in `tests/email.test.ts` pass clean.
+  - **Built (status tracking)**: `supabase/migrations/0021_orders_status_tracking.sql`
+    widens `orders.status`'s check constraint to allow
+    `payment_details_sent` and adds `status_updated_at timestamptz`
+    (nullable) — run against the dev DB. `src/lib/orders.ts`:
+    `OrderStatus` gains the new value; `markPaymentDetailsSent(orderId)`
+    advances `pending_payment` → `payment_details_sent` on first send, and
+    just refreshes `status_updated_at` on a resend (whether still
+    `payment_details_sent` or already `paid`) rather than moving status
+    backward; `markOrderPaid`/`cancelOrderAndRestoreStock`/
+    `getExpiredPendingOrderIds` all treat `payment_details_sent` the same
+    as `pending_payment` (still awaiting payment — cancellable,
+    auto-expires on the same hold-duration clock, payable directly).
+    `sendPaymentDetailsEmailAction` calls `markPaymentDetailsSent` after a
+    successful send. `/admin/orders` (`OrdersView.tsx`) gained a new
+    "Details Sent" tab and shows `"{Status} · {date}"` per order (using
+    `status_updated_at`, falling back to `created_at` for a still-fresh
+    `pending_payment` order); the `/admin` dashboard's "Needs attention"
+    list and "Pending payment" stat tile, and `/account`'s customer-facing
+    status grouping, were all updated for the new status too. New test
+    cases in `tests/orders.test.ts` (advance/resend/no-regression for
+    `markPaymentDetailsSent`, `markOrderPaid` accepting
+    `payment_details_sent`, cancel + expiry both covering the new status)
+    — skipped along with that file's other cases (pre-existing seed-data
+    issue, see `docs/MANUAL_TASKS.md`'s Outstanding list), not a new gap.
+  - **Resolved regression**: `sendPaymentDetailsEmailAction` calling
+    `markPaymentDetailsSent` right after the email send briefly reported a
+    false failure (toast said failed, email had actually sent) while
+    `0021` hadn't run yet. Moot now that `0021` is live — noted here only
+    so it isn't mistaken for a new bug if it's seen in old notes.
+  - **Follow-up bugs found in manual testing, both fixed**: the first real
+    manual click-through pass (`docs/MANUAL_TESTING.md`) surfaced two
+    bugs in `src/app/admin/orders/OrdersView.tsx`: (1) the order-status
+    timestamp (`statusDateLabel()`) showed date only
+    (`toLocaleDateString()`), so a same-day resend was indistinguishable
+    from the original send — fixed by switching to `toLocaleString()`
+    (date + time). (2) the "Send payment details" `ActionButton` rendered
+    unconditionally inside the outer `pending_payment ||
+    payment_details_sent || paid` wrapper instead of also being scoped to
+    the inner `pending_payment || payment_details_sent` condition (like
+    Mark Paid/Cancel), so it incorrectly still showed on `paid` orders —
+    fixed by moving it inside that inner condition. Both fixes shipped in
+    commit `14b5bb9` ("feat: admin-triggered payment details email"),
+    merged into `develop` via `24783d1`.
 - [x] **"Product Details" section on the storefront product page.** Two
   new nullable `products` columns (`dimensions text`, `details text`,
   migration `0017_product_details.sql`, run against the dev DB), both
