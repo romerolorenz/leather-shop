@@ -82,6 +82,11 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Dark mode shelved — site always light** (docs/DESIGN_IMPROVEMENTS.md).
+  Passed 2026-10-03 with the OS in dark mode: storefront, `/admin`, and
+  native controls (date inputs, selects, checkboxes, radios, scrollbars)
+  all render light; light-mode OS unchanged. No issues found.
+
 - [x] **Direct image uploads — fixes 413 on Vercel** (docs/IMPROVEMENTS.md).
   Passed locally and on `leather-shop-dev.vercel.app` (2026-10-03): >5 MB
   hero upload (downscaled, correct orientation), multi-photo product

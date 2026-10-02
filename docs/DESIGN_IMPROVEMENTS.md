@@ -22,6 +22,20 @@ explicitly requested — see items below.
 
 ## Done
 
+- [x] **Dark mode shelved (not deleted) — site always renders light**
+  (2026-10-03). `src/app/globals.css` now declares
+  `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));`
+  so the ~370 existing `dark:` classes only apply under
+  `<html data-theme="dark">`, and the old
+  `@media (prefers-color-scheme: dark)` vars block became
+  `:root[data-theme="dark"]` (contents unchanged, incl. `color-scheme: dark`).
+  Nothing sets the attribute, so OS dark mode no longer affects the site.
+  **To re-enable:** set `data-theme="dark"` on `<html>` (e.g. a future
+  theme toggle), or go back to following the OS by deleting the
+  `@custom-variant` line and turning `:root[data-theme="dark"]` back into
+  `@media (prefers-color-scheme: dark) { :root { … } }`. Manual check in
+  MANUAL_TESTING.md ("Dark mode shelved").
+
 - [x] **Migrated `/checkout` to the "Quiet & Confident" system**
   (`docs/design/checkout.md`). `CheckoutForm.tsx` now uses the same
   Archivo/tokens/`max-w-3xl px-6 py-16 sm:px-10` container as `/cart` and
