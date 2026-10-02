@@ -22,6 +22,16 @@ explicitly requested — see items below.
 
 ## Done
 
+- [x] **Square product images + static homepage hero** (2026-10-03,
+  `docs/design/homepage.md` "Revision (2026-10-03)"). Shop grid
+  (`src/app/products/page.tsx`) and homepage featured grid
+  (`src/app/page.tsx`) product images switched from `aspect-[4/5]` to
+  `aspect-square`, so every storefront product image is now 1:1 (gallery
+  and thumbnails already were). Product-card 3% hover zoom kept. Removed
+  the hero's 45s Ken Burns zoom loop (keyframes, class, and reduced-motion
+  override in `globals.css`); the hero is static and still honors the
+  admin focal point.
+
 - [x] **Dark mode shelved (not deleted) — site always renders light**
   (2026-10-03). `src/app/globals.css` now declares
   `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));`
@@ -35,7 +45,6 @@ explicitly requested — see items below.
   `@custom-variant` line and turning `:root[data-theme="dark"]` back into
   `@media (prefers-color-scheme: dark) { :root { … } }`. Manual check in
   MANUAL_TESTING.md ("Dark mode shelved").
-
 - [x] **Migrated `/checkout` to the "Quiet & Confident" system**
   (`docs/design/checkout.md`). `CheckoutForm.tsx` now uses the same
   Archivo/tokens/`max-w-3xl px-6 py-16 sm:px-10` container as `/cart` and

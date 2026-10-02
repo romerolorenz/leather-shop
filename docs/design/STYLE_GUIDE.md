@@ -129,13 +129,17 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
 
 ## Motion
 
-One deliberate motion moment per page justifies itself; everything else
-is a plain, fast fade. On the homepage that's the hero's Ken Burns drift
-(`homepage-hero-image` class, `globals.css`) — a single continuous subtle
-zoom (scale 1 → 1.05 over 45s), not a crossfade. Every animation has a
-`prefers-reduced-motion: reduce` fallback that freezes to the static end
-state — see `globals.css` and the `motion-reduce:` Tailwind variants used
+Motion is kept to plain, fast fades (scroll reveal, product-card hover
+zoom of 3%). The homepage hero image is **static** — the earlier 45s Ken
+Burns zoom loop was removed on 2026-10-03 at the user's request; don't
+reintroduce ambient/looping motion on the hero without asking. Every
+animation has a `prefers-reduced-motion: reduce` fallback that freezes to
+the static end state — see the `motion-reduce:` Tailwind variants used
 throughout.
+
+Product images are **1:1 (`aspect-square`)** everywhere on the storefront
+— shop grid, homepage featured grid, product-detail gallery, cart and
+account thumbnails.
 
 ## Header
 

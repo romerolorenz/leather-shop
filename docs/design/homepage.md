@@ -25,9 +25,9 @@ the user:
   admin toggle now — matches the still-open US-38 in
   [docs/USER_STORIES.md](../USER_STORIES.md), which already tracks the
   admin-toggle work as a separate future item.
-- **Hero**: single image, Heritage Messenger Bag, with a slow continuous
-  subtle zoom (revised from an earlier two-image crossfade after a
-  design-feedback pass — see below).
+- **Hero**: single static image, Heritage Messenger Bag (revised from an
+  earlier two-image crossfade, then a slow Ken Burns zoom — see the
+  revision passes below).
 - **Top-3 grid**: Weekender Duffel, Card Wallet, Minimalist Cardholder —
   chosen so the homepage's hero + grid together surface all 4
   photographed, visible products at least once.
@@ -53,7 +53,8 @@ A round of visual feedback against the first build, reconciled as follows:
 - **One hero image, not two.** Dropped the crossfade entirely — a single
   photo (Heritage Messenger Bag) with a slow, subtle continuous Ken Burns
   zoom (scale 1 → 1.05 over 45s). Simpler CSS, no risk of the two-image
-  sync drifting.
+  sync drifting. *(Superseded 2026-10-03: the zoom was removed too — the
+  hero is now fully static. See "Revision (2026-10-03)" below.)*
 - **Hero copy rescaled.** The product description is now the large/bold
   headline the brief originally specified (§3: "huge scale, tight
   tracking") — the first build under-sized it as a small caption line.
@@ -170,9 +171,9 @@ a small set — e.g. the tote and the wallet — as a slow crossfade, not a
 carousel with visible controls). Minimal overlay: small wordmark
 top-left, one confident line of copy bottom-left (product name + a
 one-line description pulled from real catalog copy), "Shop the
-Collection" link. No canvas textures, no animated line-art — the one
-motion moment is a slow, quiet Ken Burns-style drift on the image,
-respecting `prefers-reduced-motion`.
+Collection" link. No canvas textures, no animated line-art, and the
+image itself is static (no drift/zoom — see "Revision (2026-10-03)").
+Its crop honors the admin-set focal point (`objectPosition`).
 
 ### 5.2 Top 3 products (admin-chosen)
 
@@ -200,10 +201,11 @@ attribution line. One sentence, one idea, then a link to `/faq` or
 
 ## 6. Motion
 
-One motion moment only: the hero image's slow drift/crossfade. Category
-and product-grid items get a simple opacity/translate-in on scroll
-(no bounce, no stagger flourish). Everything respects
-`prefers-reduced-motion: reduce`.
+The hero image is static — no drift, zoom, or crossfade (the earlier
+Ken Burns zoom was removed 2026-10-03). Category and product-grid items
+get a simple opacity/translate-in on scroll (no bounce, no stagger
+flourish), and product cards keep a subtle 3% hover zoom on the image.
+Everything respects `prefers-reduced-motion: reduce`.
 
 ## 7. Theme
 
@@ -319,3 +321,16 @@ treatment in the header:
   overlay — on every other page nothing sits behind the header, so
   translucent vs. opaque looks identical there. The hero photo and
   headline now show through faintly beneath the bar.
+
+## Revision (2026-10-03)
+
+Two user-requested changes:
+
+- **Static hero.** Removed the 45s Ken Burns zoom loop
+  (`@keyframes homepage-hero-kenburns` / `.homepage-hero-image` in
+  `globals.css`). The hero image no longer moves; the admin focal point
+  (`objectPosition`) still drives the crop.
+- **Square product images.** The featured-products grid (and the `/products`
+  grid) switched from `aspect-[4/5]` to `aspect-square`, matching the
+  product-detail gallery and cart/account thumbnails. The 3% hover zoom on
+  product cards stays.

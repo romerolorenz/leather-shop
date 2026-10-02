@@ -40,7 +40,7 @@ export default async function Home() {
             fill
             priority
             sizes="100vw"
-            className="homepage-hero-image object-cover"
+            className="object-cover"
             style={{
               objectPosition: `${settings.heroFocalX}% ${settings.heroFocalY}%`,
             }}
@@ -83,7 +83,7 @@ export default async function Home() {
                   href={`/products/${product.slug}`}
                   className="group block"
                 >
-                  <div className="relative aspect-[4/5] w-full overflow-hidden">
+                  <div className="relative aspect-square w-full overflow-hidden">
                     <Image
                       src={product.photos[0]}
                       alt={product.name}

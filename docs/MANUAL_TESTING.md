@@ -82,6 +82,11 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Square product images + static hero** (docs/DESIGN_IMPROVEMENTS.md).
+  Passed 2026-10-03: `/products` and homepage featured grids are 1:1 and
+  crop well on mobile/desktop, card hover zoom intact, hero no longer
+  moves, focal point still respected. No issues found.
+
 - [x] **Dark mode shelved — site always light** (docs/DESIGN_IMPROVEMENTS.md).
   Passed 2026-10-03 with the OS in dark mode: storefront, `/admin`, and
   native controls (date inputs, selects, checkboxes, radios, scrollbars)
