@@ -59,23 +59,3 @@ body {
   }
 }
 
-/* Homepage hero: a single product photo with a slow, subtle Ken Burns
-   zoom — the one motion moment on the page (brief §6). */
-@keyframes homepage-hero-kenburns {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.05);
-  }
-}
-
-.homepage-hero-image {
-  animation: homepage-hero-kenburns 45s ease-in-out infinite alternate;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .homepage-hero-image {
-    animation: none;
-  }
-}

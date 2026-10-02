@@ -35,7 +35,7 @@ export default async function ProductsPage() {
               <li key={product.slug}>
                 <Reveal>
                   <Link href={`/products/${product.slug}`} className="group block">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18]">
+                    <div className="relative aspect-square w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18]">
                       {product.photos[0] ? (
                         <Image
                           src={product.photos[0]}

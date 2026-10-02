@@ -21,8 +21,9 @@ component patterns, no page-specific deviation.
   gives context) — `text-2xl font-semibold tracking-tight sm:text-3xl`,
   same treatment as "The Selection" / "The studio" on the homepage.
 - **Card treatment**: swaps the current rounded `aspect-square` +
-  stacked name/price for the homepage's no-chrome pattern — `aspect-[4/5]`
-  image (no rounded corners), name + price on one line, then a
+  stacked name/price for the homepage's no-chrome pattern — `aspect-square`
+  image (no rounded corners; was `aspect-[4/5]` until 2026-10-03, switched
+  to 1:1 to match the product-detail gallery and thumbnails), name + price on one line, then a
   description line, matching `src/app/page.tsx`'s featured-grid cards
   exactly. Column count differs from the homepage (3 fixed) since this
   page shows the full catalog: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`.
