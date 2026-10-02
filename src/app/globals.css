@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* DARK MODE IS SHELVED (not deleted) — the site always renders light.
+   All `dark:` utility classes and the dark color values below are kept
+   intact, but they now only apply under a `data-theme="dark"` attribute,
+   which nothing currently sets. To re-enable dark mode, either:
+     1. set `data-theme="dark"` on <html> (e.g. from a future theme
+        toggle), or
+     2. follow the OS setting again: delete the `@custom-variant` line
+        below and turn `:root[data-theme="dark"]` back into
+        `@media (prefers-color-scheme: dark) { :root { ... } }`.
+   See docs/DESIGN_IMPROVEMENTS.md ("Dark mode shelved"). */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -13,16 +25,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    /* Without this, native controls (date picker icon, select arrows,
-       checkboxes) keep assuming a light UI even though the page's own
-       colors go dark — e.g. the date input's calendar icon renders dark
-       on a dark background and becomes invisible. */
-    color-scheme: dark;
-  }
+/* Shelved dark theme — only active under <html data-theme="dark">. */
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  /* Without this, native controls (date picker icon, select arrows,
+     checkboxes) keep assuming a light UI even though the page's own
+     colors go dark — e.g. the date input's calendar icon renders dark
+     on a dark background and becomes invisible. */
+  color-scheme: dark;
 }
 
 body {
