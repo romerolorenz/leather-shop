@@ -4,6 +4,10 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import type { ActionResult } from "@/lib/action-result";
+import {
+  uploadFormDataFiles,
+  type DirectUploadConfig,
+} from "@/lib/direct-upload";
 
 function PlusIcon() {
   return (
@@ -41,6 +45,7 @@ function PencilIcon() {
 export function FormModal({
   title,
   action,
+  directUpload,
   submitLabel,
   triggerLabel,
   triggerVariant = "primary",
@@ -52,6 +57,11 @@ export function FormModal({
     prevState: ActionResult | null,
     formData: FormData
   ) => Promise<ActionResult>;
+  // Optional: upload this file input's files browser → Supabase Storage
+  // before calling `action`, which then receives `${field}Path` storage
+  // paths instead of file bytes (Vercel's 4.5 MB function body cap — see
+  // src/lib/direct-upload.ts). Plain data, so Server Components can pass it.
+  directUpload?: DirectUploadConfig;
   submitLabel: string;
   // Button text for "primary"; aria-label for "icon-edit".
   triggerLabel: string;
@@ -60,7 +70,26 @@ export function FormModal({
   widthClassName?: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [state, formAction] = useActionState(action, null);
+  // Wrapping inside the action (rather than an onSubmit handler) keeps
+  // useFormStatus pending — and SubmitButton's "Uploading…" label —
+  // covering the upload too, and routes upload failures into the same
+  // error toast as a failed save.
+  const [state, formAction] = useActionState(
+    async (prevState: ActionResult | null, formData: FormData) => {
+      if (directUpload) {
+        try {
+          await uploadFormDataFiles(formData, directUpload);
+        } catch (err) {
+          return {
+            success: false as const,
+            error: err instanceof Error ? err.message : "Upload failed.",
+          };
+        }
+      }
+      return action(prevState, formData);
+    },
+    null
+  );
   const { showToast } = useToast();
   // Bumping this remounts the <form> subtree on the next open, so
   // uncontrolled fields (defaultValue) reset instead of keeping whatever

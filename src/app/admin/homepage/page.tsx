@@ -50,6 +50,7 @@ export default async function AdminHomepagePage() {
 
         <ActionForm
           action={uploadHeroImageAction}
+          directUpload={{ field: "heroImage", target: { kind: "hero" } }}
           className="mb-6 flex items-center gap-2"
         >
           <input

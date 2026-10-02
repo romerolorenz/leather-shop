@@ -124,6 +124,13 @@ function PaymentMethodFields({
   );
 }
 
+// QR files go browser → Storage directly (src/lib/direct-upload.ts);
+// the create/update actions only receive the resulting `qrImagePath`.
+const QR_DIRECT_UPLOAD = {
+  field: "qrImage",
+  target: { kind: "payment-qr" },
+} as const;
+
 export default async function AdminPaymentMethodsPage() {
   const [paymentMethods, settings] = await Promise.all([
     listPaymentMethods(),
@@ -148,6 +155,7 @@ export default async function AdminPaymentMethodsPage() {
           <FormModal
             title="Add payment method"
             action={createPaymentMethodAction}
+            directUpload={QR_DIRECT_UPLOAD}
             submitLabel="Add payment method"
             triggerLabel="Add payment method"
           >
@@ -192,6 +200,7 @@ export default async function AdminPaymentMethodsPage() {
                     <FormModal
                       title="Edit payment method"
                       action={updateMethod}
+                      directUpload={QR_DIRECT_UPLOAD}
                       submitLabel="Save changes"
                       triggerLabel="Edit payment method"
                       triggerVariant="icon-edit"

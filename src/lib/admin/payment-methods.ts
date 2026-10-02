@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { setPositions } from "@/lib/admin/reorder";
+import { resolveUploadedImageUrl } from "@/lib/admin/image-uploads";
 
 // Admin-editable, shop-wide payment info shown on the "Send payment
 // details" email (docs/IMPROVEMENTS.md) — see
@@ -118,30 +119,18 @@ export async function reorderPaymentMethods(orderedIds: string[]): Promise<void>
   await setPositions(supabase, "payment_methods", {}, "id", "position", orderedIds);
 }
 
-// Uploads to the same standalone `site-images` bucket as uploadHeroImage
-// (src/lib/admin/homepage.ts) and persists the resulting public URL onto
-// this specific payment_methods row (not a shared settings value) — each
+// QR images live in the same standalone `site-images` bucket as the hero
+// and are uploaded browser → Storage directly (src/lib/admin/image-uploads.ts);
+// this validates the uploaded path and persists its public URL onto this
+// specific payment_methods row (not a shared settings value) — each
 // entry's QR is independent.
-export async function uploadPaymentMethodQrImage(
+export async function setPaymentMethodQrImageFromUpload(
   id: string,
-  file: File
+  path: string
 ): Promise<string> {
+  const publicUrl = await resolveUploadedImageUrl({ kind: "payment-qr" }, path);
+
   const supabase = getSupabaseServerClient();
-  const ext = file.name.split(".").pop() ?? "jpg";
-  const path = `payment-qr-${id}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("site-images")
-    .upload(path, await file.arrayBuffer(), {
-      contentType: file.type,
-      upsert: true,
-    });
-  if (uploadError) throw uploadError;
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("site-images").getPublicUrl(path);
-
   const { error } = await supabase
     .from("payment_methods")
     .update({ qr_image_url: publicUrl })
