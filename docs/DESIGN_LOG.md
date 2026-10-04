@@ -30,6 +30,23 @@
   the mockup was republished defaulting to 3b, with "Learn more"
   restored. Variants 1 and 2 are kept in the toggle for the record. Not
   yet built.
+  **Revised 2026-10-05 (background comparison, not decided)**:
+  republished to the same artifact with a Background toggle (none, warm
+  cream `#F3F1EC`, parchment `#EEE6D8`, espresso `#1C1A18`), a full-bleed
+  vs contained-card treatment toggle, and an Edges toggle (hairlines
+  kept, clean edge, into footer). The variant toggle gained the remaining
+  content states (photo with no quote, quote with no photo, text only,
+  photo loading). Per-option photo box fills and contrast ratios are
+  shown in the toolbar. Recommendation: cream, full-bleed, clean edge.
+  Parchment needs a darker band-only role grey (`#625D57`), and espresso
+  reuses the shelved dark-mode tokens. See brief §13. The Studio section
+  itself was built in PR #17.
+  **Decided 2026-10-05**: warm cream `#F3F1EC`, full-bleed band, clean
+  edge (no featured → studio hairline, no footer top border on the
+  homepage, footer stays white). The band has `py-20 sm:py-28` padding and
+  the photo box fill is `#E7E2D9`. The mockup now defaults to this, with
+  the other options kept in the toggles for the record. The band is added
+  to STYLE_GUIDE.md as "Section band". **Built 2026-10-05** (`src/app/page.tsx`, `StorefrontChrome.tsx`; uncommitted on `design/studio-background`).
 
 - **2026-10-04 — Unavailable products (featured, shop, product page, admin)**
   [artifact](https://claude.ai/artifact/BDcebg1YjaPrwUqdwqyFcF) —

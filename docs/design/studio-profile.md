@@ -285,3 +285,92 @@ None of these block the build. All are editable in /admin/homepage.
 - Video, carousels, or any looping motion.
 - Social links or a signature image in the credit.
 - Dark-mode styling (shelved site-wide).
+
+## 13. Revision: section background (2026-10-05)
+
+**Decided 2026-10-05: warm cream `#F3F1EC`, full-bleed band, clean edge.**
+
+- The band runs edge to edge; content stays in `mx-auto max-w-6xl px-6`
+  (photo layout) or `mx-auto max-w-3xl px-6` (no-photo layout), as built.
+- Padding inside the band: `py-16 sm:py-24` (64/96px), replacing
+  `pt-16 pb-24 sm:pb-32`. (2026-10-05: reduced from `py-20 sm:py-28` at
+  the user's request.)
+- Photo box fill (shown while the photo loads or if it fails): `#E7E2D9`,
+  replacing `#f3f1ec`, which disappears on the cream.
+- No hairlines at the band's edges. Remove the featured → studio hairline,
+  and remove the footer's top border on the homepage only. The footer
+  stays white.
+- Text colours are unchanged: ink, ink at 90%, ink-soft `#6E6A64` (4.76:1
+  on the cream) and the accent `#7A3B22` (7.51:1) all pass AA.
+- Dark-mode classes (`dark:`) stay as they are; dark mode is shelved.
+
+The comparison below is kept for the record.
+
+### Comparison (as presented, before the decision)
+
+The user wants the Studio section set apart with its own background. The
+mockup (same artifact, see DESIGN_LOG.md) gained a **Background** toggle
+(None / Warm cream / Parchment / Espresso), a **Treatment** toggle
+(full-bleed band / contained card) and an **Edges** toggle (hairlines
+kept / clean edge / into footer). The variant toggle also gained the
+remaining §7 states: photo with no quote, quote with no photo, text only
+(empty), and photo loading. Every state works with every background, on
+desktop and mobile.
+
+**Treatment for every tinted option:** a full-bleed band, edge to edge,
+with content in the existing `mx-auto max-w-6xl px-6` container, so the
+photo still lines up with the product photos above. Inside the band the
+padding becomes symmetric, `py-20 sm:py-28` (the section-rhythm token),
+in place of `pt-16 pb-24 sm:pb-32`.
+
+### Options
+
+Ratios are WCAG 2 contrast ratios computed from the hex values. AA needs
+4.5:1 for this small text.
+
+| Option | Body (ink 90%) | Role / eyebrow | Learn more | Photo box fill | Trade-offs |
+|---|---|---|---|---|---|
+| None `#FFFFFF` (as built) | 12.95 | `#6E6A64` 5.37 | `#7A3B22` 8.48 | `#f3f1ec` | Quietest; no separation beyond the hairline. |
+| **Warm cream `#F3F1EC` (recommended)** | 11.69 | `#6E6A64` 4.76 | `#7A3B22` 7.51 | `#E7E2D9` | Same cream as the product tiles, so it ties to the grid above. Every existing token passes, no new tokens. Subtle on bright or uncalibrated screens. |
+| Parchment `#EEE6D8` | 10.89 | `#6E6A64` **4.34, fails** → `#625D57` 5.26 | `#7A3B22` 6.84 | `#E2D8C7` | Warmer, vellum tan (Lab b\* 7.8 against cream's 2.6), so it is clearly different from cream. Needs a band-only darker grey, which is a new token. Starts to read as "beige UI". |
+| Espresso `#1C1A18` | `#F3F1EC` at 90%: 12.66 | `#A39C90` 6.37 | `#C97A4E` 5.27 | `#2A2724` | Strongest break; bookends the dark hero. Reuses the shelved dark-mode tokens (ink `#F3F1EC`, soft `#A39C90`, accent `#C97A4E`, also the focus ring at 5.27). Portrait gets a 1px `rgba(243,241,236,.16)` ring so dark hair doesn't melt into the band. It is the biggest departure from "colour comes from photography", and it makes owner photos look heavy. In the text-only state it reads as a dark promo or newsletter slab. |
+
+Parchment value: `#EEE6D8` is about as deep as it can go while ink and
+the accent stay comfortable and the band still reads as "light". Anything
+light enough to keep `#6E6A64` at AA (`#F2EBDF`, 4.53) is too close to the
+cream to be worth comparing.
+
+**Photo box fill:** today's `#f3f1ec` disappears completely on the cream
+band. Each option gets a fill one step deeper than its band (about
+1.14:1, the same step `#f3f1ec` has on white).
+
+### Edges (band → footer)
+
+- **Hairlines kept:** the hairline above the band and the footer's
+  `border-t` both sit on the band edge. A colour change plus a line in
+  the same place looks doubled and cramped. Rejected.
+- **Clean edge (recommended):** the band's edges do the dividing. Drop
+  the featured → studio hairline when the band is on. Drop the footer's
+  top border on the homepage only (`StorefrontChrome` already has
+  `usePathname`). The footer stays white, like every other page.
+- **Into footer:** the band continues behind the footer with a
+  container-width hairline. It is calm, but the homepage footer then
+  differs from every other page, and its `zinc-500` links fail on the
+  tints (4.28 on cream), so they need re-colouring.
+
+### Contained card: shown, not recommended
+
+The card puts the tint in a rounded, inset box inside the container. It
+breaks the STYLE_GUIDE no-cards rule. The photo no longer lines up with
+the product photos (it is inset by the card padding), the column shrinks
+on mobile (about 294px of content at 390px), and the box reads as a promo
+block. It's in the mockup for comparison only.
+
+### Empty state check
+
+Text only (heading, one paragraph, link) inside a full band: cream and
+parchment still read as a calm closing note. Espresso does not.
+
+### Recommendation
+
+Warm cream, full-bleed, clean edge. Accepted by the user on 2026-10-05.

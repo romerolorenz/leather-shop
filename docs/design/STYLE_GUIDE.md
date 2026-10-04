@@ -97,8 +97,10 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
   to eyeball an alignment, it breaks at other viewport widths. See
   `HERO_CONTAINER` in `page.tsx` and the matching classes in
   `SiteHeader.tsx`.
-- **Section rhythm**: generous vertical padding, e.g. `py-20 sm:py-28`
-  between major sections. A thin hairline divider (see Color table)
+- **Section rhythm**: generous vertical padding, e.g. `py-16 sm:py-24`
+  (64/96px) between major sections. *(2026-10-05, user request: the
+  homepage featured section went from `py-20 sm:py-28` (80/112px) to
+  `py-16 sm:py-24` to match the Studio band.)* A thin hairline divider (see Color table)
   between sections that need a visible break without a background-color
   change.
 - **Grids**: `gap-12 sm:gap-8` — wider gap on mobile (single column) than
@@ -118,6 +120,16 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
   (`flex items-baseline justify-between`), description below, "View" in
   accent color. No card background, no border, no shadow — whitespace and
   type do the separating, not containment.
+- **Section band** (homepage Studio section, 2026-10-05): `bg-[#F3F1EC]`
+  (the product-tile cream), **full-bleed** (the band spans the viewport;
+  the content inside keeps its normal shared container), with
+  `py-16 sm:py-24` inside. **No hairlines at its edges**: the colour
+  change is the divider, so drop any hairline or `border-t` that would sit
+  on the band's top or bottom edge. Never a contained, rounded or inset
+  box (that's a card). An image placeholder inside the band uses
+  `#E7E2D9`, not `#f3f1ec`, which disappears on it. All text tokens pass
+  AA on it (ink-soft 4.76:1, accent 7.51:1). Use at most one band per
+  page. See [studio-profile.md](studio-profile.md) §13.
 - **Hairline divider**: a bare `<div className="border-t ...">` inside a
   width-matched container, not a full-bleed `<hr>` — see Layout rule
   above on shared containers.

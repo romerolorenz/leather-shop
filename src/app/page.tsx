@@ -68,7 +68,7 @@ export default async function Home() {
                 alt=""
                 width={48}
                 height={48}
-                className="size-12 shrink-0 rounded-full object-cover"
+                className="size-12 shrink-0 rounded-full bg-[#E7E2D9] object-cover"
               />
             )}
             <span>
@@ -138,7 +138,7 @@ export default async function Home() {
       </section>
 
       {/* 2. Top 3 products */}
-      <section className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+      <section className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
         <div className="mb-12 sm:mb-16">
           <p className="text-xs font-medium uppercase tracking-[0.08em] text-[#6E6A64] dark:text-[#A39C90]">
             {settings.homepageFeaturedEyebrow}
@@ -203,43 +203,41 @@ export default async function Home() {
         </ul>
       </section>
 
-      {/* Thin hairline between the featured grid and the studio brief */}
-      <div className="mx-auto max-w-6xl px-6 sm:px-10">
-        <div className="border-t border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]" />
-      </div>
-
       {/* 3. Studio brief — optional photo + maker quote
-          (docs/design/studio-profile.md, Variant 3). With nothing new set
-          it renders exactly as the original text-only column. */}
-      {studioImage ? (
-        <section className="mx-auto max-w-6xl px-6 pt-16 pb-24 sm:pb-32">
-          <Reveal>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center md:gap-x-12 lg:gap-x-16">
-              <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18] md:col-span-5">
-                <Image
-                  src={studioImage}
-                  alt={settings.homepageStudioImageAlt.trim()}
-                  fill
-                  sizes="(min-width: 768px) 40vw, 100vw"
-                  className="object-cover"
-                  style={{
-                    objectPosition: `${settings.homepageStudioFocalX}% ${settings.homepageStudioFocalY}%`,
-                  }}
-                />
+          (docs/design/studio-profile.md, Variant 3), in a cream full-bleed
+          band (§13). No hairlines at its edges; the colour change is the
+          divider. With nothing new set it renders the text-only column. */}
+      <div className="bg-[#F3F1EC]">
+        {studioImage ? (
+          <section className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+            <Reveal>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center md:gap-x-12 lg:gap-x-16">
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#E7E2D9] dark:bg-[#1c1a18] md:col-span-5">
+                  <Image
+                    src={studioImage}
+                    alt={settings.homepageStudioImageAlt.trim()}
+                    fill
+                    sizes="(min-width: 768px) 40vw, 100vw"
+                    className="object-cover"
+                    style={{
+                      objectPosition: `${settings.homepageStudioFocalX}% ${settings.homepageStudioFocalY}%`,
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 max-w-[34rem] md:col-span-6 md:col-start-7">
+                  {studioText}
+                </div>
               </div>
-              <div className="min-w-0 max-w-[34rem] md:col-span-6 md:col-start-7">
-                {studioText}
-              </div>
-            </div>
-          </Reveal>
-        </section>
-      ) : (
-        <section className="mx-auto max-w-3xl px-6 pt-16 pb-24 sm:pb-32">
-          <Reveal>
-            <div className="mx-auto max-w-[34rem]">{studioText}</div>
-          </Reveal>
-        </section>
-      )}
+            </Reveal>
+          </section>
+        ) : (
+          <section className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
+            <Reveal>
+              <div className="mx-auto max-w-[34rem]">{studioText}</div>
+            </Reveal>
+          </section>
+        )}
+      </div>
     </main>
   );
 }
