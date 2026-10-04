@@ -17,6 +17,15 @@ export type Settings = {
   homepageFeaturedHeading: string;
   homepageStudioHeading: string;
   homepageStudioBody: string;
+  // Studio photo + maker profile (docs/design/studio-profile.md).
+  homepageStudioImageUrl: string | null;
+  homepageStudioFocalX: number;
+  homepageStudioFocalY: number;
+  homepageStudioImageAlt: string;
+  homepageStudioPortraitUrl: string | null;
+  homepageStudioQuote: string;
+  homepageStudioName: string;
+  homepageStudioRole: string;
   // QR images live per-payment-method (payment_methods.qr_image_url) since
   // each bank/e-wallet entry can carry its own — this is only the
   // free-form text block, shop-wide.
@@ -49,6 +58,14 @@ export async function getSettings(): Promise<Settings> {
     homepage_featured_heading: string;
     homepage_studio_heading: string;
     homepage_studio_body: string;
+    homepage_studio_image_url: string | null;
+    homepage_studio_focal_x: number;
+    homepage_studio_focal_y: number;
+    homepage_studio_image_alt: string;
+    homepage_studio_portrait_url: string | null;
+    homepage_studio_quote: string;
+    homepage_studio_name: string;
+    homepage_studio_role: string;
     payment_instructions_text: string;
   };
 
@@ -69,6 +86,18 @@ export async function getSettings(): Promise<Settings> {
     homepageFeaturedHeading: map.homepage_featured_heading,
     homepageStudioHeading: map.homepage_studio_heading,
     homepageStudioBody: map.homepage_studio_body,
+    // Fallbacks mirror the 0022 migration's seeds, so the homepage still
+    // renders (exactly as before) if this code ships before the
+    // migration has been run. Saving still needs the migration, since
+    // updateSettings() only updates existing rows.
+    homepageStudioImageUrl: map.homepage_studio_image_url ?? null,
+    homepageStudioFocalX: map.homepage_studio_focal_x ?? 50,
+    homepageStudioFocalY: map.homepage_studio_focal_y ?? 50,
+    homepageStudioImageAlt: map.homepage_studio_image_alt ?? "",
+    homepageStudioPortraitUrl: map.homepage_studio_portrait_url ?? null,
+    homepageStudioQuote: map.homepage_studio_quote ?? "",
+    homepageStudioName: map.homepage_studio_name ?? "",
+    homepageStudioRole: map.homepage_studio_role ?? "founder & leatherworker",
     paymentInstructionsText: map.payment_instructions_text,
   };
 }
@@ -90,6 +119,14 @@ const SETTINGS_KEYS: Record<keyof Settings, string> = {
   homepageFeaturedHeading: "homepage_featured_heading",
   homepageStudioHeading: "homepage_studio_heading",
   homepageStudioBody: "homepage_studio_body",
+  homepageStudioImageUrl: "homepage_studio_image_url",
+  homepageStudioFocalX: "homepage_studio_focal_x",
+  homepageStudioFocalY: "homepage_studio_focal_y",
+  homepageStudioImageAlt: "homepage_studio_image_alt",
+  homepageStudioPortraitUrl: "homepage_studio_portrait_url",
+  homepageStudioQuote: "homepage_studio_quote",
+  homepageStudioName: "homepage_studio_name",
+  homepageStudioRole: "homepage_studio_role",
   paymentInstructionsText: "payment_instructions_text",
 };
 
@@ -98,6 +135,20 @@ export async function updateSettings(input: Partial<Settings>): Promise<void> {
 
   for (const [field, value] of Object.entries(input)) {
     const key = SETTINGS_KEYS[field as keyof Settings];
+
+    // PostgREST writes a JS null into a jsonb column as SQL NULL, which
+    // settings.value (NOT NULL) rejects. Clearing a nullable setting
+    // (image URLs) goes through set_setting() instead, which stores a
+    // JSON null — see supabase/migrations/0023_set_setting_fn.sql.
+    if (value === null) {
+      const { error } = await supabase.rpc("set_setting", {
+        p_key: key,
+        p_value: null,
+      });
+      if (error) throw error;
+      continue;
+    }
+
     const { error } = await supabase
       .from("settings")
       .update({ value, updated_at: new Date().toISOString() })

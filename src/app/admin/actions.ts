@@ -27,7 +27,11 @@ import {
   type ProductInput,
   type OptionDisplayStyle,
 } from "@/lib/admin/catalog";
-import { setHeroImageFromUpload } from "@/lib/admin/homepage";
+import {
+  setHeroImageFromUpload,
+  setStudioImageFromUpload,
+  setStudioPortraitFromUpload,
+} from "@/lib/admin/homepage";
 import {
   createSignedImageUploads,
   resolveUploadedImageUrls,
@@ -652,23 +656,101 @@ export async function updateHomepageTextAction(
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
+    const text = (field: string) => String(formData.get(field) ?? "").trim();
+    const studioQuote = text("studioQuote");
+    const studioName = text("studioName");
+    // The quote is only ever shown with a credit (studio-profile.md §7),
+    // so a quote without a name would silently disappear from the
+    // homepage. Reject before saving anything.
+    if (studioQuote && !studioName) {
+      throw new Error("Add your name to show with the quote.");
+    }
     await updateSettings({
-      homepageHeroEyebrow: String(formData.get("heroEyebrow") ?? "").trim(),
-      homepageHeroHeadline: String(formData.get("heroHeadline") ?? "").trim(),
-      homepageFeaturedEyebrow: String(
-        formData.get("featuredEyebrow") ?? ""
-      ).trim(),
-      homepageFeaturedHeading: String(
-        formData.get("featuredHeading") ?? ""
-      ).trim(),
-      homepageStudioHeading: String(
-        formData.get("studioHeading") ?? ""
-      ).trim(),
-      homepageStudioBody: String(formData.get("studioBody") ?? "").trim(),
+      homepageHeroEyebrow: text("heroEyebrow"),
+      homepageHeroHeadline: text("heroHeadline"),
+      homepageFeaturedEyebrow: text("featuredEyebrow"),
+      homepageFeaturedHeading: text("featuredHeading"),
+      homepageStudioHeading: text("studioHeading"),
+      homepageStudioBody: text("studioBody"),
+      homepageStudioImageAlt: text("studioImageAlt"),
+      homepageStudioQuote: studioQuote,
+      homepageStudioName: studioName,
+      homepageStudioRole: text("studioRole"),
     });
     revalidatePath("/admin/homepage");
     revalidateHomepage();
   }, "Homepage text saved.");
+}
+
+// ─── Studio photo + maker portrait (docs/design/studio-profile.md) ──────
+
+// Same reset-on-upload rule as the hero: a stale focal point from the
+// previous photo would silently miscrop the new one.
+export async function uploadStudioImageAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const path = formData.get("studioImagePath");
+    if (typeof path !== "string" || !path) {
+      throw new Error("Choose an image to upload.");
+    }
+
+    await setStudioImageFromUpload(path);
+    await updateSettings({ homepageStudioFocalX: 50, homepageStudioFocalY: 50 });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Studio photo uploaded.");
+}
+
+export async function updateStudioFocalPointAction(
+  x: number,
+  y: number
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateSettings({ homepageStudioFocalX: x, homepageStudioFocalY: y });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Focal point saved.");
+}
+
+// Clears the setting only; the old file stays in Storage, same as a
+// replaced hero image.
+export async function removeStudioImageAction(): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateSettings({ homepageStudioImageUrl: null });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Studio photo removed.");
+}
+
+export async function uploadStudioPortraitAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const path = formData.get("studioPortraitPath");
+    if (typeof path !== "string" || !path) {
+      throw new Error("Choose an image to upload.");
+    }
+
+    await setStudioPortraitFromUpload(path);
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Portrait uploaded.");
+}
+
+export async function removeStudioPortraitAction(): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateSettings({ homepageStudioPortraitUrl: null });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Portrait removed.");
 }
 
 // ─── Categories (internal-only — see supabase/migrations/0014_categories.sql) ──

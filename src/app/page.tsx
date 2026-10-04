@@ -29,6 +29,76 @@ export default async function Home() {
     .filter((p) => p.featured)
     .sort((a, b) => (a.featuredPosition ?? 0) - (b.featuredPosition ?? 0));
 
+  // Studio section inputs. The quote only shows with a name to credit it
+  // to, and the portrait only exists to sit beside that credit. Quote
+  // marks the owner typed at either end are stripped; the curly quotes
+  // come from the markup.
+  const studioImage = settings.homepageStudioImageUrl;
+  const quote = settings.homepageStudioQuote
+    .trim()
+    .replace(/^["“”']+|["“”']+$/g, "")
+    .trim();
+  const name = settings.homepageStudioName.trim();
+  const role = settings.homepageStudioRole.trim();
+  const showQuote = Boolean(quote && name);
+  const portraitUrl = showQuote ? settings.homepageStudioPortraitUrl : null;
+
+  const studioText = (
+    <>
+      <h2
+        className={
+          showQuote
+            ? "text-xs font-medium uppercase tracking-[0.08em] text-[#6E6A64] dark:text-[#A39C90]"
+            : "text-2xl font-semibold tracking-tight sm:text-3xl"
+        }
+      >
+        {settings.homepageStudioHeading}
+      </h2>
+      {showQuote && (
+        <figure className="mt-5">
+          <blockquote>
+            <p className="text-xl font-medium leading-snug tracking-tight text-balance sm:text-[1.75rem]">
+              “{quote}”
+            </p>
+          </blockquote>
+          <figcaption className="mt-5 flex items-center gap-3 text-sm">
+            {portraitUrl && (
+              <Image
+                src={portraitUrl}
+                alt=""
+                width={48}
+                height={48}
+                className="size-12 shrink-0 rounded-full object-cover"
+              />
+            )}
+            <span>
+              — <span className="font-medium">{name}</span>
+              {role && (
+                <>
+                  ,{" "}
+                  <span className="text-[#6E6A64] dark:text-[#A39C90]">
+                    {role}
+                  </span>
+                </>
+              )}
+            </span>
+          </figcaption>
+        </figure>
+      )}
+      <p
+        className={`${showQuote ? "mt-8" : "mt-4"} text-base leading-relaxed text-[#1C1A18]/90 dark:text-[#F3F1EC]/90`}
+      >
+        {settings.homepageStudioBody}
+      </p>
+      <Link
+        href="/faq"
+        className="mt-4 inline-block text-sm font-medium uppercase tracking-[0.08em] text-[#7A3B22] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7A3B22] dark:text-[#C97A4E]"
+      >
+        Learn more
+      </Link>
+    </>
+  );
+
   return (
     <main
       className={`${archivo.className} flex-1 bg-white text-[#1C1A18] dark:bg-[#121110] dark:text-[#F3F1EC]`}
@@ -138,25 +208,38 @@ export default async function Home() {
         <div className="border-t border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]" />
       </div>
 
-      {/* 3. Studio brief */}
-      <section className="mx-auto max-w-3xl px-6 pt-16 pb-24 sm:pb-32">
-        <Reveal>
-          <div className="mx-auto max-w-[34rem]">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {settings.homepageStudioHeading}
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-[#1C1A18]/90 dark:text-[#F3F1EC]/90">
-              {settings.homepageStudioBody}
-            </p>
-            <Link
-              href="/faq"
-              className="mt-4 inline-block text-sm font-medium uppercase tracking-[0.08em] text-[#7A3B22] hover:underline dark:text-[#C97A4E]"
-            >
-              Learn more
-            </Link>
-          </div>
-        </Reveal>
-      </section>
+      {/* 3. Studio brief — optional photo + maker quote
+          (docs/design/studio-profile.md, Variant 3). With nothing new set
+          it renders exactly as the original text-only column. */}
+      {studioImage ? (
+        <section className="mx-auto max-w-6xl px-6 pt-16 pb-24 sm:pb-32">
+          <Reveal>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center md:gap-x-12 lg:gap-x-16">
+              <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18] md:col-span-5">
+                <Image
+                  src={studioImage}
+                  alt={settings.homepageStudioImageAlt.trim()}
+                  fill
+                  sizes="(min-width: 768px) 40vw, 100vw"
+                  className="object-cover"
+                  style={{
+                    objectPosition: `${settings.homepageStudioFocalX}% ${settings.homepageStudioFocalY}%`,
+                  }}
+                />
+              </div>
+              <div className="min-w-0 max-w-[34rem] md:col-span-6 md:col-start-7">
+                {studioText}
+              </div>
+            </div>
+          </Reveal>
+        </section>
+      ) : (
+        <section className="mx-auto max-w-3xl px-6 pt-16 pb-24 sm:pb-32">
+          <Reveal>
+            <div className="mx-auto max-w-[34rem]">{studioText}</div>
+          </Reveal>
+        </section>
+      )}
     </main>
   );
 }

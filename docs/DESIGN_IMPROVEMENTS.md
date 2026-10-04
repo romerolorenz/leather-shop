@@ -27,7 +27,25 @@ explicitly requested — see items below.
   hook in the admin stock update, and an unsubscribe/consent line —
   only worth it if the owner sees demand for restocked pieces.
 
+- [ ] **/about page, "About the studio"** (idea, out of scope for
+  `docs/design/studio-profile.md`). A dedicated page with the full story
+  of the maker and the studio, its own studio photo plus a portrait, and
+  a short process-and-materials part (hides, tanning, thread, hand
+  stitching). When it ships, the homepage Studio section's "Learn more"
+  link (today → /faq) becomes "About the studio" → /about. Needs its own
+  brief first, and real photos and copy from the owner.
+
 ## Done
+
+- [x] **Homepage Studio photo + maker profile** (2026-10-04,
+  `docs/design/studio-profile.md`, Variant 3 flexible). The Studio
+  section can now show a 4:5 studio photo beside the text (focal point
+  picker, stacks photo-first on mobile), a short first-person quote with
+  a "— Name, role" credit, and an optional small round portrait beside
+  the credit. All set in /admin/homepage ("Studio photo & maker" plus new
+  Homepage text fields); with nothing filled in the section renders
+  exactly as before. Migration `0022_homepage_studio_profile.sql` seeds
+  the new settings. "Learn more" still links to /faq.
 
 - [x] **Sold-out / unavailable products, site-wide** (2026-10-04,
   `docs/design/featured-out-of-stock.md`). Homepage featured grid and

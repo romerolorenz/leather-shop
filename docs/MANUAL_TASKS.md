@@ -24,6 +24,27 @@ blockers, then items that don't block any phase.
 - [ ] **Doesn't block any phase: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.
+- [ ] **Doesn't block any phase: shoot the homepage Studio photo(s)**
+  (docs/design/studio-profile.md §10). Phone, natural side-window light,
+  no flash; tidy bench, tools in use. Portrait orientation, ≥1600×2000
+  (cropped 4:5; set the focal point after upload). Pick one:
+  - **A — you at the bench** (no portrait needed): waist-up, 1–2 m away,
+    looking at the work, face + hands in frame, room around your head.
+    Ask someone or use a timer.
+  - **B — hands at work + a portrait**: close-up of saddle-stitching,
+    burnishing or cutting, hands/leather filling the frame; plus a
+    head-and-shoulders portrait, plain background, face centred, square
+    ≥400×400 (shown as a small circle).
+  Avoid filters, logo overlays, stock photos. Upload in /admin/homepage →
+  "Studio photo & maker" once built, and fill in the photo description.
+- [ ] **Doesn't block any phase: write the homepage Studio text** (once
+  built, /admin/homepage → Homepage text → Studio): a 1–2 sentence quote
+  in your own words (<140 chars, hidden until filled in), your name
+  (required with a quote) and role, and switch the body copy from "we" to
+  "I", e.g. "Every bag and wallet starts as a single hide, cut and
+  hand-stitched in my small studio in Metro Manila. I work in small
+  batches, not a production line, so each order gets my attention from
+  start to finish."
 
 ## Done
 
@@ -168,3 +189,9 @@ blockers, then items that don't block any phase.
   Supabase Site URL / Redirect URLs updated (done 2026-10-03).
 - [x] Set the email sender display name via `RESEND_FROM_EMAIL`
   (`Name <address>` format, Vercel env + redeploy) (done 2026-10-04).
+- [x] Run `supabase/migrations/0022_homepage_studio_profile.sql` (Studio
+  photo & maker settings keys) and reset the two studio image URLs left by
+  a failed test run (done 2026-10-04).
+- [x] Run `supabase/migrations/0023_set_setting_fn.sql` (`set_setting()`
+  for clearing settings to JSON null) on dev (done 2026-10-04). Run it on
+  any separate production database before `design/studio-profile` deploys.

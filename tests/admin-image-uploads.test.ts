@@ -39,6 +39,10 @@ describe("parseUploadTarget", () => {
     const productId = randomUUID();
     expect(parseUploadTarget({ kind: "hero", extra: 1 })).toEqual({ kind: "hero" });
     expect(parseUploadTarget({ kind: "payment-qr" })).toEqual({ kind: "payment-qr" });
+    expect(parseUploadTarget({ kind: "studio" })).toEqual({ kind: "studio" });
+    expect(parseUploadTarget({ kind: "studio-portrait", extra: 1 })).toEqual({
+      kind: "studio-portrait",
+    });
     expect(parseUploadTarget({ kind: "product", productId })).toEqual({
       kind: "product",
       productId,
@@ -78,10 +82,34 @@ describe("createSignedImageUploads", () => {
         { name: "b.png", type: "image/png" },
       ])
     ).rejects.toThrow(/Only one image/);
+    for (const kind of ["studio", "studio-portrait"] as const) {
+      await expect(
+        createSignedImageUploads({ kind }, [
+          { name: "a.jpg", type: "image/jpeg" },
+          { name: "b.jpg", type: "image/jpeg" },
+        ])
+      ).rejects.toThrow(/Only one image/);
+    }
+  });
+
+  it("issues studio and portrait paths under their own site-images prefixes", async () => {
+    // Signing only — nothing is uploaded, so there's nothing to clean up.
+    const [studio] = await createSignedImageUploads({ kind: "studio" }, [
+      { name: "bench.jpg", type: "image/jpeg" },
+    ]);
+    const [portrait] = await createSignedImageUploads({ kind: "studio-portrait" }, [
+      { name: "me.png", type: "image/png" },
+    ]);
+    expect(studio.bucket).toBe("site-images");
+    expect(studio.path).toMatch(/^studio-\d{13}-[a-z0-9]+\.jpg$/);
+    expect(portrait.bucket).toBe("site-images");
+    expect(portrait.path).toMatch(/^studio-portrait-\d{13}-[a-z0-9]+\.png$/);
   });
 });
 
 describe("resolveUploadedImageUrls", () => {
+  // Two real signed uploads over the network — occasionally slower than the
+  // default test timeout, so give it room (same as promo-codes' afterAll).
   it("returns public URLs for product photos uploaded via signed URL", async () => {
     const target = { kind: "product" as const, productId: randomUUID() };
     const first = await uploadViaSignedUrl(target, jpeg("one.jpg"));
@@ -93,7 +121,7 @@ describe("resolveUploadedImageUrls", () => {
     expect(urls).toHaveLength(2);
     expect(urls[0]).toContain(`/product-photos/${first.path}`);
     expect(urls[1]).toContain(`/product-photos/${second.path}`);
-  });
+  }, 60_000);
 
   it("rejects paths outside the target's prefix even if the object exists", async () => {
     const target = { kind: "product" as const, productId: randomUUID() };
@@ -111,6 +139,34 @@ describe("resolveUploadedImageUrls", () => {
     await expect(
       resolveUploadedImageUrls({ kind: "hero" }, ["https://evil.example/x.jpg"])
     ).rejects.toThrow(/Invalid uploaded image path/);
+  });
+
+  it("keeps studio and studio-portrait paths apart in both directions", async () => {
+    const stamp = Date.now();
+    const studioPath = `studio-${stamp}-abcdef.jpg`;
+    const portraitPath = `studio-portrait-${stamp}-abcdef.jpg`;
+
+    // "studio-" is a prefix of "studio-portrait-", so a portrait path must
+    // not pass as a studio photo (the timestamp has to follow directly)…
+    await expect(
+      resolveUploadedImageUrls({ kind: "studio" }, [portraitPath])
+    ).rejects.toThrow(/Invalid uploaded image path/);
+    // …nor a studio path as a portrait.
+    await expect(
+      resolveUploadedImageUrls({ kind: "studio-portrait" }, [studioPath])
+    ).rejects.toThrow(/Invalid uploaded image path/);
+    // Hero paths aren't studio paths either.
+    await expect(
+      resolveUploadedImageUrls({ kind: "studio" }, [`hero-${stamp}-abcdef.jpg`])
+    ).rejects.toThrow(/Invalid uploaded image path/);
+    // Correctly-prefixed paths get past the shape check (and then fail
+    // only because nothing was uploaded there).
+    await expect(
+      resolveUploadedImageUrls({ kind: "studio" }, [studioPath])
+    ).rejects.toThrow(/not found/);
+    await expect(
+      resolveUploadedImageUrls({ kind: "studio-portrait" }, [portraitPath])
+    ).rejects.toThrow(/not found/);
   });
 
   it("rejects a well-formed path that was never uploaded", async () => {
