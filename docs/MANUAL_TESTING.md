@@ -44,7 +44,12 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
-- [x] **Studio photo & maker profile** (docs/design/studio-profile.md).
+- [x] **Studio cream band** (docs/design/studio-profile.md §13). Passed
+  2026-10-05 on desktop + 375px: full-bleed `#F3F1EC` band in every Studio
+  state, `#E7E2D9` photo/portrait placeholders, no hairlines above the band
+  or on the homepage footer (other pages keep it), 64/96px padding in the
+  band and the featured section. No issues found.
+- [x] **Studio photo & maker profile**  (docs/design/studio-profile.md).
   Passed 2026-10-04 (phone + desktop, after migrations 0022/0023): empty
   state unchanged, 4:5 photo layout + mobile stacking, focal point, quote +
   credit, portrait add/remove, remove photo (JSON-null fix), quote-without-

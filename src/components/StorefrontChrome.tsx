@@ -17,6 +17,9 @@ export function StorefrontChrome({
 }) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
+  // The homepage ends in the Studio section's cream band; its edge is the
+  // divider, so the footer drops its top border there (studio-profile.md §13).
+  const isHome = pathname === "/";
 
   return (
     <>
@@ -25,7 +28,7 @@ export function StorefrontChrome({
         {children}
       </div>
       {!isAdmin && (
-        <footer className="border-t border-black/[.08] py-8 dark:border-white/[.145]">
+        <footer className={`py-8 ${isHome ? "" : "border-t border-black/[.08] dark:border-white/[.145]"}`}>
           <nav className="mx-auto flex max-w-6xl flex-wrap gap-6 px-6 text-sm text-zinc-500 sm:px-10 dark:text-zinc-400">
             <Link href="/faq">FAQ</Link>
             <Link href="/contact">Contact Us</Link>
