@@ -1,5 +1,36 @@
 # Design Log — Leather Shop
 
+- **2026-10-04 — Studio section: photo and maker profile**
+  [artifact](https://claude.ai/artifact/2s5kopj3Xv4MU181o4fVnw) —
+  brief: [docs/design/studio-profile.md](design/studio-profile.md).
+  Adds a studio photo and a quote-led maker profile to the homepage's
+  existing Studio section (direction A1 + B2), with no new section. The
+  layout is a 4:5 photo on the left (5 of 12 columns, aligned to the
+  featured grid container) and text on the right. It stacks photo-first
+  on mobile. The text column runs: "The studio" as an eyebrow, a
+  first-person `<blockquote>`, a credit `<figcaption>` ("— [Name],
+  founder & leatherworker"), the existing body, then a link. The mockup
+  toggles between Variant 1 (hands close-up + 48px round portrait),
+  Variant 2 (one environmental bench portrait), 3a and 3b (the flexible
+  model in its photo-only and photo + portrait states) and the Variant 3
+  admin fields (main photo + 4:5 focal point, alt text, optional
+  portrait, quote with a 140-character counter, name, role). It also has
+  a desktop/mobile width toggle, and the featured grid and footer are
+  shown dimmed for context. Placeholder photos are from Pexels (a
+  leather workshop series), embedded as data URIs. Recommendation:
+  Variant 3, with the link retargeted to "Say hello" on /contact. Open:
+  variant choice, credit, quote wording, the body copy's "we" vs the
+  quote's "my", and the link. Not yet approved or built.
+  **Decided: Variant 3** (2026-10-04, brief approved). One Studio
+  section only (a separate maker section was declined). The main photo
+  plus an optional portrait switches between the 3a and 3b looks.
+  "Learn more" stays pointed at /faq; a future /about page is logged in
+  DESIGN_IMPROVEMENTS.md. Quote, name, role and the "I" body copy stay
+  placeholders for the owner to fill in after the build. **Revised**:
+  the mockup was republished defaulting to 3b, with "Learn more"
+  restored. Variants 1 and 2 are kept in the toggle for the record. Not
+  yet built.
+
 - **2026-10-04 — Unavailable products (featured, shop, product page, admin)**
   [artifact](https://claude.ai/artifact/BDcebg1YjaPrwUqdwqyFcF) —
   brief: [docs/design/featured-out-of-stock.md](design/featured-out-of-stock.md).

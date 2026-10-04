@@ -27,6 +27,14 @@ explicitly requested — see items below.
   hook in the admin stock update, and an unsubscribe/consent line —
   only worth it if the owner sees demand for restocked pieces.
 
+- [ ] **/about page, "About the studio"** (idea, out of scope for
+  `docs/design/studio-profile.md`). A dedicated page with the full story
+  of the maker and the studio, its own studio photo plus a portrait, and
+  a short process-and-materials part (hides, tanning, thread, hand
+  stitching). When it ships, the homepage Studio section's "Learn more"
+  link (today → /faq) becomes "About the studio" → /about. Needs its own
+  brief first, and real photos and copy from the owner.
+
 ## Done
 
 - [x] **Sold-out / unavailable products, site-wide** (2026-10-04,

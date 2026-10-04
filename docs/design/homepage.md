@@ -199,6 +199,12 @@ modest max-width (~34rem). No pull-quote treatment, no drop cap, no
 attribution line. One sentence, one idea, then a link to `/faq` or
 `/contact` if someone wants more.
 
+> **Superseded in part (2026-10-04):** the Studio section now carries a
+> 4:5 studio photo and a quote-led maker profile (quote, credit, optional
+> small portrait), which overrides the "no pull-quote, no attribution"
+> line above. "Learn more" → /faq is unchanged. See
+> [studio-profile.md](studio-profile.md) (approved, Variant 3).
+
 ## 6. Motion
 
 The hero image is static — no drift, zoom, or crossfade (the earlier
