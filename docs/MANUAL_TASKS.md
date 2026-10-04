@@ -10,17 +10,6 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
-- [ ] **Go-live blocker, not a phase blocker: verify a domain on Resend.**
-  Confirmed live: the sandbox sender (`onboarding@resend.dev`) can only
-  send to your own account email (`marcolorenzoromero@gmail.com`) — it
-  rejected even a `+alias` of that same address. This means **customer
-  order-confirmation emails currently cannot reach any real customer**,
-  only you. Same restriction now also blocks the new `/contact` form (adds
-  a direct-email option alongside mailto/Instagram) — a message to any
-  address but your own will fail with a "couldn't send" error until this
-  is fixed. Code/tests are otherwise done (Phase 6). Verify a domain at
-  resend.com/domains and set `RESEND_FROM_EMAIL` to an address on it
-  before real customers place orders.
 - [ ] **Blocks clean `npm test` runs, not a phase or go-live blocker: the
   dev DB is missing `classic-bifold-wallet`/`tote-bag`, the seed products
   `tests/orders.test.ts` and `tests/api-orders.test.ts` depend on.** Both
@@ -171,3 +160,11 @@ blockers, then items that don't block any phase.
   lifecycle test cases remain skipped, same as that file's pre-existing
   cases — blocked on the unrelated missing-seed-data item above, not on
   this migration; `npm test` is otherwise unchanged (82 passed).
+- [x] Verify a domain on Resend (DKIM/SPF/MX via Namecheap) and set
+  `RESEND_FROM_EMAIL` to an address on it — customer emails can now reach
+  real customers, not just the owner inbox (done 2026-10-03).
+- [x] Point the custom (sub)domain at the Vercel app — Vercel domain +
+  Namecheap `CNAME`, `NEXT_PUBLIC_SITE_URL` updated + redeployed,
+  Supabase Site URL / Redirect URLs updated (done 2026-10-03).
+- [x] Set the email sender display name via `RESEND_FROM_EMAIL`
+  (`Name <address>` format, Vercel env + redeploy) (done 2026-10-04).
