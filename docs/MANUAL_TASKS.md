@@ -195,3 +195,7 @@ blockers, then items that don't block any phase.
 - [x] Run `supabase/migrations/0023_set_setting_fn.sql` (`set_setting()`
   for clearing settings to JSON null) on dev (done 2026-10-04). Run it on
   any separate production database before `design/studio-profile` deploys.
+- [x] Run `supabase/migrations/0024_lock_down_function_grants.sql` (stock/
+  promo functions server-only; new functions locked by default) on dev
+  (done 2026-10-04). Run it on any separate production database before
+  `fix/lock-down-db-functions` deploys.

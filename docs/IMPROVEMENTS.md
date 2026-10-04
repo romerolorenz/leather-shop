@@ -5,31 +5,6 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Security: lock down execute permissions on older database
-  functions.** Raised 2026-10-04 while building `set_setting()` (migration
-  0023), which explicitly revokes execute from `public`/`anon`/
-  `authenticated`. Supabase grants execute on new `public` functions to
-  `anon` and `authenticated` by default, and these earlier functions were
-  created without any revoke, so the **public anon key shipped to the
-  browser can likely call them directly via `/rest/v1/rpc/...`**,
-  bypassing checkout/admin logic:
-  - `decrement_variant_stock`, `restore_variant_stock` (0002 — possibly
-    superseded/unused since 0010, check)
-  - `decrement_product_stock`, `restore_product_stock` (0010) — anyone
-    could zero out or inflate stock
-  - `redeem_promo_code` (0015, replaced in 0016) — could burn a code's
-    usage limit or record redemptions outside checkout
-  Not yet confirmed. **Next steps**: (1) verify with the anon key — call
-  each RPC from a test/script and confirm it's rejected after the fix;
-  (2) add a migration revoking execute from `public, anon, authenticated`
-  and granting to `service_role` only (the app calls them server-side via
-  the service-role client — confirm no browser code uses them); (3) drop
-  the 0002 variant-stock functions if nothing references them; (4) add a
-  Vitest test that the anon client gets a permission error for each
-  function, so new functions can't regress. Also worth a quick review of
-  RLS on tables the anon key can reach. The user must run the migration in
-  the Supabase SQL editor (dev + prod).
-
 - [ ] **Use PSGC (Philippine Standard Geographic Code) data for
   region/city/barangay address fields, instead of the current flat
   admin-typed city list.** Today's address model is much simpler:
@@ -193,6 +168,34 @@ later work. Not started until explicitly requested — see items below.
     edited/deactivated.
 
 ## Done
+
+- [x] **Security: lock down execute permissions on older database
+  functions** (fixed 2026-10-04, branch `fix/lock-down-db-functions`;
+  **takes effect once `supabase/migrations/0024_lock_down_function_grants.sql`
+  is run** on dev and prod, see MANUAL_TASKS.md). **Before**, confirmed on
+  dev with the anon key: `decrement_product_stock`,
+  `restore_product_stock` and `redeem_promo_code` were all callable via
+  `/rest/v1/rpc/...` (`set_setting` was already denied by 0023). It wasn't
+  exploitable in practice: all three are SECURITY INVOKER, and every table
+  is RLS default-deny, so their UPDATE/INSERT ran as anon and matched zero
+  rows. A zero-quantity decrement on a real product raised
+  `insufficient_stock` because anon couldn't see the row; restore silently
+  updated nothing; redeem raised `promo_code_not_found` before its insert.
+  Still a single policy or `security definer` away from a real hole.
+  **After**: 0024 revokes execute from `public, anon, authenticated` and
+  grants it to `service_role` for all three. It also changes the default
+  privileges for role `postgres`, so future functions start locked:
+  per-schema for anon/authenticated, plus a global revoke from `PUBLIC`.
+  A per-schema revoke can't override PUBLIC's global default, so that one
+  is needed. Trade-off: a future function that the browser or an RLS
+  policy must call needs an explicit grant. The 0002
+  `decrement/restore_variant_stock` functions were already dropped in 0010
+  and are confirmed gone. All `.rpc()` callers are server-side
+  (service-role client); no browser code calls an RPC. RLS sweep: all 18
+  app tables have RLS enabled with no policies, and anon reads return
+  nothing. Anon also can't list Storage buckets or objects (uploads go
+  through server-issued signed URLs). Nothing new to log. Regression test:
+  `tests/db-function-permissions.test.ts`.
 
 - [x] **Show short order refs (`#xxxxxxxx`) everywhere a person sees an
   order** (fixed 2026-10-03). The checkout confirmation, the admin "New
