@@ -169,6 +169,33 @@ later work. Not started until explicitly requested — see items below.
 
 ## Done
 
+- [x] **Show short order refs (`#xxxxxxxx`) everywhere a person sees an
+  order** (fixed 2026-10-03). The checkout confirmation, the admin "New
+  order" email, and the "Order ID:" footers on the confirmation, shipped
+  and payment-details emails showed the full UUID, while `/account`,
+  `/admin` and the email headings and subjects already used an inline
+  `order.id.slice(0, 8)`. All of them now use one shared helper,
+  `formatOrderRef(id)` in `src/lib/order-ref.ts` (a pure module so the
+  client `CheckoutForm` can import it). The 8-character length is
+  hardcoded with an exception comment because it's a display format, not a
+  business setting. Server-side `console.error` logs keep the full UUID.
+  Admin order search still matches any part of the full ID, and now also
+  ignores a pasted leading `#`. Tests: `tests/order-ref.test.ts`, updated
+  `tests/email.test.ts` (asserts the short ref and that the full UUID
+  doesn't appear). Browser and inbox checks are in MANUAL_TESTING.md.
+  Follow-up (same day): the "Order ID:" footer was then removed from all
+  three customer emails (confirmation, shipped, payment details) as
+  redundant, since the short ref is already in each subject and heading.
+  `tests/email.test.ts` now asserts the footer is gone. The admin "New
+  order" email is unchanged. Second follow-up (same day): the
+  confirmation email's "We'll reach out shortly with payment instructions"
+  note moved up to sit right under the greeting (HTML and plain text), so
+  the email now ends with the delivery address. Third follow-up (2026-10-04,
+  after manual testing): dropped "Delivery is Metro Manila only." from that
+  note in the confirmation email (HTML and plain text).
+  `tests/email.test.ts` now asserts the sentence is absent. The checkout
+  form's Metro Manila address hint is unchanged.
+
 - [x] **Bug: image uploads over ~4.5 MB failed with `413 (Content Too
   Large)` on Vercel** (reported 2026-10-03, fixed 2026-10-03). All admin
   image uploads (product photos, hero, payment-method QR) now go **browser

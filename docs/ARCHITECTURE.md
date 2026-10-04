@@ -321,7 +321,7 @@ otherwise have held.
 | Product photos | Supabase Storage | ✅ done (Phase 5) — multi-photo gallery, admin upload/delete, clickable PDP thumbnails |
 | Cart | localStorage (unchanged) | ✅ already matches target |
 | Checkout → order API | Supabase-backed | ✅ done (Phase 3) |
-| Emails | Resend, both directions | ✅ done (Phase 6) — admin notification + customer confirmation (HTML, with product photo) both verified live. Go-live blocker: sandbox sender can't reach real customers until a domain is verified (see MANUAL_TASKS.md) |
+| Emails | Resend, both directions | ✅ done (Phase 6) — admin notification + customer confirmation (HTML, with product photo) both verified live. Sending domain verified on Resend (2026-10-03), so customer emails reach real inboxes |
 | Payments | Manual/offline — customer pays off-platform, admin confirms and marks `paid` in `/admin` | ✅ already matches target |
 | FAQ / Contact / Privacy | Admin-editable FAQ (`faq_items` table), static Contact/Privacy pages, linked from header + footer | ✅ done (Phase 7) |
 | Customer accounts | Order history + saved addresses, scoped to the logged-in customer's email | ✅ done (Phase 8) — `/account` (order history, grouped by status) and `/account/addresses` (CRUD, default address); checkout pre-fills from a saved address when logged in |

@@ -10,6 +10,7 @@ import {
   sendPaymentDetailsEmailAction,
 } from "../actions";
 import { ActionButton } from "@/components/ActionButton";
+import { formatOrderRef } from "@/lib/order-ref";
 import { StatusTabs } from "@/components/admin/StatusTabs";
 
 const HAIRLINE = "border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]";
@@ -70,7 +71,7 @@ function OrderCard({ order }: { order: Order }) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
-            #{order.id.slice(0, 8)} — {order.customer.name}
+            {formatOrderRef(order.id)} — {order.customer.name}
           </p>
           <p className={`text-sm ${INK_SOFT}`}>{statusDateLabel(order)}</p>
           <p className={`text-sm ${INK_SOFT}`}>
@@ -155,11 +156,14 @@ export function OrdersView({ orders }: { orders: Order[] }) {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return orders;
+    // Refs are shown as "#xxxxxxxx" — ignore a pasted leading "#" so the
+    // ref copied from an email or /account still finds the order.
+    const idQuery = query.replace(/^#/, "");
     return orders.filter(
       (order) =>
         order.customer.name.toLowerCase().includes(query) ||
         order.customer.email.toLowerCase().includes(query) ||
-        order.id.toLowerCase().includes(query)
+        (idQuery !== "" && order.id.toLowerCase().includes(idQuery))
     );
   }, [orders, search]);
 

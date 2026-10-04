@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { formatPrice } from "@/lib/products";
 import { getOrderItemPhotos, type Order } from "@/lib/orders";
+import { formatOrderRef } from "@/lib/order-ref";
 import { getSettings } from "@/lib/settings";
 import {
   listPaymentMethods,
@@ -74,9 +75,9 @@ export function buildOrderNotificationEmail(
 ): EmailContent {
   return {
     to: adminNotificationEmail,
-    subject: `New order ${order.id} — ${formatPrice(order.totalCentavos)}`,
+    subject: `New order ${formatOrderRef(order.id)} — ${formatPrice(order.totalCentavos)}`,
     text: [
-      `New order placed: ${order.id}`,
+      `New order placed: ${formatOrderRef(order.id)}`,
       "",
       `Customer: ${order.customer.name} (${order.customer.email}, ${order.customer.phone})`,
       `Deliver to: ${formatAddressLines(order.shippingAddress).join(", ")}`,
@@ -127,7 +128,10 @@ export function buildOrderConfirmationEmail(
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#171717;">
       <h1 style="font-size:20px;font-weight:600;margin:0 0 8px;">Thanks for your order, ${escapeHtml(order.customer.name)}!</h1>
-      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order #${order.id.slice(0, 8)} — here's your summary.</p>
+      <p style="font-size:14px;color:#52525b;margin:0 0 16px;">
+        We'll reach out shortly with payment instructions (bank transfer / GCash / Maya).
+      </p>
+      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order ${formatOrderRef(order.id)} — here's your summary.</p>
 
       <table style="width:100%;border-collapse:collapse;">${itemRows}
       </table>
@@ -159,22 +163,18 @@ export function buildOrderConfirmationEmail(
         <strong style="color:#171717;">Delivery address</strong><br />
         ${formatAddressLines(order.shippingAddress).map(escapeHtml).join("<br />")}
       </p>
-
-      <p style="font-size:14px;color:#52525b;margin:16px 0 0;">
-        We'll reach out shortly with payment instructions (bank transfer / GCash / Maya).
-        Delivery is Metro Manila only.
-      </p>
-
-      <p style="font-size:12px;color:#71717a;margin:24px 0 0;">Order ID: ${order.id}</p>
     </div>
   `;
 
   return {
     to: order.customer.email,
-    subject: `Order confirmed — #${order.id.slice(0, 8)}`,
+    subject: `Order confirmed — ${formatOrderRef(order.id)}`,
     html,
     text: [
       `Hi ${order.customer.name},`,
+      "",
+      "Next steps: we'll reach out shortly with payment instructions " +
+        "(bank transfer / GCash / Maya).",
       "",
       "Thanks for your order! Here's a summary:",
       "",
@@ -188,17 +188,12 @@ export function buildOrderConfirmationEmail(
       `Total: ${formatPrice(order.totalCentavos)}`,
       "",
       `Delivery address: ${formatAddressLines(order.shippingAddress).join(", ")}`,
-      "",
-      "Next steps: we'll reach out shortly with payment instructions " +
-        "(bank transfer / GCash / Maya). Delivery is Metro Manila only.",
-      "",
-      `Order ID: ${order.id}`,
     ].join("\n"),
   };
 }
 
 // Same visual shell as buildOrderConfirmationEmail (item photo rows,
-// delivery address, Order ID footer) but no cost breakdown table — a
+// delivery address) but no cost breakdown table — a
 // shipping notice's job is confirming what's coming and where, not
 // repeating a receipt already sent at confirmation.
 export function buildOrderShippedEmail(
@@ -226,7 +221,7 @@ export function buildOrderShippedEmail(
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#171717;">
       <h1 style="font-size:20px;font-weight:600;margin:0 0 8px;">Your order is on its way, ${escapeHtml(order.customer.name)}!</h1>
-      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order #${order.id.slice(0, 8)} has shipped.</p>
+      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order ${formatOrderRef(order.id)} has shipped.</p>
 
       <table style="width:100%;border-collapse:collapse;">${itemRows}
       </table>
@@ -235,14 +230,12 @@ export function buildOrderShippedEmail(
         <strong style="color:#171717;">Delivery address</strong><br />
         ${formatAddressLines(order.shippingAddress).map(escapeHtml).join("<br />")}
       </p>
-
-      <p style="font-size:12px;color:#71717a;margin:24px 0 0;">Order ID: ${order.id}</p>
     </div>
   `;
 
   return {
     to: order.customer.email,
-    subject: `Order shipped — #${order.id.slice(0, 8)}`,
+    subject: `Order shipped — ${formatOrderRef(order.id)}`,
     html,
     text: [
       `Hi ${order.customer.name},`,
@@ -252,8 +245,6 @@ export function buildOrderShippedEmail(
       formatOrderItems(order),
       "",
       `Delivery address: ${formatAddressLines(order.shippingAddress).join(", ")}`,
-      "",
-      `Order ID: ${order.id}`,
     ].join("\n"),
   };
 }
@@ -286,7 +277,7 @@ function formatPaymentMethodsHtml(methods: PaymentMethod[]): string {
 }
 
 // Same visual shell as buildOrderShippedEmail (Arial-stack, max-width:560px
-// card, delivery-address block, Order ID footer) but the item rows are
+// card, delivery-address block) but the item rows are
 // swapped for the shop's payment info instead — this email's job is
 // telling the customer how/where to pay, not what's in the order. One
 // flat payment-methods list (no bank-vs-e-wallet distinction), each entry
@@ -302,7 +293,7 @@ export function buildPaymentDetailsEmail(
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#171717;">
       <h1 style="font-size:20px;font-weight:600;margin:0 0 8px;">Payment details for your order, ${escapeHtml(order.customer.name)}</h1>
-      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order #${order.id.slice(0, 8)} — here's how to complete your payment.</p>
+      <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order ${formatOrderRef(order.id)} — here's how to complete your payment.</p>
 
       ${
         paymentMethods.length > 0
@@ -321,14 +312,12 @@ export function buildPaymentDetailsEmail(
         <strong style="color:#171717;">Delivery address</strong><br />
         ${formatAddressLines(order.shippingAddress).map(escapeHtml).join("<br />")}
       </p>
-
-      <p style="font-size:12px;color:#71717a;margin:24px 0 0;">Order ID: ${order.id}</p>
     </div>
   `;
 
   return {
     to: order.customer.email,
-    subject: `Payment details — Order #${order.id.slice(0, 8)}`,
+    subject: `Payment details — Order ${formatOrderRef(order.id)}`,
     html,
     text: [
       `Hi ${order.customer.name},`,
@@ -340,8 +329,6 @@ export function buildPaymentDetailsEmail(
       ...(instructionsText ? ["", instructionsText] : []),
       "",
       `Delivery address: ${formatAddressLines(order.shippingAddress).join(", ")}`,
-      "",
-      `Order ID: ${order.id}`,
     ].join("\n"),
   };
 }

@@ -82,6 +82,13 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Short order refs** (docs/IMPROVEMENTS.md). Passed 2026-10-04:
+  checkout confirmation, `/account`, `/admin`, `/admin/orders` and all
+  four emails show `#xxxxxxxx`; customer emails have no "Order ID:"
+  footer; confirmation email's payment note sits above the summary;
+  admin search finds orders with or without `#`. Finding — drop "Delivery
+  is Metro Manila only." from the confirmation email — fixed same day.
+
 - [x] **Square product images + static hero** (docs/DESIGN_IMPROVEMENTS.md).
   Passed 2026-10-03: `/products` and homepage featured grids are 1:1 and
   crop well on mobile/desktop, card hover zoom intact, hero no longer
