@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useToast } from "@/components/ToastProvider";
 import { setFeaturedSlotProductAction, setProductFeaturedAction } from "../actions";
 import type { AdminProduct } from "@/lib/admin/catalog";
+import { FEATURED_CHIP_BASE, featuredStatusChip } from "@/lib/admin/featured-status";
 
 const HAIRLINE = "border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]";
 
@@ -93,6 +94,7 @@ export function FeaturedSlotModal({
           <ul className="flex flex-col gap-1">
             {candidates.map((product) => {
               const photo = product.photos[0];
+              const chip = featuredStatusChip(product);
               return (
                 <li key={product.id}>
                   <button
@@ -112,9 +114,14 @@ export function FeaturedSlotModal({
                     ) : (
                       <div className="h-9 w-9 flex-none rounded-md bg-black/[.05] dark:bg-white/[.08]" />
                     )}
-                    <span className="text-sm text-[#1C1A18] dark:text-[#F3F1EC]">
+                    <span className="min-w-0 truncate text-sm text-[#1C1A18] dark:text-[#F3F1EC]">
                       {product.name}
                     </span>
+                    {chip && (
+                      <span className={`ml-auto shrink-0 ${FEATURED_CHIP_BASE} ${chip.className}`}>
+                        {chip.label}
+                      </span>
+                    )}
                   </button>
                 </li>
               );

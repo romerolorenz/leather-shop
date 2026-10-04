@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import type { AdminProduct } from "@/lib/admin/catalog";
+import { FEATURED_CHIP_BASE, featuredStatusChip } from "@/lib/admin/featured-status";
 import { reorderFeaturedProductsAction } from "../actions";
 import { DragReorderList } from "@/components/admin/DragReorderList";
 import { FeaturedSlotModal } from "./FeaturedSlotModal";
@@ -16,6 +17,7 @@ const TILE_WIDTH = "w-[calc((100%-1.5rem)/3)]";
 
 function FilledTile({ product }: { product: AdminProduct }) {
   const photo = product.photos[0];
+  const chip = featuredStatusChip(product);
   return (
     <div>
       {photo ? (
@@ -29,9 +31,16 @@ function FilledTile({ product }: { product: AdminProduct }) {
       ) : (
         <div className={`aspect-[4/3] w-full rounded-lg border ${HAIRLINE} bg-black/[.05] dark:bg-white/[.08]`} />
       )}
-      <p className="mt-1.5 truncate text-sm font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
-        {product.name}
-      </p>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-sm font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
+          {product.name}
+        </p>
+        {chip && (
+          <span className={`shrink-0 ${FEATURED_CHIP_BASE} ${chip.className}`}>
+            {chip.label}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -20,7 +20,26 @@ explicitly requested — see items below.
   user to supply the relevant PSGC rows, or a websearch pass to find a
   structured (CSV/JSON) mirror of the official data to seed from.
 
+- [ ] **"Notify me when it's back" for sold-out products** (idea, out of
+  scope for `docs/design/featured-out-of-stock.md`). Let a shopper leave
+  an email on a sold-out product page and get one email when stock goes
+  back above 0. Needs a small subscriptions table, a send-on-restock
+  hook in the admin stock update, and an unsubscribe/consent line —
+  only worth it if the owner sees demand for restocked pieces.
+
 ## Done
+
+- [x] **Sold-out / unavailable products, site-wide** (2026-10-04,
+  `docs/design/featured-out-of-stock.md`). Homepage featured grid and
+  `/products` shop grid now share one rule (`src/lib/availability.ts`,
+  paused wins over sold out): untouched photo, small ink tag top-left
+  (`Sold out` / `Unavailable`), grey caption (`Sold out — back soon` /
+  `Currently unavailable`), normal price, no hover zoom. Replaces the shop
+  grid's earlier fade + strike-through. Featured grid got a missing-photo
+  guard. Product page adds "Back soon — we're making more." under the
+  button for sold-out (not paused) items. /admin/homepage slot tiles and
+  picker show one Hidden / Paused / Sold out chip
+  (`src/lib/admin/featured-status.ts`).
 
 - [x] **Square product images + static homepage hero** (2026-10-03,
   `docs/design/homepage.md` "Revision (2026-10-03)"). Shop grid

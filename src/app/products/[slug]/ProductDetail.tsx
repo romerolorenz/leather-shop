@@ -155,6 +155,12 @@ export default function ProductDetail({ product }: { product: Product }) {
               ? "Added ✓"
               : "Add to cart"}
       </button>
+      {product.orderingEnabled && !product.inStock && (
+        // Fixed interface copy, not a setting (design brief section 5).
+        <p className="mt-3 text-center text-sm text-[#6E6A64] dark:text-[#A39C90]">
+          Back soon — we&apos;re making more.
+        </p>
+      )}
     </div>
   );
 }

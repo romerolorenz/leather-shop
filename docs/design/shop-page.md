@@ -74,3 +74,11 @@ Three follow-ups from the user, after testing the first build:
   is never a background fill, so the existing monochrome
   `bg-foreground`/`text-background` treatment already matches the system
   and was left alone.
+
+## Revision (2026-10-04): unavailable products
+
+The shop grid's fade (`opacity-60 grayscale-[0.4]`) and price
+strike-through are replaced by the site-wide unavailable treatment: an
+untouched photo with a small ink tag label, a grey caption ("Sold out — back
+soon" / "Currently unavailable") and no hover zoom. Full spec in
+[featured-out-of-stock.md](featured-out-of-stock.md).

@@ -14,44 +14,6 @@ fixed).
 
 ## Outstanding
 
-### "Order shipped" email (docs/IMPROVEMENTS.md)
-
-Self-verified end-to-end via a scratch order (created → marked paid →
-`markOrderShipped` → `sendOrderShippedEmail`, no error, cleaned up after) —
-confirms the plumbing works and Resend accepts the send. What's left needs
-a human eye on the actual rendered email:
-
-- [ ] Check the real inbox (`marcolorenzoromero@gmail.com`) for a shipped
-      notice sent during self-testing — confirm the HTML renders correctly
-      (item photo/placeholder box, delivery address, no cost breakdown
-      table) and reads clearly next to the existing order-confirmation
-      email.
-      Findings:
-- [ ] Click "Mark as shipped" on a real order in `/admin/orders` and
-      confirm the toast still shows success and the customer email arrives.
-      Findings:
-
-### Admin redesign, Phase 6 — Content (Homepage/FAQ) + Settings (docs/design/admin.md)
-
-Self-verified via the test-admin session, including full functional
-round-trips (not just screenshots) for the two redesigned interactions
-— slot swap + restore, and FAQ edit + restore, both confirmed against
-the real dev DB. Still worth a human pass over the rest:
-
-- [x] Homepage: upload a hero image, drag the focal-point picker, drag
-      to reorder two filled featured slots (self-verified the picker
-      swap/remove, not the drag-reorder itself), save homepage text
-      (now 3 fieldsets — Hero/Featured/Studio) and confirm all fields
-      persist together.
-      Findings: working
-- [x] FAQ: add an item through the modal, confirm it appears; drag to
-      reorder; delete an item.
-      Findings: 
-- [x] Settings: change a value in each of the four fieldsets (Shipping &
-      Delivery, Notifications, Payment, Contact) and save — confirm all
-      persist together in one submit, same as before.
-      Findings:
-
 ### Promo codes + categories (docs/IMPROVEMENTS.md's "Promo code capability")
 
 Migrations `0014_categories.sql`/`0015_promo_codes.sql`/
@@ -82,30 +44,40 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Sold out / unavailable products** (docs/design/featured-out-of-stock.md).
+  Passed 2026-10-04: untouched photos with ink tag + grey caption + no
+  hover zoom on homepage featured and `/products` (incl. 375px 2-up),
+  paused beats sold out, no-photo placeholder, all-3-unavailable, PDP
+  restock line, admin Hidden/Paused/Sold out chips, single VoiceOver
+  announcement. No issues found.
+- [x] **Admin redesign, Phase 6 — Content (Homepage/FAQ) + Settings**
+  (docs/design/admin.md). Hero upload + focal point, featured-slot drag
+  reorder, homepage text save (Hero/Featured/Studio), FAQ add/reorder/
+  delete, and all four Settings fieldsets saving together — all working.
+- [x] **"Order shipped" email** (docs/IMPROVEMENTS.md). Covered by the
+  2026-10-04 "Short order refs" pass: "Mark as shipped" from
+  `/admin/orders` shows the success toast and the customer email arrives
+  and renders correctly (item rows, delivery address, no cost table).
 - [x] **Short order refs** (docs/IMPROVEMENTS.md). Passed 2026-10-04:
   checkout confirmation, `/account`, `/admin`, `/admin/orders` and all
   four emails show `#xxxxxxxx`; customer emails have no "Order ID:"
   footer; confirmation email's payment note sits above the summary;
   admin search finds orders with or without `#`. Finding — drop "Delivery
   is Metro Manila only." from the confirmation email — fixed same day.
-
 - [x] **Square product images + static hero** (docs/DESIGN_IMPROVEMENTS.md).
   Passed 2026-10-03: `/products` and homepage featured grids are 1:1 and
   crop well on mobile/desktop, card hover zoom intact, hero no longer
   moves, focal point still respected. No issues found.
-
 - [x] **Dark mode shelved — site always light** (docs/DESIGN_IMPROVEMENTS.md).
   Passed 2026-10-03 with the OS in dark mode: storefront, `/admin`, and
   native controls (date inputs, selects, checkboxes, radios, scrollbars)
   all render light; light-mode OS unchanged. No issues found.
-
 - [x] **Direct image uploads — fixes 413 on Vercel** (docs/IMPROVEMENTS.md).
   Passed locally and on `leather-shop-dev.vercel.app` (2026-10-03): >5 MB
   hero upload (downscaled, correct orientation), multi-photo product
   upload, payment-method QR on add/edit (PNG kept crisp, no-file edit
   keeps existing QR), HEIC (Chrome error toast / Safari converts), and
   non-image rejection — no issues found.
-
 - [x] **Payment methods + "Send payment details" email** (docs/IMPROVEMENTS.md).
   Migrations `0019`/`0020`/`0021` are all live. Full click-through pass
   covered: `/admin/payment-methods` CRUD (add with/without QR, drag
@@ -184,14 +156,12 @@ Deferred to a later pass — not blocking, just not done yet:
   Stat tiles and the "needs attention" list (pending/paid-unshipped
   orders only, oldest first, correct chip/price/relative-time, correct
   empty state) all verified against real data. No issues found.
-
 - [x] **Admin redesign, Phase 1 — sidebar shell** (docs/design/admin.md).
   Logged in and verified clean: sidebar nav + nested Products/Content
   sub-links all correct and correctly highlight active state, mobile
   hamburger/drawer works, sign-out still works, storefront header/footer
   confirmed gone from every admin page and still present everywhere else
   (the `StorefrontChrome` split). No issues found.
-
 - [x] **Promo codes + categories — admin CRUD and the shopper-facing
   flow** (docs/IMPROVEMENTS.md's "Promo code capability"; end-to-end
   order placement + usage-limit enforcement deferred separately, see
