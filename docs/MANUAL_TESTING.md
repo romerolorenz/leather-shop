@@ -44,6 +44,12 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Sold out / unavailable products** (docs/design/featured-out-of-stock.md).
+  Passed 2026-10-04: untouched photos with ink tag + grey caption + no
+  hover zoom on homepage featured and `/products` (incl. 375px 2-up),
+  paused beats sold out, no-photo placeholder, all-3-unavailable, PDP
+  restock line, admin Hidden/Paused/Sold out chips, single VoiceOver
+  announcement. No issues found.
 - [x] **Admin redesign, Phase 6 — Content (Homepage/FAQ) + Settings**
   (docs/design/admin.md). Hero upload + focal point, featured-slot drag
   reorder, homepage text save (Hero/Featured/Studio), FAQ add/reorder/

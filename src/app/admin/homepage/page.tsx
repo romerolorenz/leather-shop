@@ -88,7 +88,7 @@ export default async function AdminHomepagePage() {
       <section className="mb-10">
         <p className={`mb-2 ${SECTION_HEADING}`}>Featured products</p>
         <p className={`mb-4 text-sm ${INK_SOFT}`}>
-          {`Up to ${MAX_FEATURED} products shown in the homepage's featured grid (separate from the hero image above). Click a box to choose or change what's featured there, drag to reorder. A featured product that later gets paused or sells out stays in its slot and shows as unavailable, rather than being dropped.`}
+          {`Up to ${MAX_FEATURED} products shown in the homepage's featured grid (separate from the hero image above). Click a box to choose or change what's featured there, drag to reorder. A featured product that later gets paused or sells out stays in its slot and shows as unavailable, rather than being dropped. A hidden product's slot is skipped on the homepage until it's visible again.`}
         </p>
 
         <HomepageFeatured products={products} />

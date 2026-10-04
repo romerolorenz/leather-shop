@@ -4,6 +4,8 @@ import { Archivo } from "next/font/google";
 import { getProducts, formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Reveal } from "@/components/Reveal";
+import { UnavailableTag } from "@/components/UnavailableTag";
+import { productAvailability } from "@/lib/availability";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -30,7 +32,7 @@ export default async function ProductsPage() {
         </h1>
         <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8 lg:grid-cols-4">
           {products.map((product) => {
-            const unavailable = !product.orderingEnabled || !product.inStock;
+            const availability = productAvailability(product);
             return (
               <li key={product.slug}>
                 <Reveal>
@@ -42,21 +44,22 @@ export default async function ProductsPage() {
                           alt={product.name}
                           fill
                           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                          className={`object-cover transition-transform duration-700 ease-out motion-reduce:transition-none group-hover:scale-[1.03] ${
-                            unavailable ? "opacity-60 grayscale-[0.4]" : ""
+                          className={`object-cover ${
+                            availability.unavailable
+                              ? ""
+                              : "transition-transform duration-700 ease-out motion-reduce:transition-none group-hover:scale-[1.03]"
                           }`}
                         />
                       ) : null}
+                      {availability.unavailable && (
+                        <UnavailableTag label={availability.label} />
+                      )}
                     </div>
                     <div className="mt-4 flex items-baseline justify-between gap-4">
                       <h2 className="font-semibold tracking-tight">
                         {product.name}
                       </h2>
-                      <span
-                        className={`shrink-0 text-[#6E6A64] dark:text-[#A39C90] ${
-                          unavailable ? "line-through" : ""
-                        }`}
-                      >
+                      <span className="shrink-0 text-[#6E6A64] dark:text-[#A39C90]">
                         {formatPrice(product.priceCentavos)}
                       </span>
                     </div>
@@ -65,16 +68,12 @@ export default async function ProductsPage() {
                     </p>
                     <span
                       className={`mt-2 inline-block text-xs font-medium uppercase tracking-[0.08em] ${
-                        unavailable
+                        availability.unavailable
                           ? "text-[#6E6A64] dark:text-[#A39C90]"
                           : "text-[#7A3B22] group-hover:underline dark:text-[#C97A4E]"
                       }`}
                     >
-                      {!product.orderingEnabled
-                        ? "Currently unavailable"
-                        : !product.inStock
-                          ? "Sold out"
-                          : "View"}
+                      {availability.caption}
                     </span>
                   </Link>
                 </Reveal>

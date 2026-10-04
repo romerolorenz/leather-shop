@@ -4,6 +4,8 @@ import { Archivo } from "next/font/google";
 import { getProducts, formatPrice } from "@/lib/products";
 import { getSettings } from "@/lib/settings";
 import { Reveal } from "@/components/Reveal";
+import { UnavailableTag } from "@/components/UnavailableTag";
+import { productAvailability } from "@/lib/availability";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -76,40 +78,58 @@ export default async function Home() {
           </h2>
         </div>
         <ul className="grid grid-cols-1 gap-12 sm:grid-cols-3 sm:gap-8">
-          {featured.map((product) => (
-            <li key={product.slug}>
-              <Reveal>
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="group block"
-                >
-                  <div className="relative aspect-square w-full overflow-hidden">
-                    <Image
-                      src={product.photos[0]}
-                      alt={product.name}
-                      fill
-                      sizes="(min-width: 640px) 33vw, 100vw"
-                      className="object-cover transition-transform duration-700 ease-out motion-reduce:transition-none group-hover:scale-[1.03]"
-                    />
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between gap-4">
-                    <h3 className="font-semibold tracking-tight">
-                      {product.name}
-                    </h3>
-                    <span className="shrink-0 text-[#6E6A64] dark:text-[#A39C90]">
-                      {formatPrice(product.priceCentavos)}
+          {featured.map((product) => {
+            const availability = productAvailability(product);
+            return (
+              <li key={product.slug}>
+                <Reveal>
+                  <Link
+                    href={`/products/${product.slug}`}
+                    className="group block"
+                  >
+                    <div className="relative aspect-square w-full overflow-hidden bg-[#f3f1ec] dark:bg-[#1c1a18]">
+                      {product.photos[0] ? (
+                        <Image
+                          src={product.photos[0]}
+                          alt={product.name}
+                          fill
+                          sizes="(min-width: 640px) 33vw, 100vw"
+                          className={`object-cover ${
+                            availability.unavailable
+                              ? ""
+                              : "transition-transform duration-700 ease-out motion-reduce:transition-none group-hover:scale-[1.03]"
+                          }`}
+                        />
+                      ) : null}
+                      {availability.unavailable && (
+                        <UnavailableTag label={availability.label} />
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-baseline justify-between gap-4">
+                      <h3 className="font-semibold tracking-tight">
+                        {product.name}
+                      </h3>
+                      <span className="shrink-0 text-[#6E6A64] dark:text-[#A39C90]">
+                        {formatPrice(product.priceCentavos)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
+                      {product.description}
+                    </p>
+                    <span
+                      className={`mt-2 inline-block text-xs font-medium uppercase tracking-[0.08em] ${
+                        availability.unavailable
+                          ? "text-[#6E6A64] dark:text-[#A39C90]"
+                          : "text-[#7A3B22] group-hover:underline dark:text-[#C97A4E]"
+                      }`}
+                    >
+                      {availability.caption}
                     </span>
-                  </div>
-                  <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
-                    {product.description}
-                  </p>
-                  <span className="mt-2 inline-block text-xs font-medium uppercase tracking-[0.08em] text-[#7A3B22] group-hover:underline dark:text-[#C97A4E]">
-                    {product.orderingEnabled ? "View" : "Currently unavailable"}
-                  </span>
-                </Link>
-              </Reveal>
-            </li>
-          ))}
+                  </Link>
+                </Reveal>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
