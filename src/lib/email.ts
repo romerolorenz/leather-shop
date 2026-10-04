@@ -130,7 +130,6 @@ export function buildOrderConfirmationEmail(
       <h1 style="font-size:20px;font-weight:600;margin:0 0 8px;">Thanks for your order, ${escapeHtml(order.customer.name)}!</h1>
       <p style="font-size:14px;color:#52525b;margin:0 0 16px;">
         We'll reach out shortly with payment instructions (bank transfer / GCash / Maya).
-        Delivery is Metro Manila only.
       </p>
       <p style="font-size:14px;color:#52525b;margin:0 0 20px;">Order ${formatOrderRef(order.id)} — here's your summary.</p>
 
@@ -175,7 +174,7 @@ export function buildOrderConfirmationEmail(
       `Hi ${order.customer.name},`,
       "",
       "Next steps: we'll reach out shortly with payment instructions " +
-        "(bank transfer / GCash / Maya). Delivery is Metro Manila only.",
+        "(bank transfer / GCash / Maya).",
       "",
       "Thanks for your order! Here's a summary:",
       "",

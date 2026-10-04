@@ -190,7 +190,11 @@ later work. Not started until explicitly requested — see items below.
   order" email is unchanged. Second follow-up (same day): the
   confirmation email's "We'll reach out shortly with payment instructions"
   note moved up to sit right under the greeting (HTML and plain text), so
-  the email now ends with the delivery address.
+  the email now ends with the delivery address. Third follow-up (2026-10-04,
+  after manual testing): dropped "Delivery is Metro Manila only." from that
+  note in the confirmation email (HTML and plain text).
+  `tests/email.test.ts` now asserts the sentence is absent. The checkout
+  form's Metro Manila address hint is unchanged.
 
 - [x] **Bug: image uploads over ~4.5 MB failed with `413 (Content Too
   Large)` on Vercel** (reported 2026-10-03, fixed 2026-10-03). All admin

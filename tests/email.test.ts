@@ -98,11 +98,15 @@ describe("buildOrderConfirmationEmail", () => {
     expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
     expect(email.text).toContain("  Color: Chestnut Brown");
     expect(email.text).toContain("₱3,948.00");
-    expect(email.text).toContain("Metro Manila only");
+    expect(email.text).toContain(
+      "Next steps: we'll reach out shortly with payment instructions (bank transfer / GCash / Maya)."
+    );
+    expect(email.text).not.toContain("Delivery is Metro Manila only");
+    expect(email.html).not.toContain("Delivery is Metro Manila only");
     expectHeadingRefNoFooter(email);
   });
 
-  it("puts the payment/delivery note right under the greeting, above the summary", () => {
+  it("puts the payment note right under the greeting, above the summary", () => {
     const email = buildOrderConfirmationEmail(order);
     const html = email.html ?? "";
     const note = "We'll reach out shortly with payment instructions";
