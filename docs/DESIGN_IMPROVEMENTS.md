@@ -37,6 +37,16 @@ explicitly requested — see items below.
 
 ## Done
 
+- [x] **Homepage Studio photo + maker profile** (2026-10-04,
+  `docs/design/studio-profile.md`, Variant 3 flexible). The Studio
+  section can now show a 4:5 studio photo beside the text (focal point
+  picker, stacks photo-first on mobile), a short first-person quote with
+  a "— Name, role" credit, and an optional small round portrait beside
+  the credit. All set in /admin/homepage ("Studio photo & maker" plus new
+  Homepage text fields); with nothing filled in the section renders
+  exactly as before. Migration `0022_homepage_studio_profile.sql` seeds
+  the new settings. "Learn more" still links to /faq.
+
 - [x] **Sold-out / unavailable products, site-wide** (2026-10-04,
   `docs/design/featured-out-of-stock.md`). Homepage featured grid and
   `/products` shop grid now share one rule (`src/lib/availability.ts`,

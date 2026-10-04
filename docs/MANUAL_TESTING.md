@@ -44,6 +44,12 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Studio photo & maker profile** (docs/design/studio-profile.md).
+  Passed 2026-10-04 (phone + desktop, after migrations 0022/0023): empty
+  state unchanged, 4:5 photo layout + mobile stacking, focal point, quote +
+  credit, portrait add/remove, remove photo (JSON-null fix), quote-without-
+  name error, toasts on every action, hero unaffected, VoiceOver order.
+  No issues found.
 - [x] **Sold out / unavailable products** (docs/design/featured-out-of-stock.md).
   Passed 2026-10-04: untouched photos with ink tag + grey caption + no
   hover zoom on homepage featured and `/products` (incl. 375px 2-up),

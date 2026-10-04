@@ -12,3 +12,23 @@ export async function setHeroImageFromUpload(path: string): Promise<string> {
   await updateSettings({ heroImageUrl: publicUrl });
   return publicUrl;
 }
+
+// Studio section photo + optional maker portrait
+// (docs/design/studio-profile.md). Same direct-upload flow as the hero,
+// each under its own `site-images` prefix.
+export async function setStudioImageFromUpload(path: string): Promise<string> {
+  const publicUrl = await resolveUploadedImageUrl({ kind: "studio" }, path);
+  await updateSettings({ homepageStudioImageUrl: publicUrl });
+  return publicUrl;
+}
+
+export async function setStudioPortraitFromUpload(
+  path: string
+): Promise<string> {
+  const publicUrl = await resolveUploadedImageUrl(
+    { kind: "studio-portrait" },
+    path
+  );
+  await updateSettings({ homepageStudioPortraitUrl: publicUrl });
+  return publicUrl;
+}

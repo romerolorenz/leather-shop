@@ -189,3 +189,9 @@ blockers, then items that don't block any phase.
   Supabase Site URL / Redirect URLs updated (done 2026-10-03).
 - [x] Set the email sender display name via `RESEND_FROM_EMAIL`
   (`Name <address>` format, Vercel env + redeploy) (done 2026-10-04).
+- [x] Run `supabase/migrations/0022_homepage_studio_profile.sql` (Studio
+  photo & maker settings keys) and reset the two studio image URLs left by
+  a failed test run (done 2026-10-04).
+- [x] Run `supabase/migrations/0023_set_setting_fn.sql` (`set_setting()`
+  for clearing settings to JSON null) on dev (done 2026-10-04). Run it on
+  any separate production database before `design/studio-profile` deploys.

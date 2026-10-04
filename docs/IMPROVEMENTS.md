@@ -5,6 +5,31 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
+- [ ] **Security: lock down execute permissions on older database
+  functions.** Raised 2026-10-04 while building `set_setting()` (migration
+  0023), which explicitly revokes execute from `public`/`anon`/
+  `authenticated`. Supabase grants execute on new `public` functions to
+  `anon` and `authenticated` by default, and these earlier functions were
+  created without any revoke, so the **public anon key shipped to the
+  browser can likely call them directly via `/rest/v1/rpc/...`**,
+  bypassing checkout/admin logic:
+  - `decrement_variant_stock`, `restore_variant_stock` (0002 — possibly
+    superseded/unused since 0010, check)
+  - `decrement_product_stock`, `restore_product_stock` (0010) — anyone
+    could zero out or inflate stock
+  - `redeem_promo_code` (0015, replaced in 0016) — could burn a code's
+    usage limit or record redemptions outside checkout
+  Not yet confirmed. **Next steps**: (1) verify with the anon key — call
+  each RPC from a test/script and confirm it's rejected after the fix;
+  (2) add a migration revoking execute from `public, anon, authenticated`
+  and granting to `service_role` only (the app calls them server-side via
+  the service-role client — confirm no browser code uses them); (3) drop
+  the 0002 variant-stock functions if nothing references them; (4) add a
+  Vitest test that the anon client gets a permission error for each
+  function, so new functions can't regress. Also worth a quick review of
+  RLS on tables the anon key can reach. The user must run the migration in
+  the Supabase SQL editor (dev + prod).
+
 - [ ] **Use PSGC (Philippine Standard Geographic Code) data for
   region/city/barangay address fields, instead of the current flat
   admin-typed city list.** Today's address model is much simpler:

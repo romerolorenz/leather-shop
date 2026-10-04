@@ -11,16 +11,36 @@ import type { ActionResult } from "@/lib/action-result";
 // coordinate math is the point, and next/image's wrapping adds nothing
 // here (unlike the admin product thumbnails, which use next/image but
 // aren't interactive click targets).
+//
+// Also used for the homepage studio photo (docs/design/studio-profile.md),
+// which passes its own `previews`. Each preview's `aspectClass` must be a
+// literal Tailwind class string (e.g. "aspect-[4/5]") so the class
+// scanner picks it up; the defaults are the hero's two crops.
+export type FocalPointPreview = { label: string; aspectClass: string };
+
+const HERO_PREVIEWS: FocalPointPreview[] = [
+  { label: "Mobile preview", aspectClass: "aspect-[9/16]" },
+  { label: "Desktop preview", aspectClass: "aspect-[16/9]" },
+];
+
 export function HeroFocalPointPicker({
   imageUrl,
   initialFocalX,
   initialFocalY,
   saveFocalPointAction,
+  previews = HERO_PREVIEWS,
+  className,
+  previewClassName = "flex-1",
 }: {
   imageUrl: string;
   initialFocalX: number;
   initialFocalY: number;
   saveFocalPointAction: (x: number, y: number) => Promise<ActionResult>;
+  previews?: FocalPointPreview[];
+  // Optional width constraint on the whole picker (e.g. a tall 4:5 photo
+  // shouldn't render full admin-page width) and on each preview tile.
+  className?: string;
+  previewClassName?: string;
 }) {
   const [focalX, setFocalX] = useState(initialFocalX);
   const [focalY, setFocalY] = useState(initialFocalY);
@@ -44,7 +64,7 @@ export function HeroFocalPointPicker({
   const objectPosition = `${focalX}% ${focalY}%`;
 
   return (
-    <div>
+    <div className={className}>
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -65,34 +85,24 @@ export function HeroFocalPointPicker({
       </p>
 
       <div className="mt-6 flex gap-4">
-        <div className="flex-1">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#6E6A64] dark:text-[#A39C90]">
-            Mobile preview
-          </p>
-          <div className="relative aspect-[9/16] w-full overflow-hidden rounded-md">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt=""
-              className="absolute h-full w-full object-cover"
-              style={{ objectPosition }}
-            />
+        {previews.map((preview) => (
+          <div key={preview.label} className={previewClassName}>
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#6E6A64] dark:text-[#A39C90]">
+              {preview.label}
+            </p>
+            <div
+              className={`relative ${preview.aspectClass} w-full overflow-hidden rounded-md`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt=""
+                className="absolute h-full w-full object-cover"
+                style={{ objectPosition }}
+              />
+            </div>
           </div>
-        </div>
-        <div className="flex-1">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-[#6E6A64] dark:text-[#A39C90]">
-            Desktop preview
-          </p>
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-md">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt=""
-              className="absolute h-full w-full object-cover"
-              style={{ objectPosition }}
-            />
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

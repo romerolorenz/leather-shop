@@ -16,6 +16,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 export type UploadTarget =
   | { kind: "product"; productId: string }
   | { kind: "hero" }
+  | { kind: "studio" }
+  | { kind: "studio-portrait" }
   | { kind: "payment-qr" };
 
 export type UploadFileMeta = { name: string; type: string };
@@ -39,6 +41,14 @@ function bucketAndPrefix(target: UploadTarget): { bucket: string; prefix: string
       return { bucket: "product-photos", prefix: `${target.productId}/` };
     case "hero":
       return { bucket: "site-images", prefix: "hero-" };
+    // "studio-" is a prefix of "studio-portrait-", but the two can't be
+    // confused: FILE_NAME_RE requires the 13-digit timestamp straight
+    // after the prefix, so a `studio-portrait-…` path fails the `studio`
+    // check (and vice versa). Covered in tests/admin-image-uploads.test.ts.
+    case "studio":
+      return { bucket: "site-images", prefix: "studio-" };
+    case "studio-portrait":
+      return { bucket: "site-images", prefix: "studio-portrait-" };
     case "payment-qr":
       // No payment_methods id in the path: on "add", the row doesn't
       // exist yet when the file is uploaded.
@@ -52,6 +62,8 @@ export function parseUploadTarget(raw: unknown): UploadTarget {
   if (raw && typeof raw === "object" && "kind" in raw) {
     const kind = (raw as { kind: unknown }).kind;
     if (kind === "hero") return { kind: "hero" };
+    if (kind === "studio") return { kind: "studio" };
+    if (kind === "studio-portrait") return { kind: "studio-portrait" };
     if (kind === "payment-qr") return { kind: "payment-qr" };
     if (kind === "product") {
       const productId = (raw as { productId?: unknown }).productId;
