@@ -1,5 +1,36 @@
 # Design Log — Leather Shop
 
+- **2026-10-04 — Unavailable products (featured, shop, product page, admin)**
+  [artifact](https://claude.ai/artifact/BDcebg1YjaPrwUqdwqyFcF) —
+  brief: [docs/design/featured-out-of-stock.md](design/featured-out-of-stock.md).
+  How a sold-out (`!inStock`) or paused (`!orderingEnabled`) product looks
+  across the storefront. Fixes the homepage featured grid showing sold-out
+  pieces as buyable. Concept: **photos stay untouched**. The earlier shop-grid
+  fade and price strike-through are dropped site-wide. The state is shown by
+  a small label in the photo's top-left corner (decided: solid ink rectangle, see below) (`Sold out` /
+  `Unavailable`), a grey caption (`Sold out — back soon` / `Currently
+  unavailable`) and no hover zoom. Prices show normally because a
+  struck-through price reads as a sale. Paused wins over sold out, so
+  paused items never promise "back soon". The product page gets a muted
+  "Back soon — we're making more." line under the disabled Sold out
+  button. /admin/homepage slot tiles and the picker modal get
+  Hidden/Paused/Sold out chips (Hidden, then Paused, then Sold out),
+  reusing the catalog chip style. The mockup includes a state switcher:
+  homepage (all available, one sold out, one paused, no photo, all 3
+  unavailable), shop grid (desktop and 375px 2-up), product page (sold
+  out, paused, available) and admin (tiles, picker). Product images are
+  CSS-drawn placeholders on light and dark backdrops to test label
+  legibility. Approved brief rev 2. Not yet built into the app.
+  **Revised same day**: added a global "Label style" toggle (pill, ink
+  rectangle, cream rectangle) that swaps the photo label in every
+  storefront view. Also added a side-by-side strip of all three on a
+  light, a mid and a dark photo. The "All 3 unavailable" homepage state
+  now spans light, mid and dark photos. The label style is under
+  comparison and not yet decided; see the brief's revision log.
+  **Decided: ink rectangle** (2026-10-04). Solid `#1C1A18`, white text,
+  `rounded-[2px]`. The mockup now defaults to it; the toggle is kept for
+  the record.
+
 - **2026-07-21 — Checkout redesign**
   [artifact](https://claude.ai/code/artifact/9e0fc171-9c5d-42f8-833a-f05af5ab321c) —
   brief: [docs/design/checkout.md](design/checkout.md). Click-through

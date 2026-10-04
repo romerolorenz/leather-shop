@@ -334,3 +334,10 @@ Two user-requested changes:
   grid) switched from `aspect-[4/5]` to `aspect-square`, matching the
   product-detail gallery and cart/account thumbnails. The 3% hover zoom on
   product cards stays.
+
+## Revision (2026-10-04): unavailable featured products
+
+Sold-out and paused featured products now keep their photo untouched and
+show a small ink tag label, a grey caption ("Sold out — back soon" /
+"Currently unavailable") and no hover zoom. Full spec in
+[featured-out-of-stock.md](featured-out-of-stock.md).
