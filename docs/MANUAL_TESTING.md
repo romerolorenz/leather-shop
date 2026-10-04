@@ -14,6 +14,45 @@ fixed).
 
 ## Outstanding
 
+### Short order refs (docs/IMPROVEMENTS.md)
+
+Every order reference a person sees is now `#` + the first 8 characters of
+the order UUID (e.g. `#abcd1234`), via `formatOrderRef` in
+`src/lib/order-ref.ts`. Email content is covered by `tests/email.test.ts`;
+these steps check the real rendered pages and inbox.
+
+- [x] Place an order at `/checkout` and confirm the confirmation screen
+      reads "Order placed — #xxxxxxxx" (8 lowercase characters, no full
+      UUID).
+      Findings:
+- [x] Customer order-confirmation email: subject and heading ("Order
+      #xxxxxxxx — here's your summary.") show the same short ref, and
+      there is no "Order ID:" footer at the bottom (removed; the email
+      should end cleanly after the delivery address).
+      Findings:
+- [x] Customer order-confirmation email: the payment/delivery note ("We'll
+      reach out shortly with payment instructions… Delivery is Metro Manila
+      only.") sits right under the "Thanks for your order" greeting, above
+      the "Order #xxxxxxxx — here's your summary." line, and the email now
+      ends with the delivery address. Check both the HTML view and the
+      plain-text version if your mail client shows it.
+      Findings: let's remove line "Delivery is Metro Manila only."
+- [x] Admin "New order" email: subject and "New order placed:" line show
+      the short ref, not the full UUID.
+      Findings:
+- [x] "Order shipped" and "Payment details" emails (trigger from
+      `/admin/orders`): subject and heading show the short ref, and
+      neither email has an "Order ID:" footer (each should end cleanly
+      after the delivery address).
+      Findings:
+- [x] The same order shows the same `#xxxxxxxx` on `/account`, the
+      `/admin` dashboard and `/admin/orders`.
+      Findings:
+- [x] In `/admin/orders`, search for the 8-character ref, both with and
+      without the leading `#` (e.g. pasted from an email), and confirm the
+      order is found.
+      Findings:
+
 ### "Order shipped" email (docs/IMPROVEMENTS.md)
 
 Self-verified end-to-end via a scratch order (created → marked paid →

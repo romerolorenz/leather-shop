@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSalesSummary, listOrdersForAdmin, type Order } from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
+import { formatOrderRef } from "@/lib/order-ref";
 
 function relativeDays(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -51,7 +52,7 @@ function AttentionRow({ order }: { order: Order }) {
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
-            #{order.id.slice(0, 8)} · {order.customer.name}
+            {formatOrderRef(order.id)} · {order.customer.name}
           </p>
           <p className="text-[.8125rem] text-[#6E6A64] dark:text-[#A39C90]">
             {formatPrice(order.totalCentavos)} · {caption}

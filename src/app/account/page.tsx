@@ -9,6 +9,7 @@ import {
   type OrderStatus,
 } from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
+import { formatOrderRef } from "@/lib/order-ref";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const archivo = Archivo({
@@ -45,7 +46,7 @@ function OrderCard({
         <p className="font-medium">
           {new Date(order.createdAt).toLocaleDateString()}{" "}
           <span className="text-sm font-normal text-[#6E6A64] dark:text-[#A39C90]">
-            #{order.id.slice(0, 8)}
+            {formatOrderRef(order.id)}
           </span>
         </p>
         <p className="font-medium">{formatPrice(order.totalCentavos)}</p>

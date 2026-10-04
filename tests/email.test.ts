@@ -42,12 +42,32 @@ const order: Order = {
   statusUpdatedAt: null,
 };
 
+// Order refs are shown short ("#abcd1234") everywhere a person reads them —
+// the full UUID must not leak into the subject, heading or body.
+const SHORT_REF = "#abcd1234";
+
+function expectShortRefOnly(email: { subject: string; text: string; html?: string }) {
+  expect(email.subject).toContain(SHORT_REF);
+  for (const part of [email.subject, email.text, email.html ?? ""]) {
+    expect(part).not.toContain(order.id);
+  }
+}
+
+// Customer emails carry the ref in the subject and the heading line only —
+// the old "Order ID:" footer was removed as redundant.
+function expectHeadingRefNoFooter(email: { text: string; html?: string }) {
+  expect(email.html).toContain(`Order ${SHORT_REF}`);
+  expect(email.text).not.toContain("Order ID:");
+  expect(email.html).not.toContain("Order ID:");
+}
+
 describe("buildOrderNotificationEmail", () => {
   it("addresses the admin and includes order + customer details", () => {
     const email = buildOrderNotificationEmail(order, "admin@example.com");
 
     expect(email.to).toBe("admin@example.com");
-    expect(email.subject).toContain(order.id);
+    expectShortRefOnly(email);
+    expect(email.text).toContain(`New order placed: ${SHORT_REF}`);
     expect(email.text).toContain("Juan Dela Cruz");
     expect(email.text).toContain("juan@example.com");
     expect(email.text).toContain("123 Rizal St, Brgy. Bel-Air, Makati 1209");
@@ -73,13 +93,33 @@ describe("buildOrderConfirmationEmail", () => {
     const email = buildOrderConfirmationEmail(order);
 
     expect(email.to).toBe("juan@example.com");
-    expect(email.subject).toContain(order.id.slice(0, 8));
+    expectShortRefOnly(email);
     expect(email.text).toContain("Hi Juan Dela Cruz");
     expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
     expect(email.text).toContain("  Color: Chestnut Brown");
     expect(email.text).toContain("₱3,948.00");
     expect(email.text).toContain("Metro Manila only");
-    expect(email.text).toContain(order.id);
+    expectHeadingRefNoFooter(email);
+  });
+
+  it("puts the payment/delivery note right under the greeting, above the summary", () => {
+    const email = buildOrderConfirmationEmail(order);
+    const html = email.html ?? "";
+    const note = "We'll reach out shortly with payment instructions";
+
+    const htmlNote = html.indexOf(note);
+    expect(htmlNote).toBeGreaterThan(html.indexOf("Thanks for your order, Juan Dela Cruz!"));
+    expect(htmlNote).toBeLessThan(html.indexOf("here's your summary"));
+    expect(htmlNote).toBeLessThan(html.indexOf("Delivery address"));
+
+    const textNote = email.text.indexOf("Next steps: we'll reach out shortly");
+    expect(textNote).toBeGreaterThan(email.text.indexOf("Hi Juan Dela Cruz,"));
+    expect(textNote).toBeLessThan(email.text.indexOf("Here's a summary"));
+    expect(textNote).toBeLessThan(email.text.indexOf("Delivery address:"));
+
+    // Text ends on the delivery address, with no double or trailing blank lines.
+    expect(email.text).not.toMatch(/\n\n\n/);
+    expect(email.text.endsWith("123 Rizal St, Brgy. Bel-Air, Makati 1209")).toBe(true);
   });
 
   it("embeds the product photo in the HTML version when provided", () => {
@@ -158,12 +198,12 @@ describe("buildOrderShippedEmail", () => {
     const email = buildOrderShippedEmail(order);
 
     expect(email.to).toBe("juan@example.com");
-    expect(email.subject).toContain(order.id.slice(0, 8));
+    expectShortRefOnly(email);
     expect(email.text).toContain("Hi Juan Dela Cruz");
     expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
     expect(email.text).toContain("  Color: Chestnut Brown");
     expect(email.text).toContain("123 Rizal St, Brgy. Bel-Air, Makati 1209");
-    expect(email.text).toContain(order.id);
+    expectHeadingRefNoFooter(email);
     expect(email.html).not.toContain("Subtotal");
     expect(email.html).not.toContain("Total");
   });
@@ -250,14 +290,14 @@ describe("buildPaymentDetailsEmail", () => {
     );
 
     expect(email.to).toBe("juan@example.com");
-    expect(email.subject).toContain(order.id.slice(0, 8));
+    expectShortRefOnly(email);
     expect(email.text).toContain("Hi Juan Dela Cruz");
     expect(email.text).toContain("BDO");
     expect(email.text).toContain("Hiraya Leather Co.");
     expect(email.text).toContain("001234567890");
     expect(email.text).toContain("GCash");
     expect(email.text).toContain("09171234567");
-    expect(email.text).toContain(order.id);
+    expectHeadingRefNoFooter(email);
     expect(email.html).toContain("BDO");
     expect(email.html).toContain("GCash");
     expect(email.html).not.toContain("Subtotal");

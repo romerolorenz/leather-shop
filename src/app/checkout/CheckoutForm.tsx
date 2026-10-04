@@ -9,6 +9,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trackEvent } from "@/lib/track-event";
 import { PromoCodeField } from "@/components/PromoCodeField";
 import { useToast } from "@/components/ToastProvider";
+import { formatOrderRef } from "@/lib/order-ref";
 import { createAddressAction } from "@/app/account/actions";
 import type { CustomerAddress } from "@/lib/customer/addresses";
 
@@ -166,7 +167,7 @@ export default function CheckoutForm({
         <div className="mx-auto w-full max-w-3xl px-6 py-16 sm:px-10">
           <Breadcrumbs items={checkoutCrumbs} />
           <h1 className="mb-4 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Order placed — #{orderId}
+            Order placed — {formatOrderRef(orderId)}
           </h1>
           <p className={INK_SOFT}>
             Thanks for your order! We&apos;ll reach out shortly with payment
