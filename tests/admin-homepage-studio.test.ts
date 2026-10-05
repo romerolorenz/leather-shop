@@ -28,15 +28,17 @@ vi.mock("@/lib/admin/auth", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 const {
-  updateHomepageTextAction,
+  updateHeroTextAction,
+  updateFeaturedTextAction,
+  updateStudioTextAction,
   uploadStudioImageAction,
   removeStudioImageAction,
   uploadStudioPortraitAction,
   removeStudioPortraitAction,
 } = await import("@/app/admin/actions");
 
-// Every row any action in this file can write (updateHomepageTextAction
-// rewrites all the homepage text fields, not just the studio ones).
+// Every row any action in this file can write — including the hero and
+// featured text rows, which the per-segment isolation tests below save.
 const SNAPSHOT_KEYS = [
   "homepage_hero_eyebrow",
   "homepage_hero_headline",
@@ -68,6 +70,10 @@ afterAll(async () => {
   }
 });
 
+// Every homepage text field as the page's three forms would post them,
+// from current settings plus overrides. Each per-tab action should only
+// read its own fields, so posting all of them also proves the others are
+// ignored.
 function textForm(s: Settings, overrides: Record<string, string>): FormData {
   const fd = new FormData();
   const base: Record<string, string> = {
@@ -86,14 +92,39 @@ function textForm(s: Settings, overrides: Record<string, string>): FormData {
   return fd;
 }
 
-describe("updateHomepageTextAction (studio fields)", () => {
+// Only the fields a single tab's form actually contains.
+function formOf(fields: Record<string, string>): FormData {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+  return fd;
+}
+
+const HERO_KEYS = ["homepageHeroEyebrow", "homepageHeroHeadline"] as const;
+const FEATURED_KEYS = [
+  "homepageFeaturedEyebrow",
+  "homepageFeaturedHeading",
+] as const;
+const STUDIO_TEXT_KEYS = [
+  "homepageStudioHeading",
+  "homepageStudioBody",
+  "homepageStudioImageAlt",
+  "homepageStudioQuote",
+  "homepageStudioName",
+  "homepageStudioRole",
+] as const;
+
+function pick(s: Settings, keys: readonly (keyof Settings)[]) {
+  return Object.fromEntries(keys.map((k) => [k, s[k]]));
+}
+
+describe("updateStudioTextAction", () => {
   it("saves the studio text fields trimmed", async () => {
     const original = await getSettings();
     const rows = await snapshot();
 
     let result, after;
     try {
-      result = await updateHomepageTextAction(
+      result = await updateStudioTextAction(
         null,
         textForm(original, {
           studioImageAlt: "  Vitest hands at the bench  ",
@@ -107,7 +138,7 @@ describe("updateHomepageTextAction (studio fields)", () => {
       await restoreSettings(rows);
     }
 
-    expect(result).toEqual({ success: true, message: "Homepage text saved." });
+    expect(result).toEqual({ success: true, message: "Studio text saved." });
     expect(after.homepageStudioImageAlt).toBe("Vitest hands at the bench");
     expect(after.homepageStudioQuote).toBe("Vitest quote.");
     expect(after.homepageStudioName).toBe("Vitest Maker");
@@ -120,7 +151,7 @@ describe("updateHomepageTextAction (studio fields)", () => {
 
     let result, after;
     try {
-      result = await updateHomepageTextAction(
+      result = await updateStudioTextAction(
         null,
         textForm(original, {
           studioHeading: "Vitest heading that must not save",
@@ -141,6 +172,96 @@ describe("updateHomepageTextAction (studio fields)", () => {
     expect(after.homepageStudioHeading).toBe(original.homepageStudioHeading);
     expect(after.homepageStudioQuote).toBe(original.homepageStudioQuote);
     expect(after.homepageStudioName).toBe(original.homepageStudioName);
+  });
+});
+
+describe("per-tab text saves only touch their own segment", () => {
+  it("saving hero text leaves featured and studio text unchanged", async () => {
+    const original = await getSettings();
+    const rows = await snapshot();
+
+    let result, after;
+    try {
+      // Post every field with changed values: only the hero ones may land.
+      result = await updateHeroTextAction(
+        null,
+        textForm(original, {
+          heroEyebrow: "  Vitest hero eyebrow ",
+          heroHeadline: " Vitest hero headline ",
+          featuredEyebrow: "Vitest featured must not save",
+          featuredHeading: "Vitest featured must not save",
+          studioHeading: "Vitest studio must not save",
+          studioBody: "Vitest studio must not save",
+        })
+      );
+      after = await getSettings();
+    } finally {
+      await restoreSettings(rows);
+    }
+
+    expect(result).toEqual({ success: true, message: "Hero text saved." });
+    expect(after.homepageHeroEyebrow).toBe("Vitest hero eyebrow");
+    expect(after.homepageHeroHeadline).toBe("Vitest hero headline");
+    expect(pick(after, FEATURED_KEYS)).toEqual(pick(original, FEATURED_KEYS));
+    expect(pick(after, STUDIO_TEXT_KEYS)).toEqual(
+      pick(original, STUDIO_TEXT_KEYS)
+    );
+  });
+
+  it("saving featured text leaves hero and studio text unchanged", async () => {
+    const original = await getSettings();
+    const rows = await snapshot();
+
+    let result, after;
+    try {
+      // Only the featured tab's own fields, as its form really posts them —
+      // the missing hero/studio fields must not be read as empty strings.
+      result = await updateFeaturedTextAction(
+        null,
+        formOf({
+          featuredEyebrow: " Vitest featured eyebrow ",
+          featuredHeading: "Vitest featured heading",
+        })
+      );
+      after = await getSettings();
+    } finally {
+      await restoreSettings(rows);
+    }
+
+    expect(result).toEqual({ success: true, message: "Featured text saved." });
+    expect(after.homepageFeaturedEyebrow).toBe("Vitest featured eyebrow");
+    expect(after.homepageFeaturedHeading).toBe("Vitest featured heading");
+    expect(pick(after, HERO_KEYS)).toEqual(pick(original, HERO_KEYS));
+    expect(pick(after, STUDIO_TEXT_KEYS)).toEqual(
+      pick(original, STUDIO_TEXT_KEYS)
+    );
+  });
+
+  it("saving studio text leaves hero and featured text unchanged", async () => {
+    const original = await getSettings();
+    const rows = await snapshot();
+
+    let after;
+    try {
+      await updateStudioTextAction(
+        null,
+        formOf({
+          studioHeading: "Vitest studio heading",
+          studioBody: "Vitest studio body",
+          studioImageAlt: "",
+          studioQuote: "",
+          studioName: "",
+          studioRole: "",
+        })
+      );
+      after = await getSettings();
+    } finally {
+      await restoreSettings(rows);
+    }
+
+    expect(after.homepageStudioHeading).toBe("Vitest studio heading");
+    expect(pick(after, HERO_KEYS)).toEqual(pick(original, HERO_KEYS));
+    expect(pick(after, FEATURED_KEYS)).toEqual(pick(original, FEATURED_KEYS));
   });
 });
 

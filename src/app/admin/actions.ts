@@ -650,15 +650,52 @@ export async function updateHeroFocalPointAction(
   }, "Focal point saved.");
 }
 
-export async function updateHomepageTextAction(
+// Homepage text is saved per segment, one action per /admin/homepage tab
+// (docs/design/admin.md "Homepage segment tabs"). Deliberately three
+// explicit actions rather than one "save only the fields present": a
+// missing field would read as "" and silently wipe that copy.
+function formText(formData: FormData, field: string): string {
+  return String(formData.get(field) ?? "").trim();
+}
+
+export async function updateHeroTextAction(
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const text = (field: string) => String(formData.get(field) ?? "").trim();
-    const studioQuote = text("studioQuote");
-    const studioName = text("studioName");
+    await updateSettings({
+      homepageHeroEyebrow: formText(formData, "heroEyebrow"),
+      homepageHeroHeadline: formText(formData, "heroHeadline"),
+    });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Hero text saved.");
+}
+
+export async function updateFeaturedTextAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    await updateSettings({
+      homepageFeaturedEyebrow: formText(formData, "featuredEyebrow"),
+      homepageFeaturedHeading: formText(formData, "featuredHeading"),
+    });
+    revalidatePath("/admin/homepage");
+    revalidateHomepage();
+  }, "Featured text saved.");
+}
+
+export async function updateStudioTextAction(
+  prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    const studioQuote = formText(formData, "studioQuote");
+    const studioName = formText(formData, "studioName");
     // The quote is only ever shown with a credit (studio-profile.md §7),
     // so a quote without a name would silently disappear from the
     // homepage. Reject before saving anything.
@@ -666,20 +703,16 @@ export async function updateHomepageTextAction(
       throw new Error("Add your name to show with the quote.");
     }
     await updateSettings({
-      homepageHeroEyebrow: text("heroEyebrow"),
-      homepageHeroHeadline: text("heroHeadline"),
-      homepageFeaturedEyebrow: text("featuredEyebrow"),
-      homepageFeaturedHeading: text("featuredHeading"),
-      homepageStudioHeading: text("studioHeading"),
-      homepageStudioBody: text("studioBody"),
-      homepageStudioImageAlt: text("studioImageAlt"),
+      homepageStudioHeading: formText(formData, "studioHeading"),
+      homepageStudioBody: formText(formData, "studioBody"),
+      homepageStudioImageAlt: formText(formData, "studioImageAlt"),
       homepageStudioQuote: studioQuote,
       homepageStudioName: studioName,
-      homepageStudioRole: text("studioRole"),
+      homepageStudioRole: formText(formData, "studioRole"),
     });
     revalidatePath("/admin/homepage");
     revalidateHomepage();
-  }, "Homepage text saved.");
+  }, "Studio text saved.");
 }
 
 // ─── Studio photo + maker portrait (docs/design/studio-profile.md) ──────

@@ -36,9 +36,10 @@ blockers, then items that don't block any phase.
     head-and-shoulders portrait, plain background, face centred, square
     ≥400×400 (shown as a small circle).
   Avoid filters, logo overlays, stock photos. Upload in /admin/homepage →
-  "Studio photo & maker" once built, and fill in the photo description.
-- [ ] **Doesn't block any phase: write the homepage Studio text** (once
-  built, /admin/homepage → Homepage text → Studio): a 1–2 sentence quote
+  Studio tab ("Studio photo & maker"), and fill in the photo description
+  in that tab's Text fields.
+- [ ] **Doesn't block any phase: write the homepage Studio text** (/admin/homepage
+  → Studio tab, Text fields): a 1–2 sentence quote
   in your own words (<140 chars, hidden until filled in), your name
   (required with a quote) and role, and switch the body copy from "we" to
   "I", e.g. "Every bag and wallet starts as a single hide, cut and

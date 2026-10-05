@@ -254,6 +254,232 @@ view from a Catalog row, same URL as the rest of this brief's prototype).
   buttons, instead of every row being a permanently-open editable form.
   Edit opens the same `FormModal` pattern used everywhere else.
 
+### Homepage segment tabs (2026-10-05) — approved 2026-10-05
+
+Status: **approved by the user 2026-10-05 and built.** No mockup: every
+control already exists and only moves; the one new visual (the sub-tab
+row) is fully specified below. Kept here rather than in a separate brief
+because it reorganizes an existing admin page and doesn't touch the
+storefront or its briefs (`homepage.md`, `studio-profile.md`).
+
+**Why.** Since the Studio band shipped, `/admin/homepage` is one long
+page: Hero image, Featured slots, Studio photo + portrait, and then a
+single "Homepage text" form at the bottom holding all three segments'
+copy behind one Save. To edit the studio quote, the owner scrolls past
+everything else, and the words for a segment sit far from its picture.
+Splitting by segment puts each segment's picture and words together and
+makes it clear what a Save covers.
+
+**Decided with the user**
+1. Sub-tabs under Homepage: keep `Content: Homepage | FAQ`, and add a
+   second row inside Homepage, **Hero | Featured | Studio**.
+2. Each tab holds that segment's image/product controls **and** its own
+   text fields, with its **own Save** that saves only that segment's
+   text. The shared "Homepage text" form goes away. Uploads, focal point,
+   remove and featured-slot changes keep their instant per-action toasts.
+3. No tab memory: the page always opens on **Hero**. Tabs are
+   client-side state, not routes, but a save or upload must never bounce
+   the owner back to Hero.
+
+#### Field and control map
+
+Every current control has a place. Each tab follows the same order:
+**intro line, then instant controls (images/products), a hairline, then
+the text fields, then that tab's Save as the last thing in the panel.**
+Keeping that order the same in all three tabs makes "Save covers the
+text above it" easy to learn.
+
+| Tab | Instant controls (own toasts, unchanged) | Text fields (this tab's Save) | Save label / toast |
+|---|---|---|---|
+| **Hero** | Hero image upload; `HeroFocalPointPicker` (mobile 9:16 + desktop 16:9 previews); the "No hero image set yet" empty state | Hero eyebrow; Hero headline | "Save hero text" / "Hero text saved." |
+| **Featured** | `HomepageFeatured` (3 slot tiles, picker modal, drag reorder) | Featured section eyebrow; Featured section heading | "Save featured text" / "Featured text saved." |
+| **Studio** | Studio photo upload + 4:5 focal picker + Remove photo + empty state; Portrait upload + round preview + Remove portrait + empty state; "The portrait only shows next to a quote." note | Studio heading; Studio body; Studio photo description (alt); Quote (`CharCountTextarea`, soft limit 140); Name; Role | "Save studio text" / "Studio text saved." |
+
+Copy changes the move forces (old text points at things that are no
+longer "above" or "below"):
+- Featured intro: "(separate from the hero image above)" becomes
+  "(separate from the hero image)".
+- Studio intro: "The quote, your name and role are in Homepage text
+  below." becomes "Your quote, name and role are further down this tab."
+- The page-level "Homepage text" heading and the per-fieldset Hero /
+  Featured / Studio headings go away. Each tab's text block gets one
+  small `SECTION_HEADING` label, **"Text"**, above the hairline-separated
+  fields.
+- Existing section headings in the panels stay (e.g. "Hero image",
+  "Featured products", "Studio photo & maker"). They read as panel
+  titles.
+
+#### The two tab rows
+
+Two stacked underline rows would read as the same level and look like a
+glitch, so the second row is deliberately quieter and of a different
+kind:
+
+- **Row 1, Content (unchanged):** `SectionTabs`. Real links,
+  `text-sm font-medium`, 2px accent underline on active, full-width
+  hairline, `mb-6`.
+- **Row 2, Homepage segments (new):** a small row of **neutral pills**
+  with no hairline:
+  - active: ink text `#1C1A18` on a soft neutral fill `bg-black/[.05]`,
+    `font-medium`;
+  - inactive: ink-soft `#6E6A64`, transparent, hover to ink;
+  - shape: `rounded-full px-4 min-h-10 text-sm`, `gap-1`, `mb-8` before
+    the panel.
+
+  Accent stays on row 1 only, so there is one accent marker on screen
+  and the STYLE_GUIDE rule "accent never as a fill" holds. The neutral
+  fill is the same `bg-black/[.05]` already used for inactive count
+  badges in `StatusTabs`. Nothing else changes: same type, same tokens.
+- Focus: visible ring on the pills,
+  `focus-visible:outline-2 outline-offset-2 outline-[#1C1A18]`, the
+  same ink focus treatment used elsewhere in admin.
+
+**Component: a new small client primitive, not `StatusTabs` as is.**
+`StatusTabs` takes a render-prop child, which a Server Component (this
+page) can't pass, and it unmounts inactive panels (see "Unsaved edits"
+below). Recommend a new `src/components/admin/SubTabs.tsx`:
+`tabs: { key, label, panel: ReactNode }[]` plus `defaultTab`. Panels are plain elements built on the server
+page, which RSC can serialize. It renders **all panels mounted** and
+hides inactive ones with the `hidden` attribute.
+
+**No keyboard or screen-reader tab features (dropped by user decision,
+2026-10-05).** The pills are plain `<button type="button">`s that switch
+the visible panel. No `role="tablist"`/`tab`/`tabpanel`, no
+`aria-selected`/`aria-controls`, and no arrow, Home or End key handling.
+Normal button focus and click (including Enter/Space, which buttons
+handle natively) still work, and the focus ring above stays. Row 1 stays
+links with `aria-current="page"`, unchanged.
+
+#### Keeping the active tab stable across saves
+
+How it behaves today, and what must stay true:
+- Every homepage action calls `revalidatePath("/admin/homepage")`. When
+  a Server Action does that, Next refreshes the current route's RSC
+  payload and React **reconciles** it into the existing tree. Client
+  component state (`useState` in `SubTabs`) survives as long as the
+  component keeps the same position and key. The product edit page's
+  `ProductEditTabs` already relies on this: saving on Photos doesn't jump
+  back to Details.
+- `ActionForm`'s remount-on-success (`key={remountKey}`) is scoped to its
+  own `<form>`, which sits inside a panel. It refreshes that form's
+  fields only and never touches the tab state above it.
+
+Rules for the build:
+1. Don't put a `key` on `SubTabs` or its wrapper derived from server
+   data (e.g. a settings timestamp or image URL). Per-picker keys
+   *inside* a panel, like the studio picker's `key={imageUrl}`, are fine.
+2. No `redirect()` in these actions, no `router.push`/`replace`, and no
+   `?tab=` query param (that would be tab memory, which the user didn't
+   want).
+3. Keep `SubTabs` at a fixed spot in the page tree. Don't render it
+   conditionally (e.g. only once a hero image exists).
+
+#### Per-tab save (server side)
+
+**Recommend three explicit actions** in `src/app/admin/actions.ts`
+replacing `updateHomepageTextAction`: `updateHeroTextAction`,
+`updateFeaturedTextAction`, `updateStudioTextAction`. Each takes
+`(prevState, formData)`, runs `assertAdmin`, writes only its own
+settings keys, calls `revalidatePath("/admin/homepage")` and
+`revalidateHomepage()`, and returns its own toast message. A small shared
+`text(formData, field)` trim helper avoids repeating code.
+
+Why not one action that "updates only the fields present": the current
+code reads `formData.get(field) ?? ""`, so a missing field would quietly
+become an empty string and wipe that copy. The presence check would be
+subtle and easy to break in later edits. Three short actions are
+obvious, and each is testable on its own.
+
+Validation that stays, all in `updateStudioTextAction`:
+- A quote with no name is rejected **before anything is saved**, with
+  the same message: "Add your name to show with the quote."
+- Required fields stay `required` in the markup: hero eyebrow and
+  headline, featured eyebrow and heading, studio heading and body.
+- Alt, quote, name and role stay optional.
+
+#### Unsaved edits when switching tabs
+
+**Recommend: keep them silently** (all panels stay mounted and hidden,
+as above). No warning dialog, no auto-save. This is the simplest safe
+option:
+- Nothing typed is lost by clicking another tab.
+- Each tab's form is separate, so the browser's `required` check on
+  Studio never blocks on a hidden Hero field.
+- Saving one tab doesn't reset another tab's unsaved typing. That form
+  isn't remounted, and the browser keeps an edited field's value even
+  when its `defaultValue` refreshes.
+
+The remaining risk is leaving the page with unsaved text in a tab you're
+not looking at. That's the same as today's long form, and the per-tab
+Save label ("Save hero text") makes what each Save covers clear. A
+"has unsaved changes" dot on the pill is possible later (see open
+questions) but isn't in this pass.
+
+#### States
+
+Unchanged per control, just moved:
+- the hero empty state; studio photo and portrait empty states; featured
+  empty and unavailable slot tiles;
+- `SubmitButton` pending labels ("Uploading…", "Saving…");
+- success and error toasts via `ActionForm`/`ActionButton`.
+
+No new loading state: tab switches are instant because all panels are
+already rendered.
+
+#### Mobile (375px)
+
+- The sidebar is already a top bar and drawer under `md`. Row 1
+  (Homepage | FAQ) fits.
+- Row 2: three short pills fit in about 250px of the 327px content
+  width, so no scrolling or wrapping is needed. `min-h-10` keeps them
+  tappable.
+- Studio photo and portrait already stack (`md:grid-cols-2`).
+- Text grids: change `grid-cols-2` to `grid-cols-1 sm:grid-cols-2`.
+  Today, Featured eyebrow/heading and Name/Role sit side by side at
+  375px and get cramped. Fields that are already `col-span-2` keep that
+  as `sm:col-span-2`.
+- Save button: `w-full sm:w-auto` (full width, easy thumb target on
+  phone; right-aligned on wider screens).
+
+#### Out of scope
+
+- Tab memory or URL state (`?tab=`), and per-segment routes.
+- Unsaved-changes warnings or dots, and auto-save.
+- The ARIA tabs pattern (roles, arrow/Home/End keys), for `SubTabs`
+  and `StatusTabs` alike. Dropped by user decision (2026-10-05).
+- Any change to the storefront homepage, the settings keys or the data
+  model. Same settings, just split across three actions.
+- The FAQ tab.
+- Dark mode (shelved).
+
+#### Build hand-off
+
+- **Files:**
+  - `src/app/admin/homepage/page.tsx` (restructure into three panels);
+  - new `src/components/admin/SubTabs.tsx`;
+  - `src/app/admin/actions.ts` (three actions replace
+    `updateHomepageTextAction`);
+  - `tests/admin-homepage-studio.test.ts` (retarget the studio save and
+    the quote-without-name tests to `updateStudioTextAction`, and drop
+    the hero/featured keys from its snapshot if they're no longer
+    written);
+  - a small new test that hero and featured saves don't touch studio
+    keys (and the reverse);
+  - `docs/MANUAL_TASKS.md` line about "Homepage text → Studio" (the path
+    becomes "Homepage → Studio tab");
+  - a `docs/MANUAL_TESTING.md` checklist.
+- **Acceptance checks:**
+  1. The page opens on Hero every time, including after a reload.
+  2. On Studio: upload a photo, set the focal point, remove the
+     portrait, save studio text, and trigger the quote-without-name
+     error. After each, you're still on Studio.
+  3. Type in Hero text, switch to Studio and back: the text is still
+     there.
+  4. Save Featured text: the toast reads "Featured text saved.", and
+     hero and studio values in the database are unchanged.
+  5. At 375px: pills on one row, no horizontal scroll, fields stacked,
+     Save full width.
+
 ## Settings (`/admin/settings`, standalone top-level item) — built 2026-07-20
 
 - Stays a single form (it's inherently one config record, no natural

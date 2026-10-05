@@ -44,6 +44,11 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Homepage segment tabs** (docs/design/admin.md). Passed 2026-10-05:
+  opens on Hero; stays on Studio after upload, focal change, remove and
+  save; per-tab saves only touch their own text; quote-without-name error;
+  unsaved Hero text survives tab switches; featured picking/reorder intact;
+  375px layout. No issues found.
 - [x] **Studio cream band** (docs/design/studio-profile.md §13). Passed
   2026-10-05 on desktop + 375px: full-bleed `#F3F1EC` band in every Studio
   state, `#E7E2D9` photo/portrait placeholders, no hairlines above the band
