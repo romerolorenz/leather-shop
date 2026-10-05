@@ -104,7 +104,7 @@ export default async function Home() {
       className={`${archivo.className} flex-1 bg-white text-[#1C1A18] dark:bg-[#121110] dark:text-[#F3F1EC]`}
     >
       {/* 1. Full-screen product highlight */}
-      <section className="relative h-dvh overflow-hidden">
+      <section className="relative h-svh overflow-hidden">
         {settings.heroImageUrl && (
           <Image
             src={settings.heroImageUrl}

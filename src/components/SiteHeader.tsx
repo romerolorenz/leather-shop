@@ -41,7 +41,8 @@ export default function SiteHeader({
 }: {
   customerEmail: string | null;
 }) {
-  // The homepage hero fills the viewport (h-dvh) — the header floats over
+  // The homepage hero fills the viewport (h-svh, so it doesn't resize as the
+  // mobile browser bar shows/hides) — the header floats over
   // it instead of taking up document-flow space, so it doesn't push the
   // hero image/copy down. Same solid color as every other page either way.
   const isHome = usePathname() === "/";

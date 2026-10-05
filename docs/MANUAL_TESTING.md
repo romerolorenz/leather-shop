@@ -14,6 +14,23 @@ fixed).
 
 ## Outstanding
 
+### Hero height on mobile (2026-10-05, `h-dvh` → `h-svh`)
+
+Needs a **real phone** — headless/desktop devtools can't simulate the
+address bar collapsing. Test on iOS Safari, plus Android Chrome if
+available.
+
+- [ ] From the top of `/`, scroll down slowly so the address bar
+      collapses — the hero image doesn't resize or re-crop.
+      Findings:
+- [ ] Scroll back up so the bar reappears — still no jump.
+      Findings:
+- [ ] On first load, the hero's eyebrow, headline and "Shop the
+      Collection" button are fully visible above the browser bar.
+      Findings:
+- [ ] Desktop is unchanged — the hero fills the window.
+      Findings:
+
 ### Promo codes + categories (docs/IMPROVEMENTS.md's "Promo code capability")
 
 Migrations `0014_categories.sql`/`0015_promo_codes.sql`/
