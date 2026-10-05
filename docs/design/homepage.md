@@ -312,7 +312,8 @@ treatment in the header:
   push the hero down because of the navbar" — so `usePathname()` stayed,
   now only deciding `absolute inset-x-0 top-0 z-20` (homepage) vs. normal
   document flow (everywhere else), with the *color* unconditional either
-  way. The homepage header floats over the hero's full `h-dvh` as an
+  way. The homepage header floats over the hero's full `h-svh` (was
+  `h-dvh` — see the 2026-10-05 note below) as an
   opaque white/dark bar (covering the top sliver of the photo) instead of
   the hero starting below it. Net shape of this whole session's header
   arc: route-aware color+position → route-aware color only (briefly) →
@@ -347,3 +348,14 @@ Sold-out and paused featured products now keep their photo untouched and
 show a small ink tag label, a grey caption ("Sold out — back soon" /
 "Currently unavailable") and no hover zoom. Full spec in
 [featured-out-of-stock.md](featured-out-of-stock.md).
+
+## Revision (2026-10-05): mobile resize fix
+
+The hero section switched from `h-dvh` to `h-svh`. On mobile, `dvh` tracks
+the browser's address/nav bar, so the hero image resized and re-cropped
+every time the bar collapsed or reappeared during scroll. `svh` stays fixed
+at the bars-shown height, so the photo never jumps; when the bars hide, a
+sliver of the next section peeks in (accepted). `lvh` was ruled out because
+the bottom-aligned eyebrow/headline/"Shop the Collection" button would sit
+behind the browser bars on first load. Desktop is unaffected (all three
+units are equal there).

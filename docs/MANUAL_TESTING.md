@@ -44,6 +44,10 @@ Deferred to a later pass — not blocking, just not done yet:
 
 ## Done
 
+- [x] **Hero height on mobile** (docs/design/homepage.md). Passed
+  2026-10-05 on a real phone via the Vercel preview: hero no longer
+  resizes or re-crops when the browser bars hide/show, hero text and
+  button fully visible on load, desktop unchanged. No issues found.
 - [x] **Homepage segment tabs** (docs/design/admin.md). Passed 2026-10-05:
   opens on Hero; stays on Studio after upload, focal change, remove and
   save; per-tab saves only touch their own text; quote-without-name error;

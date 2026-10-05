@@ -162,9 +162,13 @@ dark:border-white/[.145] dark:bg-[#121110]/80` — translucent, no blur
 than opaque, since nothing sits behind the header on other routes).
 **Positioning** stays
 route-aware via `usePathname()`: `absolute inset-x-0 top-0 z-20` on the
-homepage (floats over the full-bleed `h-dvh` hero instead of pushing it
+homepage (floats over the full-bleed `h-svh` hero instead of pushing it
 down the page — the opaque bar just covers the top sliver of the photo),
-normal document flow everywhere else. See
+normal document flow everywhere else. (2026-10-05, mobile resize fix: the
+hero is `h-svh`, not `h-dvh` — `dvh` made the photo resize/re-crop as the
+mobile address bar collapsed on scroll; `svh` stays fixed at the
+bars-shown height. Not `lvh`, which would hide the bottom-aligned hero
+copy/button behind the bars.) See
 [docs/design/homepage.md](homepage.md)'s revision passes for the full
 back-and-forth that landed here (gradient scrim → flat gray bar → darker
 gray bar → dropped in favor of one color; position briefly went
