@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin/categories";
 import { createProduct, type ProductInput } from "@/lib/admin/catalog";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project. Uses scratch categories
 // (never the shared "Test" category other test files reuse) so deleting
@@ -16,13 +17,10 @@ const scratchCategoryIds: string[] = [];
 const scratchProductIds: string[] = [];
 
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
-  for (const id of scratchCategoryIds) {
-    await supabase.from("categories").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteRowsById(errors, "products", scratchProductIds);
+  await deleteRowsById(errors, "categories", scratchCategoryIds);
+  errors.throwIfAny();
 });
 
 async function makeCategory(name: string): Promise<string> {
@@ -79,7 +77,8 @@ describe("categories", () => {
 
     // Cleanup order matters: the product must go before the category can.
     const supabase = getSupabaseServerClient();
-    await supabase.from("products").delete().eq("id", productId);
+    const { error } = await supabase.from("products").delete().eq("id", productId);
+    if (error) throw error; // afterAll still has the product's id
     scratchProductIds.splice(scratchProductIds.indexOf(productId), 1);
     await deleteCategory(categoryId);
     scratchCategoryIds.splice(scratchCategoryIds.indexOf(categoryId), 1);

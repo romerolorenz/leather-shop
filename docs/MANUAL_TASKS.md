@@ -130,6 +130,44 @@ block anything (content, brand, photos).
   `@`, which doesn't affect Resend on the `mail` subdomain). Optionally
   add it to Gmail "Send mail as". Then set **Contact email** in
   `/admin/settings` to it, and send a test email to confirm it arrives.
+- [ ] **Go-live: stop shop emails landing in spam** (found 2026-10-17 via a
+  public DNS lookup). DKIM (`resend._domainkey.mail`) is published.
+  **No SPF/return-path records** were found at `send.mail.hirayaleather.com`,
+  and there's **no DMARC record** at all.
+  1. [ ] **Resend** → Domains → `mail.hirayaleather.com`: check that every
+     record shows **Verified**. Any that don't (usually the `send.mail` MX +
+     TXT `v=spf1 include:amazonses.com ~all`): **Namecheap** → Advanced
+     DNS → add them exactly as Resend lists them. Use the host Resend shows
+     *without* `.hirayaleather.com`, e.g. `send.mail`. Then click Verify in
+     Resend.
+  2. [ ] **Namecheap** → Advanced DNS → Add TXT record, host `_dmarc`, value
+     `v=DMARC1; p=none; rua=mailto:<your inbox>`. Start with `p=none`
+     (monitor only). After a few weeks of clean reports, change it to
+     `p=quarantine`.
+  3. [ ] Place a test order, then in **Gmail** open the email → ⋮ → **Show
+     original**. SPF, DKIM and DMARC should all say **PASS**. Or send one to
+     the address <https://www.mail-tester.com> gives you, and aim for 9/10
+     or better.
+  4. [ ] If an email still lands in spam, mark it **Not spam**. Early
+     volume on a new domain is low, so a few "not spam" marks help.
+  Related: the receiving-address item above (so replies don't bounce), and
+  test runs no longer sending emails (`fix/test-safety`). A Reply-To on
+  customer emails is logged in IMPROVEMENTS.md.
+- [ ] **Dev only, blocks every `npm test` run (not go-live): mark your
+  `.env.local` as dev.** Once the `fix/test-safety` change is in, the
+  tests refuse to run (they write orders, stock, settings and promo codes)
+  until `.env.local` says it points at the dev database. **Terminal** /
+  your editor: open `.env.local` in the repo folder, check that
+  `SUPABASE_URL` is the **dev** project (not `<prod-ref>`), and add this
+  line:
+  ```
+  SUPABASE_ENV=dev
+  ```
+  Optional extra lock: also add `SUPABASE_PROD_REF=<prod-ref>` (the ID in
+  the prod project's URL), so tests refuse that project even if the
+  marker is copied somewhere by mistake. **Never** add `SUPABASE_ENV` to
+  Vercel's env vars. Then run `npm test`: it should start the lanes
+  instead of printing "Refusing to run the tests".
 - [ ] **Dev only, blocks clean `npm test` runs (not go-live): the dev DB
   is missing `classic-bifold-wallet`/`tote-bag`, the seed products
   `tests/orders.test.ts` and `tests/api-orders.test.ts` depend on.** Both

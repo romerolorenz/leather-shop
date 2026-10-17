@@ -11,6 +11,7 @@ import {
 import { createCategory, listCategories } from "@/lib/admin/categories";
 import { createProduct, type ProductInput } from "@/lib/admin/catalog";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project. Uses scratch categories,
 // products, and promo codes so mutations here never touch real catalog or
@@ -20,6 +21,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const yesterday = new Date(Date.now() - DAY_MS).toISOString();
 const tomorrow = new Date(Date.now() + DAY_MS).toISOString();
 const nextWeek = new Date(Date.now() + 7 * DAY_MS).toISOString();
+
+// Every fixed code below gets this run's suffix, so a code left behind by
+// an earlier run (or created by a parallel one) can't collide with or
+// stand in for this run's.
+const RUN_SUFFIX = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+const testCode = (name: string) => `VITEST${name}${RUN_SUFFIX}`;
 
 const scratchPromoCodeIds: string[] = [];
 const scratchProductIds: string[] = [];
@@ -83,19 +90,22 @@ beforeAll(async () => {
 // timeout here lets the full cleanup actually finish instead.
 afterAll(async () => {
   const supabase = getSupabaseServerClient();
+  const errors = new CleanupErrors();
   for (const id of scratchPromoCodeIds) {
-    await supabase.from("promo_code_redemptions").delete().eq("promo_code_id", id);
-    await supabase.from("promo_codes").delete().eq("id", id);
+    // Redemptions first: their FKs to promo_codes and orders have no
+    // ON DELETE behavior.
+    const redemptionsGone = errors.check(
+      `delete redemptions of promo code ${id}`,
+      await supabase.from("promo_code_redemptions").delete().eq("promo_code_id", id)
+    );
+    if (redemptionsGone) await deleteRowsById(errors, "promo_codes", [id]);
   }
-  for (const id of scratchOrderIds) {
-    await supabase.from("orders").delete().eq("id", id);
-  }
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
-  for (const id of scratchCategoryIds) {
-    await supabase.from("categories").delete().eq("id", id);
-  }
+  // Scratch orders here are bare rows that never took stock, so a plain
+  // delete is right (no restore).
+  await deleteRowsById(errors, "orders", scratchOrderIds);
+  await deleteRowsById(errors, "products", scratchProductIds);
+  await deleteRowsById(errors, "categories", scratchCategoryIds);
+  errors.throwIfAny();
 }, 30000);
 
 // A minimal real order row — promo_code_redemptions.order_id is a required
@@ -157,13 +167,13 @@ async function makePromoCode(
 
 describe("promo code admin CRUD", () => {
   it("creates, reads, updates, and deletes a promo code", async () => {
-    const id = await makePromoCode({ code: "VITESTCRUD" });
+    const id = await makePromoCode({ code: testCode("CRUD") });
 
     const created = await getPromoCodeForAdmin(id);
-    expect(created?.code).toBe("VITESTCRUD");
+    expect(created?.code).toBe(testCode("CRUD"));
     expect(created?.discountPercent).toBe(10);
 
-    await updatePromoCode(id, baseInput({ code: "VITESTCRUD", discountPercent: 25 }));
+    await updatePromoCode(id, baseInput({ code: testCode("CRUD"), discountPercent: 25 }));
     const updated = await getPromoCodeForAdmin(id);
     expect(updated?.discountPercent).toBe(25);
 
@@ -204,9 +214,9 @@ describe("validatePromoCode", () => {
   });
 
   it("applies a flat percent discount to the whole subtotal when unrestricted", async () => {
-    await makePromoCode({ code: "VITESTFLAT10", discountPercent: 10 });
+    await makePromoCode({ code: testCode("FLAT10"), discountPercent: 10 });
 
-    const result = await validatePromoCode("vitestflat10", {
+    const result = await validatePromoCode(testCode("FLAT10").toLowerCase(), {
       cartItems: [
         {
           productId: eligibleProductId,
@@ -226,12 +236,12 @@ describe("validatePromoCode", () => {
 
   it("caps the discount at max_discount_centavos", async () => {
     await makePromoCode({
-      code: "VITESTCAP",
+      code: testCode("CAP"),
       discountPercent: 90,
       maxDiscountCentavos: 500,
     });
 
-    const result = await validatePromoCode("VITESTCAP", {
+    const result = await validatePromoCode(testCode("CAP"), {
       cartItems: [
         {
           productId: eligibleProductId,
@@ -247,8 +257,8 @@ describe("validatePromoCode", () => {
   });
 
   it("rejects an inactive code", async () => {
-    await makePromoCode({ code: "VITESTINACTIVE", active: false });
-    const result = await validatePromoCode("VITESTINACTIVE", {
+    await makePromoCode({ code: testCode("INACTIVE"), active: false });
+    const result = await validatePromoCode(testCode("INACTIVE"), {
       cartItems: [],
       subtotalCentavos: 0,
     });
@@ -257,8 +267,8 @@ describe("validatePromoCode", () => {
   });
 
   it("rejects a code before its start date", async () => {
-    await makePromoCode({ code: "VITESTFUTURE", startsAt: tomorrow });
-    const result = await validatePromoCode("VITESTFUTURE", {
+    await makePromoCode({ code: testCode("FUTURE"), startsAt: tomorrow });
+    const result = await validatePromoCode(testCode("FUTURE"), {
       cartItems: [],
       subtotalCentavos: 0,
     });
@@ -268,11 +278,11 @@ describe("validatePromoCode", () => {
 
   it("rejects an expired code", async () => {
     await makePromoCode({
-      code: "VITESTEXPIRED",
+      code: testCode("EXPIRED"),
       startsAt: new Date(Date.now() - 2 * DAY_MS).toISOString(),
       expiresAt: yesterday,
     });
-    const result = await validatePromoCode("VITESTEXPIRED", {
+    const result = await validatePromoCode(testCode("EXPIRED"), {
       cartItems: [],
       subtotalCentavos: 0,
     });
@@ -282,10 +292,10 @@ describe("validatePromoCode", () => {
 
   it("rejects an order below the minimum order value", async () => {
     await makePromoCode({
-      code: "VITESTMINORDER",
+      code: testCode("MINORDER"),
       minOrderValueCentavos: 1000000,
     });
-    const result = await validatePromoCode("VITESTMINORDER", {
+    const result = await validatePromoCode(testCode("MINORDER"), {
       cartItems: [
         {
           productId: eligibleProductId,
@@ -301,14 +311,14 @@ describe("validatePromoCode", () => {
 
   it("checks minimum order value against the whole cart even when category-restricted", async () => {
     await makePromoCode({
-      code: "VITESTMINWHOLE",
+      code: testCode("MINWHOLE"),
       categoryIds: [eligibleCategoryId],
       minOrderValueCentavos: ELIGIBLE_PRICE_CENTAVOS + INELIGIBLE_PRICE_CENTAVOS,
     });
 
     // Whole-cart subtotal meets the minimum even though only the eligible
     // item's price alone wouldn't.
-    const result = await validatePromoCode("VITESTMINWHOLE", {
+    const result = await validatePromoCode(testCode("MINWHOLE"), {
       cartItems: [
         {
           productId: eligibleProductId,
@@ -329,12 +339,12 @@ describe("validatePromoCode", () => {
 
   it("discounts only the eligible items' subtotal for a category-restricted code (Option B)", async () => {
     await makePromoCode({
-      code: "VITESTPARTIAL",
+      code: testCode("PARTIAL"),
       discountPercent: 20,
       categoryIds: [eligibleCategoryId],
     });
 
-    const result = await validatePromoCode("VITESTPARTIAL", {
+    const result = await validatePromoCode(testCode("PARTIAL"), {
       cartItems: [
         {
           productId: eligibleProductId,
@@ -360,11 +370,11 @@ describe("validatePromoCode", () => {
 
   it("rejects a category-restricted code when the cart has no eligible items", async () => {
     await makePromoCode({
-      code: "VITESTNOMATCH",
+      code: testCode("NOMATCH"),
       categoryIds: [eligibleCategoryId],
     });
 
-    const result = await validatePromoCode("VITESTNOMATCH", {
+    const result = await validatePromoCode(testCode("NOMATCH"), {
       cartItems: [
         {
           productId: ineligibleProductId,
@@ -380,7 +390,7 @@ describe("validatePromoCode", () => {
   });
 
   it("rejects a customer who has already redeemed the code", async () => {
-    const id = await makePromoCode({ code: "VITESTONCE" });
+    const id = await makePromoCode({ code: testCode("ONCE") });
     const orderId = await makeScratchOrder();
     const supabase = getSupabaseServerClient();
     const { error } = await supabase.from("promo_code_redemptions").insert({
@@ -390,7 +400,7 @@ describe("validatePromoCode", () => {
     });
     if (error) throw error;
 
-    const result = await validatePromoCode("VITESTONCE", {
+    const result = await validatePromoCode(testCode("ONCE"), {
       cartItems: [
         {
           productId: eligibleProductId,
@@ -408,7 +418,7 @@ describe("validatePromoCode", () => {
 
   it("allows a customer to reuse a code with limitOnePerCustomer: false", async () => {
     const id = await makePromoCode({
-      code: "VITESTREUSE",
+      code: testCode("REUSE"),
       limitOnePerCustomer: false,
     });
     const orderId = await makeScratchOrder();
@@ -420,7 +430,7 @@ describe("validatePromoCode", () => {
     });
     if (error) throw error;
 
-    const result = await validatePromoCode("VITESTREUSE", {
+    const result = await validatePromoCode(testCode("REUSE"), {
       cartItems: [
         {
           productId: eligibleProductId,
@@ -436,7 +446,7 @@ describe("validatePromoCode", () => {
   });
 
   it("rejects once the total usage cap is reached", async () => {
-    const id = await makePromoCode({ code: "VITESTCAPPED", usageLimitTotal: 1 });
+    const id = await makePromoCode({ code: testCode("CAPPED"), usageLimitTotal: 1 });
     const orderId = await makeScratchOrder();
     const supabase = getSupabaseServerClient();
     const { error } = await supabase.from("promo_code_redemptions").insert({
@@ -446,7 +456,7 @@ describe("validatePromoCode", () => {
     });
     if (error) throw error;
 
-    const result = await validatePromoCode("VITESTCAPPED", {
+    const result = await validatePromoCode(testCode("CAPPED"), {
       cartItems: [
         {
           productId: eligibleProductId,

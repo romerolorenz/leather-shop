@@ -6,6 +6,7 @@ import {
   reorderFaqItems,
   listFaqItemsForAdmin,
 } from "@/lib/admin/faq";
+import { CleanupErrors } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project — every item created here is
 // deleted in afterEach so the shop's real FAQ list is untouched.
@@ -21,9 +22,12 @@ async function createScratchItem(question: string): Promise<string> {
 }
 
 afterEach(async () => {
+  const errors = new CleanupErrors();
   while (scratchIds.length > 0) {
-    await deleteFaqItem(scratchIds.pop()!);
+    const id = scratchIds.pop()!;
+    await errors.attempt(`delete FAQ item ${id}`, () => deleteFaqItem(id));
   }
+  errors.throwIfAny();
 });
 
 describe("createFaqItem / updateFaqItem / deleteFaqItem", () => {

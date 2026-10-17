@@ -14,6 +14,7 @@ import {
   CEBU_CITY_LAHUG,
   MAKATI_BEL_AIR,
 } from "./helpers/psgc-fixtures";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project — there's no separate test
 // database. Every test cleans up any address it creates.
@@ -26,15 +27,18 @@ beforeAll(assertPsgcSeeded);
 
 afterEach(async () => {
   const supabase = getSupabaseServerClient();
-  for (const id of cleanupAddressIds.splice(0)) {
-    await supabase.from("customer_addresses").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteRowsById(errors, "customer_addresses", cleanupAddressIds.splice(0));
   // Safety net: these emails are test-only, so anything a failed
   // assertion left behind (before its id was recorded) goes too.
-  await supabase
-    .from("customer_addresses")
-    .delete()
-    .in("user_email", [TEST_EMAIL, OTHER_EMAIL]);
+  errors.check(
+    "delete leftover test addresses",
+    await supabase
+      .from("customer_addresses")
+      .delete()
+      .in("user_email", [TEST_EMAIL, OTHER_EMAIL])
+  );
+  errors.throwIfAny();
 });
 
 function buildAddress(overrides: Partial<AddressInput> = {}): AddressInput {

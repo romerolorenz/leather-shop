@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin/payment-methods";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { uploadViaSignedUrl } from "./helpers/signed-upload";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Direct browser → Storage upload flow (src/lib/admin/image-uploads.ts)
 // against the real dev Supabase project. Every uploaded object / scratch
@@ -22,12 +23,15 @@ const scratchPaymentMethodIds: string[] = [];
 
 afterAll(async () => {
   const supabase = getSupabaseServerClient();
+  const errors = new CleanupErrors();
   for (const { bucket, path } of uploaded) {
-    await supabase.storage.from(bucket).remove([path]);
+    errors.check(
+      `remove ${bucket}/${path}`,
+      await supabase.storage.from(bucket).remove([path])
+    );
   }
-  for (const id of scratchPaymentMethodIds) {
-    await supabase.from("payment_methods").delete().eq("id", id);
-  }
+  await deleteRowsById(errors, "payment_methods", scratchPaymentMethodIds);
+  errors.throwIfAny();
 });
 
 function jpeg(name = "vitest.jpg") {

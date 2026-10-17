@@ -13,6 +13,7 @@ import {
 } from "@/lib/orders";
 import { getProductBySlug, type Product } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { CleanupErrors, deleteOrdersRestoringStock } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project — there's no separate test
 // database. Every test cleans up any order/stock change it makes so the
@@ -38,30 +39,12 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const orderId of cleanupOrderIds.splice(0)) {
-    // A test that already cancelled the order (via cancelOrderAndRestoreStock)
-    // has already restored its stock — restoring again here would double it.
-    const { data: orderRow } = await supabase
-      .from("orders")
-      .select("status")
-      .eq("id", orderId)
-      .maybeSingle();
-
-    if (orderRow && orderRow.status !== "cancelled") {
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("product_id, quantity")
-        .eq("order_id", orderId);
-      for (const item of items ?? []) {
-        await supabase.rpc("restore_product_stock", {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity,
-        });
-      }
-    }
-    await supabase.from("orders").delete().eq("id", orderId);
-  }
+  // Skips the stock restore for orders a test already cancelled (their
+  // stock is back), and keeps any order whose status or items it couldn't
+  // read, so its stock isn't lost; see tests/helpers/cleanup.ts.
+  const errors = new CleanupErrors();
+  await deleteOrdersRestoringStock(errors, cleanupOrderIds.splice(0));
+  errors.throwIfAny();
 });
 
 function walletItem(
@@ -155,15 +138,21 @@ describe("createOrder", () => {
   });
 
   it("throws InsufficientStockError and leaves no order behind when quantity exceeds stock", async () => {
-    await expect(createOrder(buildOrder([walletItem(9999)]))).rejects.toThrow(
-      InsufficientStockError
-    );
+    // An email only this run uses, so leftovers from earlier runs (or other
+    // tests) can't show up in the count below.
+    const email = `vitest-nostock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
+    await expect(
+      createOrder(buildOrder([walletItem(9999)], { email }))
+    ).rejects.toThrow(InsufficientStockError);
 
     const supabase = getSupabaseServerClient();
-    const { data: orders } = await supabase
+    const { data: orders, error } = await supabase
       .from("orders")
       .select("id")
-      .eq("customer_email", "vitest@example.com");
+      .eq("customer_email", email);
+    // Record anything that wrongly got created before asserting.
+    cleanupOrderIds.push(...(orders ?? []).map((o) => o.id));
+    if (error) throw error;
     expect(orders).toEqual([]);
   });
 

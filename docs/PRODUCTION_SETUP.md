@@ -113,6 +113,7 @@ item.
 
 ## Follow-up for the developer agent (optional)
 
-A guard so `npm test` refuses to run against production — e.g. a Vitest
-setup check that aborts if `SUPABASE_URL` matches the production project
-ref. Logged in [IMPROVEMENTS.md](./IMPROVEMENTS.md).
+Done (2026-10-17): `npm test` refuses to run unless `.env.local` says
+`SUPABASE_ENV=dev`, and also if `SUPABASE_URL` contains the optional
+`SUPABASE_PROD_REF` (`tests/setup/test-target.mjs`). See
+[IMPROVEMENTS.md](./IMPROVEMENTS.md) Done.

@@ -15,8 +15,8 @@ import {
   getProductForAdmin,
   type ProductInput,
 } from "@/lib/admin/catalog";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project. Uses scratch products (not
 // the seeded wallet/tote) so mutations here never touch real catalog data.
@@ -47,13 +47,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
-  for (const id of scratchOptionTypeIds) {
-    await supabase.from("option_types").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteRowsById(errors, "products", scratchProductIds);
+  await deleteRowsById(errors, "option_types", scratchOptionTypeIds);
+  errors.throwIfAny();
 });
 
 describe("shop-wide option library", () => {

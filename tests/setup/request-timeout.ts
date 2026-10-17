@@ -12,6 +12,10 @@ const originalFetch = globalThis.fetch;
 
 globalThis.fetch = (input, init) => {
   const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-  const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+  // A Request input carries its own signal, which `init` would otherwise
+  // replace, so keep whichever the caller gave.
+  const callerSignal =
+    init?.signal ?? (input instanceof Request ? input.signal : undefined);
+  const signal = callerSignal ? AbortSignal.any([callerSignal, timeout]) : timeout;
   return originalFetch(input, { ...init, signal });
 };
