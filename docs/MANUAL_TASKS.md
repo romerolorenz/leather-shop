@@ -82,9 +82,7 @@ block anything (content, brand, photos).
   `develop` → `main`.** Holds up nationwide delivery going live. Needs the
   go-live split's prod database (steps 1–4 above, done). Prod starts with
   no saved addresses, so the seed only loads the reference data there.
-  0. [ ] **Terminal**: `git push -u origin feat/nationwide-delivery`.
-     Then **GitHub**: open a PR from `feat/nationwide-delivery` into
-     `develop` and merge it.
+  0. [x] Merged into `develop` (PR #22).
   1. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
      It should list only `0025_nationwide_delivery_psgc.sql`. Then run it
      for real without `--dry-run`. The live site keeps working, because

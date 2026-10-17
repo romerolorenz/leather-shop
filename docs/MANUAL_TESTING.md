@@ -43,117 +43,27 @@ deferred as of 2026-10-17):
       and `/checkout` — usable, not visually broken.
       Findings:
 
-### Buy now + rectangular buttons (docs/design/buy-now.md, docs/design/buttons.md)
-
-Branch `design/buy-now`. Check each page at desktop width and at 375px
-(browser dev tools, iPhone SE size, or a real phone).
-
-**Buy now (product page)**
-- [x] On an in-stock product that is **not** in the cart, pick options and
-      tap **Buy now** — the label changes to "Going to checkout…" right
-      away, both buttons lock, no toast appears, and `/checkout` opens with
-      the item (with the chosen options) plus anything already in the cart.
-      Findings:
-- [x] Go back to the same product, keep the same options, and tap **Buy
-      now** again — checkout opens and the quantity for that line is
-      **unchanged** (not bumped by 1). Then change an option and tap Buy
-      now — a second, separate line is added.
-      Findings:
-- [x] Double-tap **Buy now** quickly on an item not yet in the cart —
-      only one is added (quantity 1 in the order summary).
-      Findings:
-- [x] After Buy now, press the browser's Back button — the product page
-      shows "Buy now" again and it still works.
-      Findings:
-- [x] A **paused** product (ordering turned off in admin) — no buttons;
-      a cream "Currently unavailable" block sits where they were.
-      Findings:
-- [x] A **sold-out** product — no buttons; a cream "Sold out" block, with
-      "Back soon — we're making more." below it.
-      Findings:
-- [x] **Add to cart** (sand button under Buy now) still shows "Added ✓"
-      for about 1.5s and the "Added to cart" toast, and the header count
-      goes up.
-      Findings:
-
-**Rectangular buttons, every changed page (desktop and 375px)**
-
-For each: buttons have a small 2px corner (not pills), labels are small
-uppercase with letter spacing, nothing overflows or wraps awkwardly.
-- [x] Home — hero "Shop the Collection" (white outline on the photo,
-      fills white on hover); Studio "Learn more" link still lines up.
-      Findings:
-- [x] Product page — Buy now / Add to cart, option value pills (now
-      rectangles, still sentence case), and the option dropdown if a
-      product has one.
-      Findings:
-- [x] Cart — quantity stepper (−/+ box), promo code field and **Apply**
-      (sand; greyed cream while empty; "Applying…" while working),
-      **Checkout** button.
-      Findings:
-- [x] Checkout — text fields, saved-address cards and the dashed "new
-      address" card (2px corners, radio dot still round), promo Apply,
-      **Place order** ("Placing order…" while submitting, stays dark, can't
-      be tapped twice).
-      Findings:
-- [x] Account › Addresses — "+ Add address" (sand), the modal's fields,
-      **Cancel** (sand) and **Save** (dark); the edit/delete/close icons
-      are unchanged. "Sign out" in the top bar is now a brown underlined
-      link.
-      Findings:
-  - [ ] (After merging develop's nationwide delivery.) In the add/edit
-        address modal, the new location dropdowns (Region, Province,
-        City/Municipality, Barangay) and Postal code also have 2px
-        corners, matching the other fields; **Save** reads "Saving…"
-        while saving and stays dark (not faded). Same 2px corners on
-        checkout's new-address location dropdowns.
-        Findings:
-- [x] Contact — fields and **Send message** ("Sending…" while submitting,
-      stays dark).
-      Findings:
-- [x] Login (`/login`) — **Sign in with Google** is a dark rectangle.
-      Findings:
-- [x] FAQ — looks unchanged apart from the shared header/footer.
-      Findings:
-- [x] **Keyboard focus** — Tab through the product page, cart, checkout
-      and the hero: every button shows a 2px outline with a small gap
-      (dark on white, white on the hero photo). Tab on a fresh page load:
-      the "Skip to content" link appears with the same 2px corner.
-      Findings:
-- [x] **Admin login** (`/login?next=/admin`, titled "Admin Login") —
-      the sign-in button is the new dark rectangle (accepted change); the
-      rest of the admin looks unchanged.
-      Findings:
-
-### Order safety (branch `fix/order-safety`, migration `0026`)
-
-Run after migration `0026` is on dev (MANUAL_TASKS.md). The database
-behaviour (rollbacks, races, double cancel, sweep) is covered by
-`npm test`; these check the shopper and admin side in a real browser.
-
-- [ ] **Checkout, email with capitals** — place an order typing your email
-      with a capital letter (e.g. `You@Gmail.com`). It goes through
-      normally and the confirmation email arrives.
-      Findings:
-- [ ] **My Account** — log in with Google as that same address and open
-      `/account`: the order from the step above is listed.
-      Findings:
-- [ ] **Invalid email** — at checkout, type an email like `you@gmail`
-      (no dot after the @) and place the order. A clear message appears
-      ("Enter a valid email address.") and no order is placed.
-      Findings:
-- [ ] **Not enough stock** — set a product's stock to 1 in
-      `/admin/products`, put 2 in the cart, and place the order. The
-      message names the product ("… no longer has enough stock."), and the
-      stock in `/admin/products` is still 1.
-      Findings:
-- [ ] **Admin cancel** — in `/admin/orders`, cancel the order from the
-      first step: a success toast, and the product's stock goes back up by
-      the order's quantity in `/admin/products`. Cancelling again isn't
-      offered (or shows "nothing to cancel").
-      Findings:
-
 ## Done
+
+- [x] **Order safety** (branch `fix/order-safety`, PR #25, migration
+  `0026`). Passed 2026-10-17 on dev: an order with a capitalised email goes
+  through and the confirmation arrives; it shows in `/account` after Google
+  login; `you@gmail` gets "Enter a valid email address." with no order
+  placed; ordering 2 of a stock-1 product names the product and leaves
+  stock at 1; admin cancel shows a toast, restores stock and isn't offered
+  again. No issues found. Rollbacks, races, double cancel and the expiry
+  sweep are covered by `tests/order-safety.test.ts`.
+
+- [x] **Buy now + rectangular buttons** (docs/design/buy-now.md,
+  docs/design/buttons.md). Passed 2026-10-17 at desktop + 375px: Buy now
+  goes straight to checkout ("Going to checkout…", buttons lock, no toast),
+  doesn't bump an existing line's quantity, adds a separate line for new
+  options, double-tap adds one, Back button restores it; paused/sold-out
+  cream blocks; Add to cart "Added ✓" + toast + header count. 2px
+  rectangular buttons on home, product, cart, checkout, account addresses
+  (incl. the nationwide location dropdowns and "Saving…"), contact, login,
+  FAQ and admin login; keyboard focus outlines and the "Skip to content"
+  link. No issues found. Branch `design/buy-now` (PR #23).
 
 - [x] **Nationwide delivery (PSGC address dropdowns)** (docs/design/checkout.md
   §4, docs/IMPROVEMENTS.md). Passed 2026-10-17 on dev after migration 0025
