@@ -16,6 +16,7 @@ import {
   sendOrderConfirmationEmail,
 } from "@/lib/email";
 import { logEvent } from "@/lib/events";
+import { EMAIL_PATTERN, normalizeEmail } from "@/lib/email-address";
 import {
   readAddressCodes,
   resolveAddressCodes,
@@ -44,12 +45,31 @@ type OrderRequestBody = {
   promoCode?: string;
 };
 
+// Shown for a malformed request body. The checkout page always sends
+// valid JSON, so a shopper only sees this if something mangled the request.
+const INVALID_REQUEST_MESSAGE =
+  "Something went wrong sending your order. Please refresh the page and try again.";
+
+// Shown when placing the order fails for a reason the shopper can't fix
+// (a database error or timeout). create_order() rolls everything back, so
+// nothing was reserved and trying again is safe.
+const ORDER_FAILED_MESSAGE =
+  "We couldn't place your order just now. Please try again in a moment.";
+
 export async function POST(request: Request) {
-  const body: OrderRequestBody = await request.json();
+  const body: OrderRequestBody | null = await request.json().catch(() => null);
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return NextResponse.json({ error: INVALID_REQUEST_MESSAGE }, { status: 400 });
+  }
   const settings = await getSettings();
 
   const name = body.customer?.name?.trim();
-  const email = body.customer?.email?.trim();
+  // Lowercased so the one-per-customer promo rule and My Account match
+  // however the shopper capitalised it.
+  const email =
+    typeof body.customer?.email === "string"
+      ? normalizeEmail(body.customer.email)
+      : "";
   const phone = body.customer?.phone?.trim();
   const street = body.shippingAddress?.street?.trim();
   const address2 = body.shippingAddress?.address2?.trim() ?? "";
@@ -58,6 +78,13 @@ export async function POST(request: Request) {
   if (!name || !email || !phone) {
     return NextResponse.json(
       { error: "Customer name, email, and phone are required." },
+      { status: 400 }
+    );
+  }
+
+  if (!EMAIL_PATTERN.test(email)) {
+    return NextResponse.json(
+      { error: "Enter a valid email address." },
       { status: 400 }
     );
   }
@@ -95,7 +122,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!body.items || body.items.length === 0) {
+  if (!Array.isArray(body.items) || body.items.length === 0) {
     return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
   }
 
@@ -239,7 +266,8 @@ export async function POST(request: Request) {
     if (err instanceof PromoCodeRedemptionError) {
       return NextResponse.json({ error: err.message }, { status: 409 });
     }
-    throw err;
+    console.error("[orders] Failed to create order:", err);
+    return NextResponse.json({ error: ORDER_FAILED_MESSAGE }, { status: 500 });
   }
 
   logEvent("order_placed", {

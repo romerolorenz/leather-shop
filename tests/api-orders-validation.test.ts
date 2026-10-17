@@ -9,10 +9,16 @@ import {
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { assertPsgcSeeded, MAKATI_BEL_AIR } from "./helpers/psgc-fixtures";
+import {
+  CleanupErrors,
+  deleteOrdersRestoringStock,
+  deleteRowsById,
+} from "./helpers/cleanup";
+import { placeOrder } from "./helpers/place-order";
 
-// Cart-item validation in POST /api/orders: whole-number quantities, and
-// option types with no values being skipped (matching ProductDetail.tsx,
-// docs/design/buy-now.md section 4). Uses its own scratch product (not the
+// Input validation in POST /api/orders: a malformed body, the email
+// format, whole-number quantities, and option types with no values being
+// skipped (matching ProductDetail.tsx, docs/design/buy-now.md section 4). Uses its own scratch product (not the
 // seed products api-orders.test.ts needs) so it runs on the dev project.
 // The shipping address is a real PSGC chain, so every request gets past
 // the route's address check and reaches the item checks under test.
@@ -68,55 +74,16 @@ beforeAll(async () => {
   productSlug = data.slug;
 });
 
-// Every Supabase error is collected rather than ignored, and cleanup keeps
-// going so one failure doesn't strand the rest; the file then fails at the
-// end (same pattern as restoreSettings in helpers/settings-snapshot.ts).
-// This matters because order_items.product_id has no cascade: an order
-// delete that quietly fails also leaves the scratch product behind.
+// order_items.product_id has no cascade, so the orders (and the stock they
+// took) go first, then the product and option types. Every failure is
+// collected and the file fails at the end (helpers/cleanup.ts).
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  const failures: string[] = [];
-  const check = (what: string, error: { message: string } | null) => {
-    if (error) failures.push(`${what}: ${error.message}`);
-  };
-
-  for (const orderId of scratchOrderIds) {
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select("product_id, quantity")
-      .eq("order_id", orderId);
-    check(`read items of order ${orderId}`, itemsError);
-    for (const item of items ?? []) {
-      const { error } = await supabase.rpc("restore_product_stock", {
-        p_product_id: item.product_id,
-        p_quantity: item.quantity,
-      });
-      check(`restore stock for product ${item.product_id}`, error);
-    }
-    const { error } = await supabase.from("orders").delete().eq("id", orderId);
-    check(`delete order ${orderId}`, error);
-  }
-  for (const id of scratchProductIds) {
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    check(`delete product ${id}`, error);
-  }
-  for (const id of scratchOptionTypeIds) {
-    const { error } = await supabase.from("option_types").delete().eq("id", id);
-    check(`delete option type ${id}`, error);
-  }
-
-  if (failures.length) {
-    throw new Error(`api-orders-validation cleanup failed:\n${failures.join("\n")}`);
-  }
+  const errors = new CleanupErrors();
+  await deleteOrdersRestoringStock(errors, scratchOrderIds);
+  await deleteRowsById(errors, "products", scratchProductIds);
+  await deleteRowsById(errors, "option_types", scratchOptionTypeIds);
+  errors.throwIfAny();
 });
-
-function makeRequest(body: unknown) {
-  return new Request("http://localhost/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
 
 function orderBody(item: {
   selectedOptions: Record<string, string>;
@@ -138,14 +105,41 @@ function orderBody(item: {
   };
 }
 
-// Posts an order and records any created order for cleanup before the
-// caller asserts anything.
+// Records any created order for cleanup before the caller asserts anything.
 async function postOrder(body: unknown) {
-  const res = await POST(makeRequest(body));
-  const json = await res.json();
-  if (json.order?.id) scratchOrderIds.push(json.order.id);
+  const { res, body: json } = await placeOrder(body, scratchOrderIds);
   return { res, json };
 }
+
+function rawRequest(body: string) {
+  return new Request("http://localhost/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+  });
+}
+
+describe("POST /api/orders request checks", () => {
+  it("returns a 400 with a message for a malformed JSON body", async () => {
+    const res = await POST(rawRequest("{not json"));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toEqual(expect.any(String));
+  });
+
+  it("returns a 400 for a body that isn't an object", async () => {
+    const res = await POST(rawRequest("null"));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toEqual(expect.any(String));
+  });
+
+  it("rejects an invalid email address", async () => {
+    const body = orderBody({ selectedOptions: { [colorTypeName]: "Black" }, quantity: 1 });
+    body.customer.email = "not-an-email";
+    const { res, json } = await postOrder(body);
+    expect(res.status).toBe(400);
+    expect(json.error).toBe("Enter a valid email address.");
+  });
+});
 
 describe("POST /api/orders cart-item validation", () => {
   it("rejects a fractional quantity", async () => {

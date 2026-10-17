@@ -75,6 +75,17 @@ Ordered by what it blocks.
   migration written after the nationwide release is live on prod. It's
   one line and harmless until then.
 
+- [ ] *Blocked by: the order-safety release on prod (MANUAL_TASKS).
+  Blocks: nothing.* **Drop `decrement_product_stock()`.** Since migration
+  `0026` the app places orders through `create_order()`, which decrements
+  stock itself. `0026` keeps the old function so the code before that
+  release keeps working between the migration and the deploy. Once the
+  release is live on prod, add
+  `drop function if exists decrement_product_stock(uuid, integer);` to the
+  next migration and remove its row from
+  `tests/db-function-permissions.test.ts`. Keep `restore_product_stock()`
+  (the test cleanup helper uses it).
+
 - [ ] *Blocks: nothing.*
   **Audit the app for actions missing success/error feedback.** Per
   CLAUDE.md's new rule ("every user-triggered action gets visible
@@ -100,7 +111,74 @@ Ordered by what it blocks.
   in `email.test.ts`. Pair it with MANUAL_TASKS' "receiving address" and
   "stop shop emails landing in spam" items.
 
+- [ ] *Blocks: nothing, but it protects real stock and the email quota.*
+  **Bot and abuse protection on public forms** (from the 2026-10-17
+  repo review). `/api/orders` and `/api/contact` have no rate limit or bot
+  check. A script could hold every item's stock for the payment hold,
+  make the shop email any address, or use up the Resend quota, after
+  which real order notifications fail with only a log line. Options:
+  Vercel BotID or Cloudflare Turnstile on checkout and contact, and/or a
+  per-IP rate limit. Pair it with an admin-editable max quantity per order
+  line in `settings` (not hardcoded).
+- [ ] *Blocks: nothing.* **Prevent a double order on a flaky connection**
+  (repo review). If the response is lost after the server created the
+  order, the shopper sees "Could not reach the server", resubmits, and
+  holds stock twice. Fix: the client sends an idempotency key with the
+  order, stored on `orders` with a unique constraint, and a retry returns
+  the existing order.
+- [ ] *Blocks: nothing.* **Fill test coverage gaps** (repo review):
+  - `assertAdmin` actually rejecting a non-admin, and the `proxy.ts` admin
+    gate (today they're only mocked);
+  - the admin order actions (`cancelOrderAction`, `markOrderShipped`,
+    `sendPaymentDetailsEmailAction`);
+  - `getSalesSummary`.
+  (The order races and the expiry sweep actually cancelling an order are
+  now covered by the order-safety work, see Done.)
+- [ ] *Blocks: nothing.* **Small cleanups from the reviews:**
+  - `MAX_FEATURED = 3` is defined three times (`catalog.ts`,
+    `admin/homepage/page.tsx`, `HomepageFeatured.tsx`), so the copies can
+    drift. Use one shared constant.
+  - `supabase/scripts/wipe_test_data.sql` has been stale since `0015`: its
+    `delete from orders` hits the `promo_code_redemptions` foreign key.
+  - `src/lib/supabase/server.ts` should `import "server-only"`.
+  - "Try again" on location load errors (`AddressLocationFields.tsx:145`)
+    is about 20px tall. Give it `inline-block py-3` for a 44px tap target.
+  - The applied-promo box (`PromoCodeField.tsx:100`) is still `rounded-md`.
+    Under the owner's "every rectangular element is 2px" rule it should be
+    `rounded-btn` (owner to confirm).
+  - Test hardening (optional): make `deleteOrdersRestoringStock`'s delete
+    conditional on the status not being cancelled, and add guard unit tests
+    for a shell-only variable and a shell-only `SUPABASE_PROD_REF`.
+
 ## Done
+
+- [x] **Order safety** (from the 2026-10-17 repo review, built on
+  `fix/order-safety`, migration `0026_atomic_orders.sql`. **Not live
+  yet:** the migration runs on dev, then prod before the release; see
+  MANUAL_TASKS.md).
+  - Placing an order is one database transaction (`create_order()`):
+    order, items, options, stock decrement and promo redemption all
+    succeed or all roll back. Before, a timeout part-way could leave a
+    pending order that never took stock, and cancelling it later inflated
+    stock (overselling a handmade item). Stock, promo and other failures
+    now get their own shopper message instead of everything reading as
+    "no longer has enough stock".
+  - Cancelling (admin button and the expiry sweep) is one transaction
+    (`cancel_order_and_restore_stock()`), so stock can't be lost if it
+    fails part-way. The sweep carries on past a failing order, lists it in
+    its response and returns a 500 so Vercel's cron logs flag the run.
+  - Emails are case-insensitive: stored lowercased (trigger, plus existing
+    rows normalised) and compared with `lower()`. Closes "Juan@x.com"
+    getting past a one-per-customer promo, and My Account missing an order
+    typed with capitals.
+  - `/api/orders` rejects an invalid email; it and
+    `/api/promo-codes/apply` return a 400 (not a 500) for a malformed
+    body.
+  - Tests: `tests/order-safety.test.ts` (atomicity, races for the last
+    unit and a promo cap, double cancel, paid/shipped refused, email case),
+    the real expiry sweep in `api-orders-expire.test.ts`, input checks in
+    `api-orders-validation.test.ts` (now on the shared test helpers) and
+    `api-promo-codes-apply.test.ts`.
 
 - [x] **Stop `npm test` from ever running against the production
   database** (2026-10-17): tests abort unless `.env.local` has

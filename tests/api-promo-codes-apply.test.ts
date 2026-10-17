@@ -71,6 +71,18 @@ function makeRequest(body: unknown) {
 }
 
 describe("POST /api/promo-codes/apply", () => {
+  it("returns a 400 with a message for a malformed JSON body", async () => {
+    const res = await POST(
+      new Request("http://localhost/api/promo-codes/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{not json",
+      })
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toEqual(expect.any(String));
+  });
+
   it("rejects an empty code", async () => {
     const res = await POST(
       makeRequest({ code: "", items: [{ slug: productSlug, quantity: 1 }] })

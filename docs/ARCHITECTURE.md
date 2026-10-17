@@ -44,8 +44,9 @@ Single codebase, both roles:
   Supabase/Resend directly. The browser never holds a Supabase
   service-role key. Main routes:
   - `POST /api/orders` — validates cart contents against real stock,
-    recomputes totals server-side, writes the order, decrements stock,
-    triggers both emails.
+    recomputes totals server-side, then writes the order, decrements
+    stock and redeems any promo code in one database transaction
+    (`create_order()`), and triggers both emails.
   - `GET /api/locations/cities?region=…&province=…` and
     `GET /api/locations/barangays?city=…` — the on-demand halves of the
     checkout/address PSGC dropdowns (see "Delivery area" below). Public,
@@ -56,9 +57,9 @@ Single codebase, both roles:
   - `GET /api/orders/expire` — the order-hold check (PRD §5, §6): reads
     the configured hold duration from the `settings` table (default 48
     hours — admin-editable, not a code constant), finds orders still
-    `pending_payment` past that many hours since `created_at`, flips them
-    to `cancelled`, and restores each item's product-level stock via
-    the `restore_product_stock` Postgres function. `GET`, not `POST`,
+    awaiting payment past that many hours since `created_at`, and cancels
+    each one with the `cancel_order_and_restore_stock()` Postgres function
+    (status flip and stock restore in one transaction). `GET`, not `POST`,
     because that's what Vercel Cron actually sends. Not otherwise
     user-facing — requires a `CRON_SECRET` bearer token, which Vercel
     attaches automatically once the env var is set; any request without a
@@ -192,11 +193,14 @@ promo_code_redemptions
   (one redemption per email, unless limit_one_per_customer is false) and
   total-cap rules are checked against real history. Enforced atomically by
   the `redeem_promo_code()` Postgres function (row-locks the promo_codes
-  row, same idea as decrement_product_stock in
-  `0002_stock_functions.sql`) at order-creation time —
+  row and re-checks active/dates, per-customer and the total cap), called
+  inside `create_order()`'s transaction at order-creation time —
   src/lib/promo-codes.ts's validatePromoCode() does a non-atomic preview
   check first (for the cart/checkout "Apply" button), but
-  redeem_promo_code() is the actual enforcement.
+  redeem_promo_code() is the actual enforcement. customer_email is
+  compared case-insensitively and stored lowercased (migration 0026's
+  trigger does this for orders.customer_email too, so My Account finds an
+  order however the shopper capitalised their email).
 
 orders
   id, status ("pending_payment" | "payment_details_sent" | "paid" |
@@ -334,16 +338,47 @@ row. Names are never taken from the client.
 1. Browser: cart lives in `localStorage`, nothing server-side yet.
 2. Checkout form submits → `POST /api/orders` with cart contents + shipping
    info.
-3. API route: re-fetches each product/variant from Supabase (never trusts
-   client-submitted prices), validates the shipping address's PSGC code
-   chain (any region; see "Delivery area" above) and stock/
-   ordering-enabled, decrements the product's `stock_quantity` at this
-   point (not at payment confirmation — see PRD §5 for why), writes
-   `orders` + `order_items` rows.
-4. API route: fires both Resend emails.
-5. Browser: shows order confirmation with the order id; cart is cleared.
-6. Shop owner: gets the email, later confirms payment and updates order
+3. API route (validation, nothing written yet): rejects a malformed body
+   or an invalid email (400), lowercases the email, re-fetches each
+   product from Supabase (never trusts client-submitted prices), checks
+   options, quantity and ordering-enabled, validates the shipping
+   address's PSGC code chain (any region; see "Delivery area" above), and
+   previews the promo code (`validatePromoCode()`).
+4. API route → `create_order()` Postgres function (migration 0026), **one
+   transaction**: locks the promo code (if any), inserts `orders`,
+   `order_items` and `order_item_options`; decrements each product's `stock_quantity` with
+   a locked re-check (at placement, not payment confirmation — see PRD §5
+   for why); redeems the promo code with a locked re-check of its caps.
+   Any failure rolls back all of it, so a failed order never leaves a
+   half-made order or taken stock behind.
+5. API route: fires both Resend emails (a send failure is logged, not
+   shown to the shopper — the order is already placed).
+6. Browser: shows order confirmation with the order id; cart is cleared.
+7. Shop owner: gets the email, later confirms payment and updates order
    status in `/admin`.
+
+```mermaid
+flowchart TD
+  A[POST /api/orders] --> B{Body, email, items,<br/>address, promo preview valid?}
+  B -- no --> E400[400 + message]
+  B -- yes --> C["create_order() — one transaction"]
+  C --> C1[insert order, items, item options]
+  C1 --> C2{Enough stock?<br/>locked re-check}
+  C2 -- no --> R1[roll back everything] --> E409S["409: '&lt;item&gt; no longer has enough stock.'"]
+  C2 -- yes --> C3{Promo still redeemable?<br/>locked re-check}
+  C3 -- no --> R2[roll back everything] --> E409P["409: 'That promo code just became unavailable…'"]
+  C3 -- yes / no promo --> D[commit] --> F[send emails] --> G[201 + order]
+  C -. any other error .-> R3[roll back everything] --> E500["500: 'We couldn't place your order just now…'"]
+```
+
+Two orders racing for the last unit, or past a promo's usage cap, can't
+both win: the second waits on the row lock, then re-checks and fails.
+`create_order()` locks the promo code first (before the order insert,
+whose foreign key to the promo would otherwise take a conflicting lock
+early), then products in id order. `cancel_order_and_restore_stock()`
+locks the order's products in the same id order before restoring stock,
+and never touches the promo. So orders sharing a promo code or products,
+and cancels sharing products, can't deadlock each other.
 
 ## Request flow: order expiry (payment hold)
 
@@ -356,14 +391,40 @@ row. Names are never taken from the client.
    traffic volume, but worth revisiting on a paid plan if faster expiry
    matters.
 2. Route reads `order_payment_hold_hours` from `settings` (default 48),
-   then queries Supabase for orders where `status = 'pending_payment'`
-   and `created_at` is older than that many hours.
-3. For each match: sets `status = 'cancelled'`, and for each of its
-   `order_items`, adds the quantity back onto its product's
-   `stock_quantity`.
-4. No email/notification implied by this flow in the PRD — just the status
+   then queries Supabase for orders still awaiting payment
+   (`pending_payment` or `payment_details_sent`) whose `created_at` is
+   older than that many hours.
+3. For each match, separately: `cancel_order_and_restore_stock()`
+   (migration 0026) flips the status to `cancelled` only if it's still
+   awaiting payment, and adds each item's quantity back onto its
+   product's `stock_quantity`, in one transaction. It returns false (and
+   touches nothing) for an order that was paid, shipped or already
+   cancelled in the meantime, so stock is never restored twice. The admin
+   "Cancel order" button uses the same function.
+4. One order failing doesn't stop the sweep: the route carries on and
+   returns `{ checked, cancelled, failed: [{ orderId, error }] }`, with
+   status 200, or 500 if any order failed (so Vercel's cron logs flag
+   the run). A
+   failed order is still pending with its stock held (the cancel is
+   all-or-nothing), so the next day's run retries it.
+5. No email/notification implied by this flow in the PRD — just the status
    change and stock restore. (Admin sees the cancelled status next time
    they check `/admin`.)
+
+```mermaid
+flowchart TD
+  A[Vercel Cron: GET /api/orders/expire] --> B{CRON_SECRET ok?}
+  B -- no --> U[401]
+  B -- yes --> C[find orders awaiting payment<br/>older than the hold]
+  C --> D[for each order]
+  D --> E["cancel_order_and_restore_stock() — one transaction"]
+  E --> F{still awaiting payment?}
+  F -- yes --> G[status = cancelled<br/>+ restore stock] --> H[cancelled += 1]
+  F -- no --> I[skip, nothing changed]
+  E -. error .-> J[add to failed, carry on]
+  H & I & J --> D
+  D -- done --> K["{ checked, cancelled, failed }<br/>200, or 500 if any failed"]
+```
 
 ## Deployment
 

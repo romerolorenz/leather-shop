@@ -82,9 +82,7 @@ block anything (content, brand, photos).
   `develop` → `main`.** Holds up nationwide delivery going live. Needs the
   go-live split's prod database (steps 1–4 above, done). Prod starts with
   no saved addresses, so the seed only loads the reference data there.
-  0. [ ] **Terminal**: `git push -u origin feat/nationwide-delivery`.
-     Then **GitHub**: open a PR from `feat/nationwide-delivery` into
-     `develop` and merge it.
+  0. [x] Merged into `develop` (PR #22).
   1. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
      It should list only `0025_nationwide_delivery_psgc.sql`. Then run it
      for real without `--dry-run`. The live site keeps working, because
@@ -120,6 +118,25 @@ block anything (content, brand, photos).
        you're comfortable absorbing.
      - [ ] *Optional:* mention the longer provincial delivery in product
        descriptions or lead-time copy where it matters.
+- [ ] **Blocks the order-safety release on prod: run migration `0026` on
+  prod, then merge `develop` → `main`.** Do this after the
+  nationwide-delivery release above (`0026` needs `0025`'s columns).
+  Needs `fix/order-safety` merged into `develop` (`0026` already ran on
+  dev, see Done). Safe to run before the deploy: it only adds functions and a
+  trigger, and lowercases stored emails; the live code keeps working with
+  it in place (see the header comment in the migration).
+  1. [ ] *Recommended:* take a backup first. **Terminal**:
+     `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
+  2. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
+     It should list only `0026_atomic_orders.sql` (plus `0025` if the
+     nationwide release hasn't gone out yet; then do that item first).
+     Then run it for real without `--dry-run`.
+  3. [ ] **GitHub**: merge `develop` → `main`. Wait for **Vercel** to
+     finish the Production deploy.
+  4. [ ] **Live site** → `/checkout`: place one order with your email
+     typed with a capital letter (e.g. `You@gmail.com`). Then, logged in,
+     check it shows in **My Account**. Then cancel it in `/admin/orders`
+     and check the product's stock goes back in `/admin/products`.
 - [ ] **Go-live, doesn't block other steps: set up a receiving address on
   your domain** (e.g. `hello@hirayaleather.com`) so customer replies
   aren't lost. The sending address on `mail.hirayaleather.com` has no
@@ -153,21 +170,6 @@ block anything (content, brand, photos).
   Related: the receiving-address item above (so replies don't bounce), and
   test runs no longer sending emails (`fix/test-safety`). A Reply-To on
   customer emails is logged in IMPROVEMENTS.md.
-- [ ] **Dev only, blocks every `npm test` run (not go-live): mark your
-  `.env.local` as dev.** Once the `fix/test-safety` change is in, the
-  tests refuse to run (they write orders, stock, settings and promo codes)
-  until `.env.local` says it points at the dev database. **Terminal** /
-  your editor: open `.env.local` in the repo folder, check that
-  `SUPABASE_URL` is the **dev** project (not `<prod-ref>`), and add this
-  line:
-  ```
-  SUPABASE_ENV=dev
-  ```
-  Optional extra lock: also add `SUPABASE_PROD_REF=<prod-ref>` (the ID in
-  the prod project's URL), so tests refuse that project even if the
-  marker is copied somewhere by mistake. **Never** add `SUPABASE_ENV` to
-  Vercel's env vars. Then run `npm test`: it should start the lanes
-  instead of printing "Refusing to run the tests".
 - [ ] **Dev only, blocks clean `npm test` runs (not go-live): the dev DB
   is missing `classic-bifold-wallet`/`tote-bag`, the seed products
   `tests/orders.test.ts` and `tests/api-orders.test.ts` depend on.** Both
@@ -309,3 +311,12 @@ block anything (content, brand, photos).
 - [x] Run migration `0025` (nationwide delivery) + the PSGC seed on dev
   (done 2026-10-17), re-seeded after the City of Manila revert; `npm test`
   and the MANUAL_TESTING.md pass both done.
+- [x] Marked the dev `.env.local` with `SUPABASE_ENV=dev`, the test-suite
+  prod guard (PR #24). The full `npm test` passed with it (2026-10-17).
+  Keep the line if `.env.local` is ever recreated. Never set it on Vercel.
+- [x] Ran migration `0026` (order safety: atomic order creation and
+  cancellation, case-insensitive emails) on dev (2026-10-17), and
+  re-applied it after the first round of review fixes.
+- [x] Re-ran the edited `0026` on dev after the review fixes (cancel
+  lock order, re-runnable triggers, promo locked first). The full
+  `npm test` passed apart from the two known seed files (2026-10-17).
