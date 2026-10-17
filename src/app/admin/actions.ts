@@ -64,6 +64,8 @@ import {
   createCategory,
   renameCategory,
   deleteCategory,
+  reorderCategories,
+  reorderCategoryProducts,
 } from "@/lib/admin/categories";
 import {
   createPromoCode,
@@ -780,7 +782,7 @@ export async function removeStudioPortraitAction(): Promise<ActionResult> {
   }, "Portrait removed.");
 }
 
-// ─── Categories (internal-only — see supabase/migrations/0014_categories.sql) ──
+// ─── Categories (0014; shop order 0027, docs/design/shop-order.md) ──────
 
 export async function createCategoryAction(
   prevState: ActionResult | null,
@@ -824,6 +826,43 @@ export async function deleteCategoryAction(id: string): Promise<ActionResult> {
     revalidatePath("/admin/categories");
     revalidatePath("/admin/products");
   }, "Category deleted.");
+}
+
+// Shop order (docs/design/shop-order.md): DragReorderList on
+// /admin/categories calls these with the full dropped order.
+//
+// Revalidation runs in `finally`: positions are written one row at a time
+// (setPositions), so a failure part-way can leave some rows already moved.
+// Refreshing anyway keeps the admin list and the shop showing what's
+// really saved; the error still comes back as a toast.
+export async function reorderCategoriesAction(
+  orderedIds: string[]
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    try {
+      await reorderCategories(orderedIds);
+    } finally {
+      revalidatePath("/admin/categories");
+      revalidateStorefront();
+    }
+  }, "Category order saved.");
+}
+
+// Bound to categoryId on the page, one per category's product list.
+export async function reorderCategoryProductsAction(
+  categoryId: string,
+  orderedIds: string[]
+): Promise<ActionResult> {
+  return runAction(async () => {
+    await assertAdmin();
+    try {
+      await reorderCategoryProducts(categoryId, orderedIds);
+    } finally {
+      revalidatePath("/admin/categories");
+      revalidateStorefront();
+    }
+  }, "Product order saved.");
 }
 
 // ─── Promo codes (supabase/migrations/0015_promo_codes.sql) ────────────

@@ -110,17 +110,28 @@ export function DragReorderList<T extends { id: string }>({
         <li
           key={item.id}
           draggable={grabbedId === item.id}
+          // Lists can nest (/admin/categories: each category row holds
+          // its own product list). Drag events bubble, so a list stops
+          // the ones it owns: an inner product drag never also starts a
+          // drag of the outer category row, and a drop is only stopped
+          // by the list whose item is being dragged. A category dropped
+          // onto a product row inside another category still bubbles up
+          // to that category's row.
           onDragStart={(e) => {
+            e.stopPropagation();
             setDraggedId(item.id);
             e.dataTransfer.effectAllowed = "move";
           }}
-          onDragEnd={() => {
+          onDragEnd={(e) => {
+            e.stopPropagation();
             setDraggedId(null);
             setGrabbedId(null);
           }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
+            if (!draggedId) return;
+            e.stopPropagation();
             handleDrop(item.id);
           }}
           className={`${overlayGrip ? "relative" : "flex items-start gap-2"} ${itemClassName ?? ""} ${
