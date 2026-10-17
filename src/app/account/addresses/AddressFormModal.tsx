@@ -21,8 +21,6 @@ type AddressFormValues = LocationCodes & {
   address2: string;
   postalCode: string;
   isDefault: boolean;
-  // Saved before nationwide delivery and not fully matched to PSGC.
-  needsUpdate: boolean;
 };
 
 // Shared by the "+ Add address" trigger and each address's edit-icon
@@ -125,12 +123,6 @@ export default function AddressFormModal({
           onSuccess={close}
           className="flex flex-col gap-3"
         >
-          {defaultValues?.needsUpdate && (
-            <p className="text-sm text-[#7A3B22] dark:text-[#C97A4E]">
-              We now deliver nationwide. Please pick this address&apos;s
-              region, city and barangay from the lists.
-            </p>
-          )}
           <input
             name="label"
             defaultValue={defaultValues?.label}

@@ -212,18 +212,12 @@ shape (`Brgy. {barangay}, {city} {postalCode}`), since they have no
 province/region snapshot. "Brgy." isn't added when the PSGC name already
 starts with "Barangay" (Manila's "Barangay 12").
 
-**Saved addresses that predate PSGC** (dev data only; prod started
-clean). If one couldn't be fully matched to PSGC codes, its card shows a
-small accent-colored "Needs a quick update before ordering" line, and
-`/account/addresses` shows a muted "Needs updating" tag beside its label.
-Selecting that card at checkout shows the manual-entry fields prefilled
-from it, with one accent-colored note on top: "We now deliver
-nationwide, so please pick this address's region, city and barangay
-from the lists below. We'll update your saved address too." The "Save
-this address" checkbox is hidden, because that saved address is updated
-automatically after the order is placed. The account edit modal shows
-the same note. No new layout either way. It's the existing manual-entry
-form with defaults.
+**Saved addresses without PSGC codes** (only dev has any; production
+started clean) aren't offered as cards at checkout, since an order needs
+a valid code chain. They still show in `/account/addresses`, unmarked,
+and editing one means picking its region, city and barangay. There's no
+extra tag, note or fix-up flow (owner's call after the first testing
+pass, 2026-10-17).
 
 **Feedback.** Saving in the `/account/addresses` modal now goes through
 `ActionForm`/`SubmitButton`. It shows a success or error toast, shows

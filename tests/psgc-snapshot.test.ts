@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { derivePsgcTables } from "../supabase/psgc/derive.mjs";
 import { readSnapshot } from "../supabase/psgc/snapshot-io.mjs";
-import {
-  matchLegacyAddress,
-  normalizeCityName,
-} from "../supabase/psgc/legacy-match.mjs";
 
 // No database: checks the bundled PSGC snapshot (supabase/psgc/data/) that
-// seed.mjs loads, and the pure derivation/matching logic behind it. A PSA
+// seed.mjs loads, and the pure derivation logic behind it. A PSA
 // refresh that breaks one of these invariants should fail here before it
 // reaches any database.
 
@@ -114,49 +110,5 @@ describe("derivePsgcTables", () => {
   it("throws on an unknown geographic level", () => {
     const rows = [...baseRows, ["0702201002", "Odd", "", "Purok"]];
     expect(() => derivePsgcTables([header, ...rows])).toThrow(/Unknown PSGC level/);
-  });
-});
-
-describe("matchLegacyAddress (pre-PSGC saved addresses)", () => {
-  const ncrCities = snapshot.cities.filter((c) => c.regionCode === "1300000000");
-  const barangaysByCity = new Map<string, { code: string; name: string }[]>();
-  for (const b of snapshot.barangays) {
-    if (!b.cityCode.startsWith("13")) continue;
-    barangaysByCity.set(b.cityCode, [...(barangaysByCity.get(b.cityCode) ?? []), b]);
-  }
-
-  it("normalizes old list names to PSGC names", () => {
-    expect(normalizeCityName("Las Piñas")).toBe(normalizeCityName("City of Las Piñas"));
-    expect(normalizeCityName("Quezon City")).toBe(normalizeCityName("Quezon City"));
-  });
-
-  it("fully matches a known city and barangay", () => {
-    const match = matchLegacyAddress(
-      { city: "Quezon City", barangay: "Brgy. Pinyahan" },
-      ncrCities,
-      barangaysByCity
-    );
-    expect(match.city?.code).toBe("1381300000");
-    expect(match.barangay?.code).toBe("1381300082");
-  });
-
-  it("matches only the city when the free-typed barangay isn't in it", () => {
-    // Pineda is in Pasig, not Las Piñas — a real dev saved address.
-    const match = matchLegacyAddress(
-      { city: "Las Piñas", barangay: "Pineda" },
-      ncrCities,
-      barangaysByCity
-    );
-    expect(match.city?.name).toBe("City of Las Piñas");
-    expect(match.barangay).toBeNull();
-  });
-
-  it("matches nothing for a city outside the old Metro Manila list", () => {
-    const match = matchLegacyAddress(
-      { city: "Cebu City", barangay: "Lahug" },
-      ncrCities,
-      barangaysByCity
-    );
-    expect(match).toEqual({ city: null, barangay: null });
   });
 });

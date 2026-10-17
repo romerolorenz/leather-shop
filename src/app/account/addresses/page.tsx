@@ -56,11 +56,6 @@ export default async function AddressesPage() {
                         Default
                       </span>
                     )}
-                    {address.needsUpdate && (
-                      <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#6E6A64] dark:text-[#A39C90]">
-                        Needs updating
-                      </span>
-                    )}
                   </p>
                   <div className="flex items-center gap-1">
                     <AddressFormModal
@@ -82,7 +77,6 @@ export default async function AddressesPage() {
                         cityCode: address.cityCode,
                         barangayCode: address.barangayCode,
                         isDefault: address.isDefault,
-                        needsUpdate: address.needsUpdate,
                       }}
                     />
                     <ActionButton

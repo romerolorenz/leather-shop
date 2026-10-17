@@ -237,9 +237,8 @@ later work. Not started until explicitly requested — see items below.
     and region) on `customer_addresses` and `orders` (`shipping_`), with
     no FK to `psgc_*`, so a PSA refresh can't break history.
     `resolveAddressCodes()` validates the chain on every order and address
-    save, and never trusts client names. Pre-PSGC dev addresses get a
-    best-effort NCR name match in the seed. The rest show "Needs updating"
-    and are re-picked at checkout, which updates the saved address.
+    save, and never trusts client names. Saved addresses with no PSGC
+    codes (only dev has any) aren't offered at checkout.
   - **Display:** full barangay/city/province/region lines on checkout
     cards, `/account/addresses`, `/admin/orders` and all four order
     emails (shared `src/lib/address-format.ts`). Metro Manila copy is

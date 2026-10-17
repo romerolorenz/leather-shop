@@ -52,9 +52,7 @@ flowchart LR
   province, and the City of Manila's sub-municipalities are folded in. It
   fails loudly on anything new rather than mis-filing it.
 - `xlsx.mjs`: a tiny dependency-free `.xlsx` reader.
-- `seed.mjs`: loads `data/` into a database. It also best-effort matches
-  saved addresses from before nationwide delivery to PSGC codes.
-- `legacy-match.mjs`: the matching rules for those old addresses.
+- `seed.mjs`: loads `data/` into a database.
 - `tests/psgc-snapshot.test.ts` checks the snapshot and these rules
   without touching any database.
 
@@ -75,13 +73,11 @@ node supabase/psgc/seed.mjs
 
 It prints the target host first. Check that it's the database you meant.
 
-**Saved addresses from before PSGC** (dev only, since prod started
-clean): addresses with no `barangay_code` are matched by name against
-the Metro Manila cities from the old delivery list. When the city and
-barangay both match, the codes are filled in. When only the city
-matches, the city is filled in and the address shows as "Needs
-updating", so the customer re-picks the barangay at checkout or in
-`/account/addresses`. Anything else is left for the customer the same way.
+**After any re-seed**, the location lists are cached: a day in each
+browser, and up to a week at Vercel's edge (`src/lib/locations-api.ts`).
+So test in a private window, or with DevTools → Network → "Disable
+cache" ticked. After a **prod** re-seed, also redeploy prod (Vercel →
+Deployments → latest Production → Redeploy) to clear the edge cache.
 
 ## Refreshing to a newer PSA release
 

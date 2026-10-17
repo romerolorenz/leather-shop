@@ -14,16 +14,13 @@ export type CustomerAddress = {
   province: string;
   region: string;
   postalCode: string;
-  // PSGC codes (migration 0025). Null on addresses saved before
-  // nationwide delivery that couldn't be matched to PSGC.
+  // PSGC codes (migration 0025). Null only on rows saved before
+  // nationwide delivery, which checkout doesn't offer (see
+  // hasPsgcLocation).
   regionCode: string | null;
   provinceCode: string | null;
   cityCode: string | null;
   barangayCode: string | null;
-  // True when the address predates PSGC and couldn't be fully matched
-  // (supabase/psgc/seed.mjs). The customer re-picks city/barangay the
-  // next time they use it at checkout, or edits it in /account/addresses.
-  needsUpdate: boolean;
   isDefault: boolean;
 };
 
@@ -76,9 +73,17 @@ function mapAddressRow(row: AddressRow): CustomerAddress {
     provinceCode: row.province_code,
     cityCode: row.city_code,
     barangayCode: row.barangay_code,
-    needsUpdate: !row.region_code || !row.city_code || !row.barangay_code,
     isDefault: row.is_default,
   };
+}
+
+// Checkout only offers saved addresses that carry PSGC codes, since an
+// order needs a valid code chain. Rows saved before nationwide delivery
+// have none; they still show in /account/addresses, where editing one
+// means picking its location from the dropdowns. Production started with
+// no such rows.
+export function hasPsgcLocation(address: CustomerAddress): boolean {
+  return !!address.regionCode && !!address.cityCode && !!address.barangayCode;
 }
 
 // customer_addresses has RLS with no policies (default-deny) — only the

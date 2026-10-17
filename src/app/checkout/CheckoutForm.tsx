@@ -10,7 +10,7 @@ import { trackEvent } from "@/lib/track-event";
 import { PromoCodeField } from "@/components/PromoCodeField";
 import { useToast } from "@/components/ToastProvider";
 import { formatOrderRef } from "@/lib/order-ref";
-import { createAddressAction, updateAddressAction } from "@/app/account/actions";
+import { createAddressAction } from "@/app/account/actions";
 import type { CustomerAddress } from "@/lib/customer/addresses";
 import type { PsgcProvince, PsgcRegion } from "@/lib/psgc";
 import { formatAddressLines } from "@/lib/address-format";
@@ -70,11 +70,6 @@ export default function CheckoutForm({
   const selectedAddress = savedAddresses.find(
     (a) => a.id === selectedAddressId
   );
-  // A saved address from before nationwide delivery that couldn't be
-  // matched to PSGC: show the entry fields prefilled from it so the
-  // shopper re-picks city/barangay, then update that saved address.
-  const addressToFix = selectedAddress?.needsUpdate ? selectedAddress : undefined;
-  const usingSavedAddress = !!selectedAddress && !addressToFix;
 
   useEffect(() => {
     // Cart hydrates from localStorage asynchronously (see cart-context.tsx),
@@ -141,12 +136,11 @@ export default function CheckoutForm({
       setOrderId(data.order.id);
       clear();
 
-      if (shouldSaveAddress || (addressToFix && customerEmail)) {
+      if (shouldSaveAddress) {
         const addressForm = new FormData();
         addressForm.set(
           "label",
-          addressToFix?.label ??
-            (savedAddresses.length === 0 ? "Home" : "New address")
+          savedAddresses.length === 0 ? "Home" : "New address"
         );
         for (const name of [
           "phone",
@@ -161,22 +155,17 @@ export default function CheckoutForm({
           addressForm.set(name, field(name));
         }
         addressForm.set("recipientName", field("name"));
-        if (addressToFix ? addressToFix.isDefault : savedAddresses.length === 0) {
-          addressForm.set("isDefault", "on");
-        }
+        if (savedAddresses.length === 0) addressForm.set("isDefault", "on");
 
         // The order is already placed, so a failure here (including a
         // network error) only gets a toast, never the order-failed error.
-        const result = await (addressToFix
-          ? updateAddressAction(addressToFix.id, null, addressForm)
-          : createAddressAction(null, addressForm)
-        ).catch(() => ({ success: false as const, error: "" }));
+        const result = await createAddressAction(null, addressForm).catch(
+          () => ({ success: false as const, error: "" })
+        );
         if (!result.success) {
           showToast({
             type: "error",
-            message: addressToFix
-              ? "Order placed, but couldn't update your saved address."
-              : "Order placed, but couldn't save this address for next time.",
+            message: "Order placed, but couldn't save this address for next time.",
           });
         }
       }
@@ -360,7 +349,7 @@ export default function CheckoutForm({
                 </div>
               )}
 
-              {usingSavedAddress && selectedAddress ? (
+              {selectedAddress ? (
                 <>
                   <input type="hidden" name="name" value={selectedAddress.recipientName} readOnly />
                   <input type="hidden" name="phone" value={selectedAddress.phone} readOnly />
@@ -373,16 +362,7 @@ export default function CheckoutForm({
                   <input type="hidden" name="postalCode" value={selectedAddress.postalCode} readOnly />
                 </>
               ) : (
-                // Keyed so switching to a different address-to-fix (or to
-                // "+ Enter a different address") resets the prefilled values.
-                <div key={selectedAddressId} className="mt-3 flex flex-col gap-4">
-                  {addressToFix && (
-                    <p className="text-sm text-[#7A3B22] dark:text-[#C97A4E]">
-                      We now deliver nationwide, so please pick this
-                      address&apos;s region, city and barangay from the lists
-                      below. We&apos;ll update your saved address too.
-                    </p>
-                  )}
+                <div className="mt-3 flex flex-col gap-4">
                   <div>
                     <label className={LABEL_CLASS} htmlFor="name">
                       Full name
@@ -390,7 +370,6 @@ export default function CheckoutForm({
                     <input
                       id="name"
                       name="name"
-                      defaultValue={addressToFix?.recipientName}
                       required
                       className={`mt-1 ${FIELD_CLASS}`}
                     />
@@ -402,7 +381,6 @@ export default function CheckoutForm({
                     <input
                       id="phone"
                       name="phone"
-                      defaultValue={addressToFix?.phone}
                       placeholder="0917 123 4567"
                       required
                       className={`mt-1 ${FIELD_CLASS}`}
@@ -415,7 +393,6 @@ export default function CheckoutForm({
                     <input
                       id="street"
                       name="street"
-                      defaultValue={addressToFix?.street}
                       placeholder="House/unit no., street name"
                       required
                       className={`mt-1 ${FIELD_CLASS}`}
@@ -429,14 +406,12 @@ export default function CheckoutForm({
                     <input
                       id="address2"
                       name="address2"
-                      defaultValue={addressToFix?.address2}
                       className={`mt-1 ${FIELD_CLASS}`}
                     />
                   </div>
                   <AddressLocationFields
                     regions={regions}
                     provinces={provinces}
-                    initial={addressToFix}
                     fieldClass={FIELD_CLASS}
                     labelClass={LABEL_CLASS}
                     showLabels
@@ -454,13 +429,12 @@ export default function CheckoutForm({
                           maxLength={4}
                           required
                           placeholder="1100"
-                          defaultValue={addressToFix?.postalCode}
                           className={`mt-1 ${FIELD_CLASS}`}
                         />
                       </>
                     }
                   />
-                  {customerEmail && !addressToFix && (
+                  {customerEmail && (
                     <label className={`flex items-center gap-2 text-sm ${INK_SOFT}`}>
                       <input type="checkbox" name="saveAddress" />
                       Save this address for next time
@@ -525,11 +499,7 @@ function AddressCard({
             </span>
           ))}
         </span>
-        {address.needsUpdate && (
-          <span className="mt-1 block text-xs text-[#7A3B22] dark:text-[#C97A4E]">
-            Needs a quick update before ordering
-          </span>
-        )}
+
       </span>
     </button>
   );

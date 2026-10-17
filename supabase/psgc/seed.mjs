@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Loads the bundled PSGC snapshot (supabase/psgc/data/) into the psgc_*
-// tables from migration 0025, then best-effort matches pre-PSGC saved
-// addresses to codes. Safe to re-run: it upserts every row and then
+// tables from migration 0025. Safe to re-run: it upserts every row and then
 // deletes rows that are no longer in the snapshot (a PSA refresh can
 // retire codes). See supabase/psgc/README.md.
 //
@@ -12,7 +11,6 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { readSnapshot } from "./snapshot-io.mjs";
-import { matchLegacyAddress } from "./legacy-match.mjs";
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -97,53 +95,6 @@ for (const table of Object.keys(toRows).reverse()) {
     if (error) await fail(`removing retired ${table}`, error);
   }
   if (stale.length) console.log(`Removed ${stale.length} retired ${table}`);
-}
-
-// ─── best-effort match of pre-PSGC saved addresses ────────────────────────
-// Only touches addresses with no barangay_code yet. Anything left without
-// a barangay_code is shown as "needs updating" at checkout and in
-// /account/addresses, and the customer re-picks it there.
-const { data: legacy, error: legacyErr } = await supabase
-  .from("customer_addresses")
-  .select("id, city, barangay")
-  .is("barangay_code", null);
-if (legacyErr) await fail("reading saved addresses", legacyErr);
-
-if (legacy.length) {
-  const ncr = snapshot.regions.find((r) => r.code.startsWith("13"));
-  const ncrCities = snapshot.cities.filter((c) => c.regionCode === ncr.code);
-  const ncrCodes = new Set(ncrCities.map((c) => c.code));
-  const barangaysByCity = new Map();
-  for (const b of snapshot.barangays) {
-    if (!ncrCodes.has(b.cityCode)) continue;
-    if (!barangaysByCity.has(b.cityCode)) barangaysByCity.set(b.cityCode, []);
-    barangaysByCity.get(b.cityCode).push(b);
-  }
-
-  let full = 0;
-  let cityOnly = 0;
-  for (const address of legacy) {
-    const { city, barangay } = matchLegacyAddress(address, ncrCities, barangaysByCity);
-    if (!city) continue;
-    const update = {
-      region_code: ncr.code,
-      region: ncr.name,
-      province_code: null,
-      province: null,
-      city_code: city.code,
-      city: city.name,
-      ...(barangay ? { barangay_code: barangay.code, barangay: barangay.name } : {}),
-    };
-    const { error } = await supabase.from("customer_addresses").update(update).eq("id", address.id);
-    if (error) await fail("updating a saved address", error);
-    if (barangay) full++;
-    else cityOnly++;
-  }
-  console.log(
-    `Saved addresses without PSGC codes: ${legacy.length}. Fully matched: ${full}. ` +
-      `City only (customer re-picks the barangay): ${cityOnly}. ` +
-      `Unmatched: ${legacy.length - full - cityOnly}.`
-  );
 }
 
 console.log("Done.");

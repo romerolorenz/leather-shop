@@ -41,6 +41,7 @@ logged in with a Google account that has saved addresses.
       Pick **City of Manila**. Barangays show their district, e.g.
       "Barangay 1 (Tondo I/II)".
       Findings: clean it up, don't show barangay 1, 2, etc; Tondo, Binondo, etc should be there
+      2026-10-17: reverted, Manila keeps numbered barangays
 - [x] Change the region after picking everything. Province, City and
       Barangay clear, so you can't submit a stale combination.
       Findings:
@@ -81,6 +82,13 @@ logged in with a Google account that has saved addresses.
       order. Back in `/account/addresses` the address is updated and the
       tag is gone.
       Findings: lets remove this handling; database will start from scratch
+- [x] **Re-test (removed 2026-10-17):** in `/account/addresses`, dev's old
+      addresses (no barangay picked from the list) show no "Needs
+      updating" tag, and their edit modal has no "We now deliver
+      nationwide…" note. At `/checkout` they aren't offered as cards at
+      all. Only addresses saved with the dropdowns appear there. With no
+      usable saved address, checkout shows the entry fields directly.
+      Findings:
 - [x] Picking a complete saved address at checkout places the order
       without showing any fields, as before.
       Findings: 

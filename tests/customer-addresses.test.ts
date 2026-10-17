@@ -2,6 +2,7 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   createAddress,
   deleteAddress,
+  hasPsgcLocation,
   listAddresses,
   updateAddress,
   type AddressInput,
@@ -134,8 +135,8 @@ describe("PSGC codes on saved addresses", () => {
       province: "Cebu",
       city: "City of Cebu",
       barangay: "Lahug",
-      needsUpdate: false,
     });
+    expect(hasPsgcLocation(address)).toBe(true);
   });
 
   it("stores no province for a Metro Manila address", async () => {
@@ -184,7 +185,7 @@ describe("PSGC codes on saved addresses", () => {
     expect(unchanged.barangayCode).toBe(CEBU_CITY_LAHUG.barangayCode);
   });
 
-  it("flags a pre-PSGC address (no codes) as needing an update", async () => {
+  it("keeps a pre-PSGC address (no codes) listed, but not usable at checkout", async () => {
     const { data, error } = await getSupabaseServerClient()
       .from("customer_addresses")
       .insert({
@@ -202,6 +203,7 @@ describe("PSGC codes on saved addresses", () => {
     expect(error).toBeNull();
 
     const [address] = await listAddresses(TEST_EMAIL);
-    expect(address.needsUpdate).toBe(true);
+    expect(address.label).toBe("Old");
+    expect(hasPsgcLocation(address)).toBe(false);
   });
 });

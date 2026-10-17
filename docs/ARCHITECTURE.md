@@ -264,10 +264,9 @@ customer_addresses
   barangay, city, province, region, postal_code, region_code,
   province_code, city_code, barangay_code, is_default — saved shipping
   addresses (Phase 8), scoped to the logged-in customer's email in app
-  code. Same PSGC code + name snapshot as orders (migration `0025`). An
-  address saved before nationwide delivery that couldn't be matched to
-  PSGC has null codes and is shown as "needs updating" until the
-  customer re-picks it.
+  code. Same PSGC code + name snapshot as orders (migration `0025`).
+  Checkout only offers addresses that carry PSGC codes; rows saved before
+  nationwide delivery (dev only) have none and aren't offered.
 
 psgc_regions / psgc_provinces / psgc_cities / psgc_barangays
   Read-only PSA reference data (migration `0025`, seeded by

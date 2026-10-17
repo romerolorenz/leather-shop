@@ -185,31 +185,6 @@ blockers, then items that don't block any phase.
         yet, take a manual backup before any risky migration. In
         **Terminal**, run
         `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
-- [ ] **Blocks merging `feat/nationwide-delivery` into `develop`: run the
-  nationwide-delivery migration and PSGC seed on dev.** No phase is
-  blocked (all are done), but nothing PSGC-related can be tested until
-  this is done. Migration `0025` is additive, so the current code keeps
-  working after it.
-  1. [x] **Supabase · dev** → SQL Editor → New query: paste
-     `supabase/migrations/0025_nationwide_delivery_psgc.sql` → Run. (Or,
-     in **Terminal**: `supabase db push --db-url "<dev URI>" --dry-run`,
-     which should list only `0025`, then run it again without
-     `--dry-run`.)
-  2. [x] **Terminal** (repo root):
-     `node --env-file=.env.local supabase/psgc/seed.mjs`. It should print
-     dev's host as `Target`, then `Upserted 42010 psgc_barangays`, then a
-     saved-address summary. Dev has 3 pre-PSGC addresses. Expect the two
-     Makati ones to match the city only (no barangay was ever saved), and
-     "Las Piñas / Pineda" to match the city only (Pineda is in Pasig).
-     All three then show "Needs updating".
-  3. [x] **Terminal**: `npm test`. The PSGC tests now run. The only
-     expected failures are the two seed-product files (the item below).
-     Done 2026-10-17 by the developer agent: 196 passed, 19 skipped, and
-     only those two files failed.
-  4. [ ] Work through MANUAL_TESTING.md → "Nationwide delivery (PSGC
-     address dropdowns)". The first pass was done 2026-10-17 with three
-     findings (City of Manila districts, and remove the "Needs updating"
-     and old-address handling). Re-test those after the fixes.
 - [ ] **Blocks releasing nationwide delivery (`develop` → `main`): run
   migration `0025` and the PSGC seed on prod, *before* the release
   deploys.** Prod starts with no saved addresses, so the seed only loads
@@ -222,13 +197,23 @@ blockers, then items that don't block any phase.
      and API Keys (`service_role`). Then, in **Terminal**:
      `SUPABASE_URL="https://<prod-ref>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<prod service_role key>" node supabase/psgc/seed.mjs`.
      Check that it prints `Target: <prod-ref>.supabase.co` and
-     `Upserted 42010 psgc_barangays`.
+     `Upserted 42010 psgc_barangays`. If you ever re-seed prod later (a
+     PSGC refresh), redeploy prod afterwards (Vercel → Deployments →
+     latest Production → Redeploy) to clear Vercel's edge cache of the
+     location lists.
   3. [ ] **GitHub**: merge `develop` → `main`. Wait for **Vercel** to
      finish the Production deploy.
   4. [ ] **Live site** → `/checkout`: place one order to an address
      outside Metro Manila (e.g. Cebu → City of Cebu → Lahug), using your
      own email. Check the email shows the full address. Then cancel it in
      `/admin/orders` (stock goes back).
+- [ ] **Optional, dev only: delete dev's 3 saved addresses from before
+  nationwide delivery.** They have no PSGC barangay code, so checkout no
+  longer offers them (they still show in `/account/addresses`, where
+  editing one means picking its region, city and barangay). Production
+  never had any. To clear them: **Supabase · dev** → SQL Editor →
+  `delete from customer_addresses where barangay_code is null;` (it should
+  report 3 rows). Or just leave them; nothing depends on them.
 - [ ] **At the nationwide release: update shop text that still says
   "Metro Manila only".** This is content you edit in the admin, not code.
   Do it right after the release above is live.
@@ -453,3 +438,35 @@ blockers, then items that don't block any phase.
   promo functions server-only; new functions locked by default) on dev
   (done 2026-10-04). Run it on any separate production database before
   `fix/lock-down-db-functions` deploys.
+- [x] **Blocks merging `feat/nationwide-delivery` into `develop`: run the
+  nationwide-delivery migration and PSGC seed on dev.** No phase is
+  blocked (all are done), but nothing PSGC-related can be tested until
+  this is done. Migration `0025` is additive, so the current code keeps
+  working after it.
+  1. [x] **Supabase · dev** → SQL Editor → New query: paste
+     `supabase/migrations/0025_nationwide_delivery_psgc.sql` → Run. (Or,
+     in **Terminal**: `supabase db push --db-url "<dev URI>" --dry-run`,
+     which should list only `0025`, then run it again without
+     `--dry-run`.)
+  2. [x] **Terminal** (repo root):
+     `node --env-file=.env.local supabase/psgc/seed.mjs` (first seed).
+  3. [x] **Terminal**: `npm test`. The PSGC tests now run. The only
+     expected failures are the two seed-product files (the item below).
+     Done 2026-10-17 by the developer agent: 196 passed, 19 skipped, and
+     only those two files failed.
+  4. [x] **Terminal**: re-seed dev again,
+     `node --env-file=.env.local supabase/psgc/seed.mjs`. Dev currently
+     holds the reverted City of Manila districts version (14 district
+     rows, no numbered barangays). The owner decided on 2026-10-17 to keep
+     Manila's 897 numbered barangays, shown as e.g. "Barangay 1 (Tondo
+     I/II)". No new migration. It should print
+     `Upserted 42010 psgc_barangays`, then
+     `Removed 14 retired psgc_barangays` (the district rows).
+     Then test in a private window, or with DevTools → Network →
+     "Disable cache" ticked: location lists are cached in the browser
+     for a day, so a normal window may still show the districts.
+  5. [x] Work through MANUAL_TESTING.md →
+     "Nationwide delivery (PSGC address dropdowns)". The first pass was
+     done 2026-10-17 with three findings (City of Manila districts, and
+     removing the old-address handling; the Manila change was later
+     reverted). Re-test the steps marked "Re-test" after the re-seed. Done 2026-10-17.
