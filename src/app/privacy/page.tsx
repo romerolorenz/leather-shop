@@ -1,7 +1,7 @@
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export const metadata = {
-  title: "Privacy Policy — Leather Shop",
+  title: "Privacy Policy — Hiraya Leather",
 };
 
 export default function PrivacyPage() {

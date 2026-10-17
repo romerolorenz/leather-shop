@@ -9,7 +9,7 @@ const archivo = Archivo({
 });
 
 export const metadata = {
-  title: "Contact Us — Leather Shop",
+  title: "Contact Us — Hiraya Leather",
 };
 
 export default async function ContactPage() {
