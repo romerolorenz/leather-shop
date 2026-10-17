@@ -488,16 +488,10 @@ export async function updateSettingsAction(
   return runAction(async () => {
     await assertAdmin();
 
-    const deliveryCities = String(formData.get("deliveryCities") ?? "")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
     await updateSettings({
       shippingFeeCentavos: Math.round(
         Number(formData.get("shippingFee")) * 100
       ),
-      deliveryCities,
       adminNotificationEmail: String(
         formData.get("adminNotificationEmail") ?? ""
       ).trim(),

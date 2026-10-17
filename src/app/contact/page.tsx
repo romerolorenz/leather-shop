@@ -28,8 +28,7 @@ export default async function ContactPage() {
           Contact Us
         </h1>
         <p className="text-[#6E6A64] dark:text-[#A39C90]">
-          Have a question, or want to order for delivery outside Metro Manila?
-          Send us a message below, or reach out directly:
+          Have a question? Send us a message below, or reach out directly:
         </p>
 
         <div className="mt-6 flex flex-col gap-3">

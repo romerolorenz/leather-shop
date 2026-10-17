@@ -3,6 +3,7 @@ import { formatPrice } from "@/lib/products";
 import { getOrderItemPhotos, type Order } from "@/lib/orders";
 import { formatOrderRef } from "@/lib/order-ref";
 import { getSettings } from "@/lib/settings";
+import { formatAddressLines as formatDisplayAddressLines } from "@/lib/address-format";
 import {
   listPaymentMethods,
   type PaymentMethod,
@@ -35,16 +36,12 @@ function formatOrderItems(order: Order): string {
     .join("\n");
 }
 
-// Two lines: "{street}, {address2}" (address2 omitted if empty), then
-// "Brgy. {barangay}, {city} {postalCode}" — same shape used on
-// /account/addresses and the checkout address cards, so an order's
-// delivery address reads the same way everywhere it's shown.
-function formatAddressLines(address: Order["shippingAddress"]): [string, string] {
-  const line1 = address.address2
-    ? `${address.street}, ${address.address2}`
-    : address.street;
-  const line2 = `Brgy. ${address.barangay}, ${address.city} ${address.postalCode}`;
-  return [line1, line2];
+// Same shape as checkout's address cards, /account/addresses and
+// /admin/orders (src/lib/address-format.ts), so an order's delivery
+// address reads the same everywhere: street line, barangay + city, then
+// province + region + postal code.
+function formatAddressLines(address: Order["shippingAddress"]): string[] {
+  return formatDisplayAddressLines(address);
 }
 
 function escapeHtml(value: string): string {

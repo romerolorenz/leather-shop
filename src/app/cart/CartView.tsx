@@ -180,7 +180,7 @@ export default function CartView({
           </>
         )}
         <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
-          Shipping ({formatPrice(shippingFeeCentavos)} flat, Metro Manila)
+          Shipping ({formatPrice(shippingFeeCentavos)} flat rate)
           calculated at checkout.
         </p>
 

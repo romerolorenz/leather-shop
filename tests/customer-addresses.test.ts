@@ -1,24 +1,40 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   createAddress,
   deleteAddress,
+  hasPsgcLocation,
   listAddresses,
   updateAddress,
   type AddressInput,
 } from "@/lib/customer/addresses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { AddressValidationError } from "@/lib/psgc";
+import {
+  assertPsgcSeeded,
+  CEBU_CITY_LAHUG,
+  MAKATI_BEL_AIR,
+} from "./helpers/psgc-fixtures";
 
 // Runs against the real (dev) Supabase project — there's no separate test
 // database. Every test cleans up any address it creates.
 
 const TEST_EMAIL = "vitest-addresses@example.com";
+const OTHER_EMAIL = "vitest-other@example.com";
 const cleanupAddressIds: string[] = [];
+
+beforeAll(assertPsgcSeeded);
 
 afterEach(async () => {
   const supabase = getSupabaseServerClient();
   for (const id of cleanupAddressIds.splice(0)) {
     await supabase.from("customer_addresses").delete().eq("id", id);
   }
+  // Safety net: these emails are test-only, so anything a failed
+  // assertion left behind (before its id was recorded) goes too.
+  await supabase
+    .from("customer_addresses")
+    .delete()
+    .in("user_email", [TEST_EMAIL, OTHER_EMAIL]);
 });
 
 function buildAddress(overrides: Partial<AddressInput> = {}): AddressInput {
@@ -28,9 +44,8 @@ function buildAddress(overrides: Partial<AddressInput> = {}): AddressInput {
     phone: "0917 000 0000",
     street: "1 Test St",
     address2: "",
-    barangay: "Test Barangay",
-    city: "Pasig",
-    postalCode: "1600",
+    postalCode: "1209",
+    location: MAKATI_BEL_AIR,
     isDefault: false,
     ...overrides,
   };
@@ -39,7 +54,7 @@ function buildAddress(overrides: Partial<AddressInput> = {}): AddressInput {
 describe("listAddresses", () => {
   it("only returns addresses for the given user_email", async () => {
     await createAddress(TEST_EMAIL, buildAddress());
-    const otherEmail = "vitest-other@example.com";
+    const otherEmail = OTHER_EMAIL;
     await createAddress(otherEmail, buildAddress());
 
     const [mine, theirs] = await Promise.all([
@@ -102,5 +117,93 @@ describe("deleteAddress", () => {
     await deleteAddress(address.id, TEST_EMAIL);
     expect(await listAddresses(TEST_EMAIL)).toHaveLength(0);
     cleanupAddressIds.length = 0;
+  });
+});
+
+describe("PSGC codes on saved addresses", () => {
+  it("snapshots region, province, city and barangay names from the codes", async () => {
+    await createAddress(
+      TEST_EMAIL,
+      buildAddress({ location: CEBU_CITY_LAHUG, postalCode: "6000" })
+    );
+    const [address] = await listAddresses(TEST_EMAIL);
+    cleanupAddressIds.push(address.id);
+
+    expect(address).toMatchObject({
+      ...CEBU_CITY_LAHUG,
+      region: "Region VII (Central Visayas)",
+      province: "Cebu",
+      city: "City of Cebu",
+      barangay: "Lahug",
+    });
+    expect(hasPsgcLocation(address)).toBe(true);
+  });
+
+  it("stores no province for a Metro Manila address", async () => {
+    await createAddress(TEST_EMAIL, buildAddress());
+    const [address] = await listAddresses(TEST_EMAIL);
+    cleanupAddressIds.push(address.id);
+
+    expect(address.provinceCode).toBeNull();
+    expect(address.province).toBe("");
+    expect(address.city).toBe("City of Makati");
+  });
+
+  it("rejects an inconsistent chain and saves nothing", async () => {
+    await expect(
+      createAddress(
+        TEST_EMAIL,
+        buildAddress({
+          location: { ...CEBU_CITY_LAHUG, barangayCode: MAKATI_BEL_AIR.barangayCode },
+        })
+      )
+    ).rejects.toThrow(AddressValidationError);
+    expect(await listAddresses(TEST_EMAIL)).toHaveLength(0);
+  });
+
+  it("re-resolves names when an update changes the codes, and rejects a bad update", async () => {
+    await createAddress(TEST_EMAIL, buildAddress());
+    const [address] = await listAddresses(TEST_EMAIL);
+    cleanupAddressIds.push(address.id);
+
+    await updateAddress(
+      address.id,
+      TEST_EMAIL,
+      buildAddress({ location: CEBU_CITY_LAHUG, postalCode: "6000" })
+    );
+    const [moved] = await listAddresses(TEST_EMAIL);
+    expect(moved).toMatchObject({ city: "City of Cebu", province: "Cebu", barangay: "Lahug" });
+
+    await expect(
+      updateAddress(
+        address.id,
+        TEST_EMAIL,
+        buildAddress({ location: { ...CEBU_CITY_LAHUG, provinceCode: null } })
+      )
+    ).rejects.toThrow(AddressValidationError);
+    const [unchanged] = await listAddresses(TEST_EMAIL);
+    expect(unchanged.barangayCode).toBe(CEBU_CITY_LAHUG.barangayCode);
+  });
+
+  it("keeps a pre-PSGC address (no codes) listed, but not usable at checkout", async () => {
+    const { data, error } = await getSupabaseServerClient()
+      .from("customer_addresses")
+      .insert({
+        user_email: TEST_EMAIL,
+        label: "Old",
+        recipient_name: "Vitest Tester",
+        phone: "0917 000 0000",
+        street: "1 Test St",
+        city: "Pasig",
+        barangay: "Kapitolyo",
+      })
+      .select("id")
+      .single();
+    if (data) cleanupAddressIds.push(data.id);
+    expect(error).toBeNull();
+
+    const [address] = await listAddresses(TEST_EMAIL);
+    expect(address.label).toBe("Old");
+    expect(hasPsgcLocation(address)).toBe(false);
   });
 });

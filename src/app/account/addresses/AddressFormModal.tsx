@@ -1,15 +1,24 @@
 "use client";
 
 import { useRef } from "react";
+import { ActionForm } from "@/components/admin/ActionForm";
+import { SubmitButton } from "@/components/admin/SubmitButton";
+import {
+  AddressLocationFields,
+  type LocationCodes,
+} from "@/components/AddressLocationFields";
+import type { ActionResult } from "@/lib/action-result";
+import type { PsgcProvince, PsgcRegion } from "@/lib/psgc";
 
-type AddressFormValues = {
+const FIELD_CLASS =
+  "w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]";
+
+type AddressFormValues = LocationCodes & {
   label: string;
   recipientName: string;
   phone: string;
   street: string;
   address2: string;
-  barangay: string;
-  city: string;
   postalCode: string;
   isDefault: boolean;
 };
@@ -18,14 +27,19 @@ type AddressFormValues = {
 // trigger — same dialog/form, different action + title + starting values.
 export default function AddressFormModal({
   action,
-  cities,
+  regions,
+  provinces,
   title,
   submitLabel,
   defaultValues,
   variant,
 }: {
-  action: (formData: FormData) => void | Promise<void>;
-  cities: string[];
+  action: (
+    prevState: ActionResult | null,
+    formData: FormData
+  ) => Promise<ActionResult>;
+  regions: PsgcRegion[];
+  provinces: PsgcProvince[];
   title: string;
   submitLabel: string;
   defaultValues?: AddressFormValues;
@@ -104,74 +118,67 @@ export default function AddressFormModal({
             </svg>
           </button>
         </div>
-        <form action={action} onSubmit={close} className="flex flex-col gap-3">
+        <ActionForm
+          action={action}
+          onSuccess={close}
+          className="flex flex-col gap-3"
+        >
           <input
             name="label"
             defaultValue={defaultValues?.label}
             placeholder="Label (e.g. Home)"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className={FIELD_CLASS}
           />
           <input
             name="recipientName"
             defaultValue={defaultValues?.recipientName}
             placeholder="Recipient name"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className={FIELD_CLASS}
           />
           <input
             name="phone"
             defaultValue={defaultValues?.phone}
             placeholder="Phone"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className={FIELD_CLASS}
           />
           <input
             name="street"
             defaultValue={defaultValues?.street}
             placeholder="Address 1 (house/unit no., street name)"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className={FIELD_CLASS}
           />
           <input
             name="address2"
             defaultValue={defaultValues?.address2}
             placeholder="Apartment, suite, building (optional)"
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className={FIELD_CLASS}
           />
-          <select
-            name="city"
-            defaultValue={defaultValues?.city ?? ""}
-            required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
-          >
-            <option value="" disabled>
-              Select a Metro Manila city
-            </option>
-            {cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              name="barangay"
-              defaultValue={defaultValues?.barangay}
-              placeholder="Barangay"
-              required
-              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
-            />
-            <input
-              name="postalCode"
-              defaultValue={defaultValues?.postalCode}
-              placeholder="Postal code"
-              inputMode="numeric"
-              maxLength={4}
-              required
-              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
-            />
-          </div>
+          <AddressLocationFields
+            regions={regions}
+            provinces={provinces}
+            initial={defaultValues}
+            fieldClass={FIELD_CLASS}
+            labelClass=""
+            showLabels={false}
+            rowGapClass="gap-3"
+            postalCodeField={
+              <input
+                name="postalCode"
+                aria-label="Postal code"
+                defaultValue={defaultValues?.postalCode}
+                placeholder="Postal code"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                required
+                className={FIELD_CLASS}
+              />
+            }
+          />
           <label className="flex items-center gap-2 text-sm text-[#6E6A64] dark:text-[#A39C90]">
             <input
               type="checkbox"
@@ -188,14 +195,14 @@ export default function AddressFormModal({
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            <SubmitButton
+              pendingLabel="Saving…"
+              className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
             >
               {submitLabel}
-            </button>
+            </SubmitButton>
           </div>
-        </form>
+        </ActionForm>
       </dialog>
     </>
   );

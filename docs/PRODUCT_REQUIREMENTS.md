@@ -99,15 +99,15 @@ finalized and swapped in later without a structural rebuild.
 - Home page: brand story, featured products, categories.
 - Category / catalog listing pages with filtering (category, price,
   availability — i.e. not sold out).
-- **FAQ page**: shipping (Metro Manila only, ₱150 flat), payment (manual v1 —
+- **FAQ page**: shipping (nationwide, one flat fee), payment (manual v1 —
   bank transfer/GCash/Maya), made-to-order lead times, materials/care, and
   return/exchange policy (**returns/exchanges accepted only for defective
   items** — no change-of-mind returns, no returns for made-to-order items
   produced correctly to the customer's chosen options).
-- **Contact Us page**: Instagram and email as the inquiry channels — the
-  single place customers outside Metro Manila (or with other questions) are
-  directed to, consolidating the "Outside Metro Manila? Contact us" prompt
-  referenced under Checkout below.
+- **Contact Us page**: Instagram and email as the inquiry channels for any
+  question. (It used to also be where customers outside Metro Manila were
+  sent. Since delivery became nationwide on 2026-10-15, checkout no longer
+  sends anyone here.)
 - **Privacy Policy page**: covers what customer data is collected (name,
   email, phone, address) and how it's used/stored (Supabase). Required for
   Google OAuth consent screen verification (§6 Account/Admin both use Google
@@ -119,15 +119,20 @@ finalized and swapped in later without a structural rebuild.
   info.
 - Cart: view items, adjust quantity, remove items.
 - Checkout: shipping address, shipping method, payment, order review.
-  - **Metro Manila delivery only.** Site does not accept orders with a
-    shipping address outside Metro Manila (this supersedes "domestic
-    Philippines" as the checkout boundary).
-  - Single delivery option, flat rate: **₱150** for Metro Manila delivery
-    (no method choice at checkout — one shipping fee for all orders).
-  - Customers outside Metro Manila (including international) are directed
-    to an inquiry channel instead (Instagram DM / email) — e.g. a note on
-    the shipping step or a dedicated "Outside Metro Manila? Contact us"
-    prompt.
+  - **Nationwide delivery (whole Philippines)**, decided 2026-10-15. This
+    supersedes the earlier "Metro Manila delivery only" boundary. Any
+    Philippine address can order. The address is picked from cascading
+    region → province → city/municipality → barangay dropdowns built from
+    the PSA's official PSGC data. Street, unit and postal code stay free
+    text.
+  - Single delivery option, **one flat shipping fee nationwide**, the
+    admin-editable shipping fee (₱150 by default). No zones or per-region
+    pricing, and no method choice at checkout.
+  - Always nationwide, with no admin switch to narrow the area. This is a
+    deliberate exception to the "no hardcoded business configuration"
+    rule below (owner's call).
+  - Out of scope: international delivery, per-area fees, courier
+    integration and delivery-time estimates by area.
 - Order confirmation page + **confirmation email sent to the customer's
   provided email address** (order summary, total, and next steps for
   payment) — distinct from the admin order-notification email in
@@ -157,8 +162,9 @@ finalized and swapped in later without a structural rebuild.
   updated without a code change.
 - **Edit shop configuration** — no business value/amount is hardcoded in
   code; all of the following are admin-editable, not code constants:
-  - Shipping fee (currently ₱150 flat).
-  - Delivery area (currently the fixed Metro Manila city list).
+  - Shipping fee (₱150 flat by default, one fee nationwide).
+  - *(Delivery area is no longer a setting: delivery is always nationwide,
+    see Checkout above.)*
   - Admin order-notification recipient email.
   - **Order payment-hold duration** (currently defaults to 48 hours —
     see Payments & Fulfillment below).
