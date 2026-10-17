@@ -13,7 +13,7 @@ const archivo = Archivo({
 });
 
 export const metadata = {
-  title: "Shop — Leather Shop",
+  title: "Shop — Hiraya Leather",
   description:
     "Shop handcrafted leather goods, made in small batches — wallets, bags, and more.",
 };

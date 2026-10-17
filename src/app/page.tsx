@@ -14,7 +14,7 @@ const archivo = Archivo({
 });
 
 // Matches SiteHeader.tsx's nav container so the hero copy lines up with
-// the "Leather Shop" wordmark above it.
+// the "Hiraya" wordmark above it.
 const HERO_CONTAINER = "mx-auto max-w-6xl px-6 sm:px-10";
 
 export default async function Home() {
