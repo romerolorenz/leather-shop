@@ -1,6 +1,12 @@
 "use client";
 
 import { useRef } from "react";
+import {
+  BTN,
+  BTN_COMPACT,
+  BTN_PRIMARY,
+  BTN_SECONDARY,
+} from "@/components/button-styles";
 
 type AddressFormValues = {
   label: string;
@@ -47,7 +53,7 @@ export default function AddressFormModal({
         <button
           type="button"
           onClick={open}
-          className="whitespace-nowrap rounded-full border border-[rgba(28,26,24,.12)] px-4 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+          className={`${BTN} ${BTN_COMPACT} ${BTN_SECONDARY}`}
         >
           + Add address
         </button>
@@ -110,40 +116,40 @@ export default function AddressFormModal({
             defaultValue={defaultValues?.label}
             placeholder="Label (e.g. Home)"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
           />
           <input
             name="recipientName"
             defaultValue={defaultValues?.recipientName}
             placeholder="Recipient name"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
           />
           <input
             name="phone"
             defaultValue={defaultValues?.phone}
             placeholder="Phone"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
           />
           <input
             name="street"
             defaultValue={defaultValues?.street}
             placeholder="Address 1 (house/unit no., street name)"
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
           />
           <input
             name="address2"
             defaultValue={defaultValues?.address2}
             placeholder="Apartment, suite, building (optional)"
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
           />
           <select
             name="city"
             defaultValue={defaultValues?.city ?? ""}
             required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+            className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
           >
             <option value="" disabled>
               Select a Metro Manila city
@@ -160,7 +166,7 @@ export default function AddressFormModal({
               defaultValue={defaultValues?.barangay}
               placeholder="Barangay"
               required
-              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+              className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
             />
             <input
               name="postalCode"
@@ -169,7 +175,7 @@ export default function AddressFormModal({
               inputMode="numeric"
               maxLength={4}
               required
-              className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+              className="w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
             />
           </div>
           <label className="flex items-center gap-2 text-sm text-[#6E6A64] dark:text-[#A39C90]">
@@ -184,13 +190,13 @@ export default function AddressFormModal({
             <button
               type="button"
               onClick={close}
-              className="rounded-full border border-[rgba(28,26,24,.12)] px-4 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+              className={`${BTN} ${BTN_COMPACT} ${BTN_SECONDARY}`}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+              className={`${BTN} ${BTN_COMPACT} ${BTN_PRIMARY}`}
             >
               {submitLabel}
             </button>

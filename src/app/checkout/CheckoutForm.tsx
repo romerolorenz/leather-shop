@@ -12,6 +12,7 @@ import { useToast } from "@/components/ToastProvider";
 import { formatOrderRef } from "@/lib/order-ref";
 import { createAddressAction } from "@/app/account/actions";
 import type { CustomerAddress } from "@/lib/customer/addresses";
+import { BTN, BTN_DEFAULT, BTN_PRIMARY } from "@/components/button-styles";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -23,7 +24,7 @@ const DIVIDE_HAIRLINE = "divide-[rgba(28,26,24,.12)] dark:divide-[rgba(243,241,2
 const INK_SOFT = "text-[#6E6A64] dark:text-[#A39C90]";
 const ACCENT_LINK =
   "text-[#7A3B22] underline underline-offset-4 hover:no-underline dark:text-[#C97A4E]";
-const FIELD_CLASS = `w-full rounded-md border ${HAIRLINE} bg-transparent px-3 py-2 text-sm`;
+const FIELD_CLASS = `w-full rounded-btn border ${HAIRLINE} bg-transparent px-3 py-2 text-sm`;
 const LABEL_CLASS = "text-sm font-medium";
 
 const checkoutCrumbs = [
@@ -321,7 +322,7 @@ export default function CheckoutForm({
                     type="button"
                     onClick={() => setSelectedAddressId("new")}
                     aria-pressed={selectedAddressId === "new"}
-                    className={`flex w-full items-center rounded-lg border border-dashed px-4 py-3 text-left text-sm transition-colors ${
+                    className={`flex w-full items-center rounded-btn border border-dashed px-4 py-3 text-left text-sm transition-colors ${
                       selectedAddressId === "new"
                         ? "border-[#7A3B22] bg-[rgba(122,59,34,.07)] dark:border-[#C97A4E] dark:bg-[rgba(201,122,78,.10)]"
                         : `${HAIRLINE} ${INK_SOFT} hover:border-[rgba(28,26,24,.22)] dark:hover:border-[rgba(243,241,236,.26)]`
@@ -463,9 +464,10 @@ export default function CheckoutForm({
             <button
               type="submit"
               disabled={submitting}
-              className="mt-2 w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-[#ccc]"
+              aria-busy={submitting || undefined}
+              className={`${BTN} ${BTN_DEFAULT} ${BTN_PRIMARY} mt-2 w-full`}
             >
-              {submitting ? "Placing order..." : "Place order"}
+              {submitting ? "Placing order…" : "Place order"}
             </button>
           </form>
         </div>
@@ -488,7 +490,7 @@ function AddressCard({
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${
+      className={`flex w-full items-start gap-3 rounded-btn border px-4 py-3 text-left transition-colors ${
         selected
           ? "border-[#7A3B22] bg-[rgba(122,59,34,.07)] dark:border-[#C97A4E] dark:bg-[rgba(201,122,78,.10)]"
           : `${HAIRLINE} hover:border-[rgba(28,26,24,.22)] dark:hover:border-[rgba(243,241,236,.26)]`

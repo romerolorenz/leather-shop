@@ -1,6 +1,7 @@
 "use client";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { BTN, BTN_DEFAULT, BTN_PRIMARY } from "@/components/button-styles";
 
 const ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "That Google account isn't authorized for admin access.",
@@ -38,8 +39,9 @@ export default function LoginForm({
         <p className="text-sm text-red-600">{ERROR_MESSAGES[error]}</p>
       )}
       <button
+        type="button"
         onClick={handleSignIn}
-        className="rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+        className={`${BTN} ${BTN_DEFAULT} ${BTN_PRIMARY}`}
       >
         Sign in with Google
       </button>

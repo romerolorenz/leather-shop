@@ -1,4 +1,5 @@
 import { getSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
+import { TEXT_LINK_INLINE } from "@/components/button-styles";
 
 export default async function AccountLayout({
   children,
@@ -18,7 +19,10 @@ export default async function AccountLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 sm:px-10">
           <span className="text-zinc-500 dark:text-zinc-400">Signed in as {user?.email}</span>
           <form action="/auth/signout" method="post">
-            <button type="submit" className="underline">
+            <button
+              type="submit"
+              className={`${TEXT_LINK_INLINE} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7A3B22]`}
+            >
               Sign out
             </button>
           </form>
