@@ -62,11 +62,18 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 // Cleans a cart parsed from localStorage. Anything that isn't an array
-// becomes an empty cart, and lines without a string `slug`, a positive
-// numeric `quantity` and a plain-object `selectedOptions` (e.g. an old
+// becomes an empty cart, and lines without a string `slug` and `name`, a
+// finite numeric `priceCentavos`, a positive whole-number `quantity` and a
+// plain-object `selectedOptions` (e.g. an old
 // `variant`-shaped cart, or a hand-edited one) are dropped silently, so a
 // bad saved cart can't crash the cart page, Add to cart or Buy now.
-export function sanitizeCart<T extends CartLineIdentity & { quantity: number }>(
+export function sanitizeCart<
+  T extends CartLineIdentity & {
+    quantity: number;
+    name: string;
+    priceCentavos: number;
+  },
+>(
   raw: unknown
 ): T[] {
   if (!Array.isArray(raw)) return [];
@@ -74,9 +81,11 @@ export function sanitizeCart<T extends CartLineIdentity & { quantity: number }>(
     (line): line is T =>
       isPlainObject(line) &&
       typeof line.slug === "string" &&
-      typeof line.quantity === "number" &&
-      Number.isFinite(line.quantity) &&
-      line.quantity > 0 &&
+      typeof line.name === "string" &&
+      typeof line.priceCentavos === "number" &&
+      Number.isFinite(line.priceCentavos) &&
+      Number.isInteger(line.quantity) &&
+      (line.quantity as number) > 0 &&
       isPlainObject(line.selectedOptions)
   );
 }

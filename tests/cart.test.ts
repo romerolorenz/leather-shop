@@ -129,6 +129,20 @@ describe("sanitizeCart (cleaning a cart loaded from localStorage)", () => {
     expect(sanitizeCart<Line>([...bad, good])).toEqual([good]);
   });
 
+  it("drops lines with a missing price, a non-string name, or a fractional quantity", () => {
+    const good = wallet({ Color: "Black" });
+    const { priceCentavos: _p, ...noPrice } = good;
+    void _p;
+    const bad = [
+      noPrice,
+      { ...good, priceCentavos: Number.NaN },
+      { ...good, priceCentavos: "150000" },
+      { ...good, name: 7 },
+      { ...good, quantity: 1.5 },
+    ];
+    expect(sanitizeCart<Line>([...bad, good])).toEqual([good]);
+  });
+
   it("returns something isInCart can safely use", () => {
     const cleaned = sanitizeCart<Line>([{ slug: "wallet", quantity: 1 }]);
     expect(isInCart(cleaned, { slug: "wallet", selectedOptions: {} })).toBe(
