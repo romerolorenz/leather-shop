@@ -6,8 +6,8 @@ import {
   type ProductInput,
 } from "@/lib/admin/catalog";
 import { getProducts, getProductBySlug } from "@/lib/products";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project. Uses a scratch product
 // (not the seeded wallet/tote) so mutations here never touch real catalog
@@ -32,10 +32,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteRowsById(errors, "products", scratchProductIds);
+  errors.throwIfAny();
 });
 
 describe("product visibility", () => {

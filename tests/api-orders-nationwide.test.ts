@@ -1,9 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { POST } from "@/app/api/orders/route";
 import { createProduct, type ProductInput } from "@/lib/admin/catalog";
 import { getOrderById } from "@/lib/orders";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
+import {
+  CleanupErrors,
+  deleteOrdersRestoringStock,
+  deleteRowsById,
+} from "./helpers/cleanup";
+import { placeOrder as postOrder } from "./helpers/place-order";
 import {
   assertPsgcSeeded,
   CEBU_CITY_LAHUG,
@@ -42,43 +47,21 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const orderId of scratchOrderIds) {
-    const { data: items } = await supabase
-      .from("order_items")
-      .select("product_id, quantity")
-      .eq("order_id", orderId);
-    for (const item of items ?? []) {
-      await supabase.rpc("restore_product_stock", {
-        p_product_id: item.product_id,
-        p_quantity: item.quantity,
-      });
-    }
-    await supabase.from("orders").delete().eq("id", orderId);
-  }
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteOrdersRestoringStock(errors, scratchOrderIds);
+  await deleteRowsById(errors, "products", scratchProductIds);
+  errors.throwIfAny();
 });
 
-function orderRequest(location: Record<string, unknown>, postalCode = "6000") {
-  return new Request("http://localhost/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+function placeOrder(location: Record<string, unknown>, postalCode = "6000") {
+  return postOrder(
+    {
       customer: { name: "Vitest", email: "vitest-nationwide@example.com", phone: "123" },
       shippingAddress: { street: "1 Test St", address2: "", postalCode, ...location },
       items: [{ slug: productSlug, selectedOptions: {}, quantity: 1 }],
-    }),
-  });
-}
-
-async function placeOrder(location: Record<string, unknown>, postalCode?: string) {
-  const res = await POST(orderRequest(location, postalCode));
-  const body = await res.json();
-  // Record for cleanup before any assertion can throw.
-  if (body.order?.id) scratchOrderIds.push(body.order.id);
-  return { res, body };
+    },
+    scratchOrderIds
+  );
 }
 
 describe("POST /api/orders, nationwide delivery", () => {

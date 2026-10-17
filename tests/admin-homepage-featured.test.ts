@@ -7,8 +7,8 @@ import {
   type ProductInput,
   type FeaturedProduct,
 } from "@/lib/admin/catalog";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project. "featured" is a global
 // max-3 toggle across the whole catalog, not scoped per test — so this
@@ -40,15 +40,16 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteRowsById(errors, "products", scratchProductIds);
   for (const product of [...originalFeatured].sort(
     (a, b) => a.featuredPosition - b.featuredPosition
   )) {
-    await setProductFeatured(product.id, true);
+    await errors.attempt(`re-feature product ${product.id}`, () =>
+      setProductFeatured(product.id, true)
+    );
   }
+  errors.throwIfAny();
 });
 
 async function createScratchProduct(name: string): Promise<string> {

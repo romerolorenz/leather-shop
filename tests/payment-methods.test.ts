@@ -6,7 +6,7 @@ import {
   deletePaymentMethod,
   reorderPaymentMethods,
 } from "@/lib/admin/payment-methods";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project — scratch rows tracked here
 // and deleted in afterAll, same shape as tests/categories.test.ts. One
@@ -16,10 +16,9 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 const scratchPaymentMethodIds: string[] = [];
 
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const id of scratchPaymentMethodIds) {
-    await supabase.from("payment_methods").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteRowsById(errors, "payment_methods", scratchPaymentMethodIds);
+  errors.throwIfAny();
 });
 
 describe("payment methods", () => {

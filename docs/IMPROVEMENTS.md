@@ -7,20 +7,6 @@ later work. Not started until explicitly requested — see items below.
 
 Ordered by what it blocks.
 
-- [ ] *Blocks: safe `npm test` runs. The prod/dev split is done (MANUAL_TASKS
-  go-live steps 1–4), so the risk is live now.*
-  **Stop `npm test` from ever running against the production
-  database.** Once prod and dev are separate Supabase projects
-  ([PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)), a stale `.env.local`
-  could still point tests at prod, where they create orders, change stock
-  and create promo codes. Add a Vitest setup check (`vitest.config.ts`
-  already loads `.env.local`) that aborts the whole run if `SUPABASE_URL`
-  points at the production project. One option: an explicit
-  `SUPABASE_ENV=dev` marker that must be present. The other: compare the
-  URL against a known prod project ref. Small, and only useful after the
-  split, so do it right after MANUAL_TASKS.md's "split production from
-  dev" item.
-
 - [ ] *Blocks: nothing technically, but it affects real customers now
   that prod takes orders. Its migration will need dev + prod items in
   MANUAL_TASKS when built.*
@@ -103,7 +89,22 @@ Ordered by what it blocks.
   as part of this pass rather than assuming. Not started — no other
   candidates surveyed yet.
 
+- [ ] *Blocks: nothing. Helps deliverability and customer replies.*
+  **Set a Reply-To on customer emails** (logged 2026-10-17). The order
+  confirmation, payment details and shipped emails are sent from
+  `mail.hirayaleather.com`, which has no inbox, and have no Reply-To. Only
+  the contact form sets one, to the shopper (`src/lib/email.ts:352`). A
+  customer who hits Reply gets a bounce, and an unanswerable sender is a
+  small spam signal. Set `replyTo` on customer-facing sends to the
+  admin-editable `settings.contact_email`, so it isn't hardcoded. Test it
+  in `email.test.ts`. Pair it with MANUAL_TASKS' "receiving address" and
+  "stop shop emails landing in spam" items.
+
 ## Done
+
+- [x] **Stop `npm test` from ever running against the production
+  database** (2026-10-17): tests abort unless `.env.local` has
+  `SUPABASE_ENV=dev` (`tests/setup/test-target.mjs`).
 
 - [x] **Deliver nationwide (whole Philippines), with PSGC address
   dropdowns** (built 2026-10-17 on `feat/nationwide-delivery`, commits

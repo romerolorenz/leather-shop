@@ -16,20 +16,24 @@ config({ path: ".env.local" });
 // the lanes one after the other.
 //
 // Where a new test file goes:
-// - changes `settings` rows or which products are featured: SETTINGS_LANE;
+// - touches orders/stock, or a setting order code reads → data. That's
+//   the default: anything not listed below (products, stock, orders, the
+//   expiry sweep, promo codes, categories, pure unit tests) lands there;
+// - otherwise, changes `settings` rows or which products are featured:
+//   SETTINGS_LANE;
 // - touches only FAQ items, payment methods, saved addresses, or reads
 //   reference data (and never products, stock, orders, promo codes or
-//   settings): CONTENT_LANE;
-// - anything else (products, stock, orders, promo codes, categories, pure
-//   unit tests): nothing to do, it lands in the "data" lane by default.
+//   settings): CONTENT_LANE.
+
+// Homepage settings and featured products only: no order code reads them.
+// settings.test.ts (order_payment_hold_hours) and api-orders-expire.test.ts
+// (the real expiry sweep, which cancels expired dev orders and restores
+// their stock) stay in "data", next to orders.test.ts.
 const SETTINGS_LANE = [
-  "tests/settings.test.ts",
   "tests/admin-homepage-settings.test.ts",
   "tests/admin-homepage-studio.test.ts",
   "tests/admin-homepage-hero-upload.test.ts",
   "tests/admin-homepage-featured.test.ts",
-  // Reads order_payment_hold_hours, which settings.test.ts changes.
-  "tests/api-orders-expire.test.ts",
 ];
 
 const CONTENT_LANE = [
@@ -46,7 +50,10 @@ const shared = {
   plugins: [tsconfigPaths()],
   test: {
     environment: "node",
-    setupFiles: ["tests/setup/request-timeout.ts"],
+    // Refuses to run unless the target is the dev database (see
+    // tests/setup/test-target.mjs). Runs once per process, before any file.
+    globalSetup: ["tests/setup/test-target-guard.ts"],
+    setupFiles: ["tests/setup/no-email.ts", "tests/setup/request-timeout.ts"],
     fileParallelism: false,
     // Per test. Most finish in under 10s; the request timeout above means
     // a hang fails well inside this.

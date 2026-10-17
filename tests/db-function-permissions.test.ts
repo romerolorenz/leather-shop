@@ -103,7 +103,10 @@ describe("app tables return nothing to the anon key (RLS default-deny)", () => {
   ])("%s", async (table) => {
     const { data, error } = await anon.from(table).select("*").limit(1);
     // Either RLS hides every row (empty result) or the role has no table
-    // privilege at all (error) — both mean nothing leaks.
-    if (!error) expect(data).toEqual([]);
+    // privilege at all (42501, insufficient_privilege) — both mean nothing
+    // leaks. Any other error (network, missing table) proves nothing, so
+    // it fails.
+    if (error) expect(error.code).toBe("42501");
+    else expect(data).toEqual([]);
   });
 });

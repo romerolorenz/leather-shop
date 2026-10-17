@@ -1,11 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { POST } from "@/app/api/orders/route";
 import { createPromoCode, type PromoCodeInput } from "@/lib/promo-codes";
 import { createProduct, type ProductInput } from "@/lib/admin/catalog";
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/settings";
 import { assertPsgcSeeded, MAKATI_BEL_AIR } from "./helpers/psgc-fixtures";
+import {
+  CleanupErrors,
+  deleteOrdersRestoringStock,
+  deleteRowsById,
+} from "./helpers/cleanup";
+import { placeOrder as postOrder } from "./helpers/place-order";
 
 // End-to-end coverage for promo codes through the real order-creation path
 // (not just validatePromoCode in isolation) — confirms the discount lands
@@ -52,30 +57,19 @@ beforeAll(async () => {
 
 afterAll(async () => {
   const supabase = getSupabaseServerClient();
+  const errors = new CleanupErrors();
   // promo_code_redemptions.order_id has no ON DELETE behavior, so
   // redemptions must go before the orders they reference.
   for (const id of scratchPromoCodeIds) {
-    await supabase.from("promo_code_redemptions").delete().eq("promo_code_id", id);
+    errors.check(
+      `delete redemptions of promo code ${id}`,
+      await supabase.from("promo_code_redemptions").delete().eq("promo_code_id", id)
+    );
   }
-  for (const orderId of scratchOrderIds) {
-    const { data: items } = await supabase
-      .from("order_items")
-      .select("product_id, quantity")
-      .eq("order_id", orderId);
-    for (const item of items ?? []) {
-      await supabase.rpc("restore_product_stock", {
-        p_product_id: item.product_id,
-        p_quantity: item.quantity,
-      });
-    }
-    await supabase.from("orders").delete().eq("id", orderId);
-  }
-  for (const id of scratchPromoCodeIds) {
-    await supabase.from("promo_codes").delete().eq("id", id);
-  }
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
+  await deleteOrdersRestoringStock(errors, scratchOrderIds);
+  await deleteRowsById(errors, "promo_codes", scratchPromoCodeIds);
+  await deleteRowsById(errors, "products", scratchProductIds);
+  errors.throwIfAny();
 });
 
 async function makePromoCode(overrides: Partial<PromoCodeInput> = {}) {
@@ -97,12 +91,9 @@ async function makePromoCode(overrides: Partial<PromoCodeInput> = {}) {
   return input.code;
 }
 
-function makeRequest(body: unknown) {
-  return new Request("http://localhost/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+// Records the order for cleanup before the caller asserts anything.
+function placeOrder(email: string, code?: string) {
+  return postOrder(orderBody(email, code), scratchOrderIds);
 }
 
 function orderBody(email: string, code?: string) {
@@ -122,12 +113,8 @@ describe("POST /api/orders with a promo code", () => {
   it("applies the discount to the order total and records a redemption", async () => {
     const code = await makePromoCode({ usageLimitTotal: 10 });
 
-    const res = await POST(makeRequest(orderBody("promo-buyer@example.com", code)));
+    const { res, body } = await placeOrder("promo-buyer@example.com", code);
     expect(res.status).toBe(201);
-
-    const body = await res.json();
-    scratchOrderIds.push(body.order.id);
-
     expect(body.order.discountCentavos).toBe(10000); // 10% of ₱1,000
     expect(body.order.promoCode).toBe(code);
     expect(body.order.totalCentavos).toBe(
@@ -138,13 +125,11 @@ describe("POST /api/orders with a promo code", () => {
   it("rejects reusing a code the same customer already redeemed", async () => {
     const code = await makePromoCode({ usageLimitTotal: 10 });
 
-    const first = await POST(makeRequest(orderBody("repeat@example.com", code)));
-    expect(first.status).toBe(201);
-    const firstBody = await first.json();
-    scratchOrderIds.push(firstBody.order.id);
+    const first = await placeOrder("repeat@example.com", code);
+    expect(first.res.status).toBe(201);
 
-    const second = await POST(makeRequest(orderBody("repeat@example.com", code)));
-    expect(second.status).toBe(400);
+    const second = await placeOrder("repeat@example.com", code);
+    expect(second.res.status).toBe(400);
   });
 
   it("allows the same customer to reuse a code with limitOnePerCustomer: false, up to the total cap", async () => {
@@ -153,43 +138,29 @@ describe("POST /api/orders with a promo code", () => {
       limitOnePerCustomer: false,
     });
 
-    const first = await POST(
-      makeRequest(orderBody("reusable@example.com", code))
-    );
-    expect(first.status).toBe(201);
-    const firstBody = await first.json();
-    scratchOrderIds.push(firstBody.order.id);
+    const first = await placeOrder("reusable@example.com", code);
+    expect(first.res.status).toBe(201);
 
-    const second = await POST(
-      makeRequest(orderBody("reusable@example.com", code))
-    );
-    expect(second.status).toBe(201);
-    const secondBody = await second.json();
-    scratchOrderIds.push(secondBody.order.id);
+    const second = await placeOrder("reusable@example.com", code);
+    expect(second.res.status).toBe(201);
 
-    const third = await POST(
-      makeRequest(orderBody("reusable@example.com", code))
-    );
-    expect(third.status).toBe(400);
+    const third = await placeOrder("reusable@example.com", code);
+    expect(third.res.status).toBe(400);
   });
 
   it("rejects once the total usage cap is reached, even for a different customer", async () => {
     const code = await makePromoCode({ usageLimitTotal: 1 });
 
-    const first = await POST(makeRequest(orderBody("first@example.com", code)));
-    expect(first.status).toBe(201);
-    const firstBody = await first.json();
-    scratchOrderIds.push(firstBody.order.id);
+    const first = await placeOrder("first@example.com", code);
+    expect(first.res.status).toBe(201);
 
-    const second = await POST(makeRequest(orderBody("second@example.com", code)));
-    expect(second.status).toBe(400);
+    const second = await placeOrder("second@example.com", code);
+    expect(second.res.status).toBe(400);
   });
 
   it("places the order normally when no promo code is given", async () => {
-    const res = await POST(makeRequest(orderBody("no-promo@example.com")));
+    const { res, body } = await placeOrder("no-promo@example.com");
     expect(res.status).toBe(201);
-    const body = await res.json();
-    scratchOrderIds.push(body.order.id);
     expect(body.order.discountCentavos).toBe(0);
     expect(body.order.promoCode).toBeNull();
   });

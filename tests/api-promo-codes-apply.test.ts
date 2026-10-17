@@ -4,6 +4,7 @@ import { createPromoCode, type PromoCodeInput } from "@/lib/promo-codes";
 import { createProduct, type ProductInput } from "@/lib/admin/catalog";
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
 
 // Runs against the real (dev) Supabase project — HTTP-wiring coverage for
 // POST /api/promo-codes/apply; validatePromoCode's own rules are covered
@@ -55,13 +56,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const id of scratchPromoCodeIds) {
-    await supabase.from("promo_codes").delete().eq("id", id);
-  }
-  for (const id of scratchProductIds) {
-    await supabase.from("products").delete().eq("id", id);
-  }
+  const errors = new CleanupErrors();
+  await deleteRowsById(errors, "promo_codes", scratchPromoCodeIds);
+  await deleteRowsById(errors, "products", scratchProductIds);
+  errors.throwIfAny();
 });
 
 function makeRequest(body: unknown) {
