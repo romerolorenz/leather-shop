@@ -10,8 +10,11 @@ import { trackEvent } from "@/lib/track-event";
 import { PromoCodeField } from "@/components/PromoCodeField";
 import { useToast } from "@/components/ToastProvider";
 import { formatOrderRef } from "@/lib/order-ref";
-import { createAddressAction } from "@/app/account/actions";
+import { createAddressAction, updateAddressAction } from "@/app/account/actions";
 import type { CustomerAddress } from "@/lib/customer/addresses";
+import type { PsgcProvince, PsgcRegion } from "@/lib/psgc";
+import { formatAddressLines } from "@/lib/address-format";
+import { AddressLocationFields } from "@/components/AddressLocationFields";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -33,12 +36,14 @@ const checkoutCrumbs = [
 ];
 
 export default function CheckoutForm({
-  cities,
+  regions,
+  provinces,
   shippingFeeCentavos,
   customerEmail,
   savedAddresses = [],
 }: {
-  cities: string[];
+  regions: PsgcRegion[];
+  provinces: PsgcProvince[];
   shippingFeeCentavos: number;
   customerEmail?: string;
   savedAddresses?: CustomerAddress[];
@@ -65,6 +70,11 @@ export default function CheckoutForm({
   const selectedAddress = savedAddresses.find(
     (a) => a.id === selectedAddressId
   );
+  // A saved address from before nationwide delivery that couldn't be
+  // matched to PSGC: show the entry fields prefilled from it so the
+  // shopper re-picks city/barangay, then update that saved address.
+  const addressToFix = selectedAddress?.needsUpdate ? selectedAddress : undefined;
+  const usingSavedAddress = !!selectedAddress && !addressToFix;
 
   useEffect(() => {
     // Cart hydrates from localStorage asynchronously (see cart-context.tsx),
@@ -91,6 +101,7 @@ export default function CheckoutForm({
     // path too.
     const shouldSaveAddress =
       !selectedAddress && !!customerEmail && form.get("saveAddress") === "on";
+    const field = (name: string) => String(form.get(name) ?? "");
 
     try {
       const res = await fetch("/api/orders", {
@@ -105,8 +116,10 @@ export default function CheckoutForm({
           shippingAddress: {
             street: form.get("street"),
             address2: form.get("address2"),
-            barangay: form.get("barangay"),
-            city: form.get("city"),
+            regionCode: form.get("regionCode"),
+            provinceCode: form.get("provinceCode"),
+            cityCode: form.get("cityCode"),
+            barangayCode: form.get("barangayCode"),
             postalCode: form.get("postalCode"),
           },
           items: items.map((item) => ({
@@ -128,27 +141,42 @@ export default function CheckoutForm({
       setOrderId(data.order.id);
       clear();
 
-      if (shouldSaveAddress) {
+      if (shouldSaveAddress || (addressToFix && customerEmail)) {
         const addressForm = new FormData();
         addressForm.set(
           "label",
-          savedAddresses.length === 0 ? "Home" : "New address"
+          addressToFix?.label ??
+            (savedAddresses.length === 0 ? "Home" : "New address")
         );
-        addressForm.set("recipientName", String(form.get("name") ?? ""));
-        addressForm.set("phone", String(form.get("phone") ?? ""));
-        addressForm.set("street", String(form.get("street") ?? ""));
-        addressForm.set("address2", String(form.get("address2") ?? ""));
-        addressForm.set("barangay", String(form.get("barangay") ?? ""));
-        addressForm.set("city", String(form.get("city") ?? ""));
-        addressForm.set("postalCode", String(form.get("postalCode") ?? ""));
-        if (savedAddresses.length === 0) addressForm.set("isDefault", "on");
+        for (const name of [
+          "phone",
+          "street",
+          "address2",
+          "regionCode",
+          "provinceCode",
+          "cityCode",
+          "barangayCode",
+          "postalCode",
+        ]) {
+          addressForm.set(name, field(name));
+        }
+        addressForm.set("recipientName", field("name"));
+        if (addressToFix ? addressToFix.isDefault : savedAddresses.length === 0) {
+          addressForm.set("isDefault", "on");
+        }
 
-        try {
-          await createAddressAction(addressForm);
-        } catch {
+        // The order is already placed, so a failure here (including a
+        // network error) only gets a toast, never the order-failed error.
+        const result = await (addressToFix
+          ? updateAddressAction(addressToFix.id, null, addressForm)
+          : createAddressAction(null, addressForm)
+        ).catch(() => ({ success: false as const, error: "" }));
+        if (!result.success) {
           showToast({
             type: "error",
-            message: "Order placed, but couldn't save this address for next time.",
+            message: addressToFix
+              ? "Order placed, but couldn't update your saved address."
+              : "Order placed, but couldn't save this address for next time.",
           });
         }
       }
@@ -171,8 +199,8 @@ export default function CheckoutForm({
           </h1>
           <p className={INK_SOFT}>
             Thanks for your order! We&apos;ll reach out shortly with payment
-            instructions (bank transfer / GCash / Maya). Delivery is Metro
-            Manila only, flat rate {formatPrice(shippingFeeCentavos)}.
+            instructions (bank transfer / GCash / Maya). Delivery is a flat{" "}
+            {formatPrice(shippingFeeCentavos)} anywhere in the Philippines.
           </p>
           <Link href="/products" className={`mt-6 inline-block ${ACCENT_LINK}`}>
             Continue shopping
@@ -273,7 +301,7 @@ export default function CheckoutForm({
               </div>
             )}
             <div className="mt-1 flex justify-between text-sm">
-              <span>Shipping (Metro Manila flat rate)</span>
+              <span>Shipping (flat rate)</span>
               <span>{formatPrice(shippingFeeCentavos)}</span>
             </div>
             <div className={`mt-2 flex justify-between border-t ${HAIRLINE} pt-2 font-medium`}>
@@ -332,18 +360,29 @@ export default function CheckoutForm({
                 </div>
               )}
 
-              {selectedAddress ? (
+              {usingSavedAddress && selectedAddress ? (
                 <>
                   <input type="hidden" name="name" value={selectedAddress.recipientName} readOnly />
                   <input type="hidden" name="phone" value={selectedAddress.phone} readOnly />
                   <input type="hidden" name="street" value={selectedAddress.street} readOnly />
                   <input type="hidden" name="address2" value={selectedAddress.address2} readOnly />
-                  <input type="hidden" name="barangay" value={selectedAddress.barangay} readOnly />
-                  <input type="hidden" name="city" value={selectedAddress.city} readOnly />
+                  <input type="hidden" name="regionCode" value={selectedAddress.regionCode ?? ""} readOnly />
+                  <input type="hidden" name="provinceCode" value={selectedAddress.provinceCode ?? ""} readOnly />
+                  <input type="hidden" name="cityCode" value={selectedAddress.cityCode ?? ""} readOnly />
+                  <input type="hidden" name="barangayCode" value={selectedAddress.barangayCode ?? ""} readOnly />
                   <input type="hidden" name="postalCode" value={selectedAddress.postalCode} readOnly />
                 </>
               ) : (
-                <div className="mt-3 flex flex-col gap-4">
+                // Keyed so switching to a different address-to-fix (or to
+                // "+ Enter a different address") resets the prefilled values.
+                <div key={selectedAddressId} className="mt-3 flex flex-col gap-4">
+                  {addressToFix && (
+                    <p className="text-sm text-[#7A3B22] dark:text-[#C97A4E]">
+                      We now deliver nationwide, so please pick this
+                      address&apos;s region, city and barangay from the lists
+                      below. We&apos;ll update your saved address too.
+                    </p>
+                  )}
                   <div>
                     <label className={LABEL_CLASS} htmlFor="name">
                       Full name
@@ -351,6 +390,7 @@ export default function CheckoutForm({
                     <input
                       id="name"
                       name="name"
+                      defaultValue={addressToFix?.recipientName}
                       required
                       className={`mt-1 ${FIELD_CLASS}`}
                     />
@@ -362,6 +402,7 @@ export default function CheckoutForm({
                     <input
                       id="phone"
                       name="phone"
+                      defaultValue={addressToFix?.phone}
                       placeholder="0917 123 4567"
                       required
                       className={`mt-1 ${FIELD_CLASS}`}
@@ -374,6 +415,7 @@ export default function CheckoutForm({
                     <input
                       id="street"
                       name="street"
+                      defaultValue={addressToFix?.street}
                       placeholder="House/unit no., street name"
                       required
                       className={`mt-1 ${FIELD_CLASS}`}
@@ -387,66 +429,38 @@ export default function CheckoutForm({
                     <input
                       id="address2"
                       name="address2"
+                      defaultValue={addressToFix?.address2}
                       className={`mt-1 ${FIELD_CLASS}`}
                     />
                   </div>
-                  <div>
-                    <label className={LABEL_CLASS} htmlFor="city">
-                      City
-                    </label>
-                    <select
-                      id="city"
-                      name="city"
-                      required
-                      defaultValue=""
-                      className={`mt-1 ${FIELD_CLASS}`}
-                    >
-                      <option value="" disabled>
-                        Select a Metro Manila city
-                      </option>
-                      {cities.map((city) => (
-                        <option key={city} value={city}>
-                          {city}
-                        </option>
-                      ))}
-                    </select>
-                    <p className={`mt-1 text-sm ${INK_SOFT}`}>
-                      Delivery is available in Metro Manila only. Outside Metro
-                      Manila?{" "}
-                      <Link href="/contact" className={ACCENT_LINK}>
-                        Contact us
-                      </Link>{" "}
-                      instead.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={LABEL_CLASS} htmlFor="barangay">
-                        Barangay
-                      </label>
-                      <input
-                        id="barangay"
-                        name="barangay"
-                        required
-                        className={`mt-1 ${FIELD_CLASS}`}
-                      />
-                    </div>
-                    <div>
-                      <label className={LABEL_CLASS} htmlFor="postalCode">
-                        Postal code
-                      </label>
-                      <input
-                        id="postalCode"
-                        name="postalCode"
-                        inputMode="numeric"
-                        maxLength={4}
-                        required
-                        placeholder="1100"
-                        className={`mt-1 ${FIELD_CLASS}`}
-                      />
-                    </div>
-                  </div>
-                  {customerEmail && (
+                  <AddressLocationFields
+                    regions={regions}
+                    provinces={provinces}
+                    initial={addressToFix}
+                    fieldClass={FIELD_CLASS}
+                    labelClass={LABEL_CLASS}
+                    showLabels
+                    rowGapClass="gap-4"
+                    postalCodeField={
+                      <>
+                        <label className={LABEL_CLASS} htmlFor="postalCode">
+                          Postal code
+                        </label>
+                        <input
+                          id="postalCode"
+                          name="postalCode"
+                          inputMode="numeric"
+                          pattern="[0-9]{4}"
+                          maxLength={4}
+                          required
+                          placeholder="1100"
+                          defaultValue={addressToFix?.postalCode}
+                          className={`mt-1 ${FIELD_CLASS}`}
+                        />
+                      </>
+                    }
+                  />
+                  {customerEmail && !addressToFix && (
                     <label className={`flex items-center gap-2 text-sm ${INK_SOFT}`}>
                       <input type="checkbox" name="saveAddress" />
                       Save this address for next time
@@ -505,12 +519,17 @@ function AddressCard({
         <span className="block text-sm font-semibold">{address.label}</span>
         <span className={`mt-0.5 block text-sm ${INK_SOFT}`}>
           {address.recipientName} · {address.phone}
-          <br />
-          {address.street}
-          {address.address2 && `, ${address.address2}`}
-          <br />
-          Brgy. {address.barangay}, {address.city} {address.postalCode}
+          {formatAddressLines(address).map((line, i) => (
+            <span key={i} className="block">
+              {line}
+            </span>
+          ))}
         </span>
+        {address.needsUpdate && (
+          <span className="mt-1 block text-xs text-[#7A3B22] dark:text-[#C97A4E]">
+            Needs a quick update before ordering
+          </span>
+        )}
       </span>
     </button>
   );

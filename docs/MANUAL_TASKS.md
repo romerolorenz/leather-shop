@@ -139,7 +139,8 @@ blockers, then items that don't block any phase.
        That includes contact email, Instagram handle, admin notification
        email, shipping fee, delivery cities, order hold duration and
        payment instructions text. These are all defaults until you change
-       them.
+       them. (The nationwide-delivery release removes the delivery cities
+       field, so skip it if that release is already live.)
      - [x] **Live site** → `/admin/homepage`: in the **Hero** tab, set
        the image and focal point. In **Featured**, pick products. In
        **Studio**, set the photo and text, or leave them until the Studio
@@ -184,6 +185,64 @@ blockers, then items that don't block any phase.
         yet, take a manual backup before any risky migration. In
         **Terminal**, run
         `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
+- [ ] **Blocks merging `feat/nationwide-delivery` into `develop`: run the
+  nationwide-delivery migration and PSGC seed on dev.** No phase is
+  blocked (all are done), but nothing PSGC-related can be tested until
+  this is done. Migration `0025` is additive, so the current code keeps
+  working after it.
+  1. [x] **Supabase · dev** → SQL Editor → New query: paste
+     `supabase/migrations/0025_nationwide_delivery_psgc.sql` → Run. (Or,
+     in **Terminal**: `supabase db push --db-url "<dev URI>" --dry-run`,
+     which should list only `0025`, then run it again without
+     `--dry-run`.)
+  2. [x] **Terminal** (repo root):
+     `node --env-file=.env.local supabase/psgc/seed.mjs`. It should print
+     dev's host as `Target`, then `Upserted 42010 psgc_barangays`, then a
+     saved-address summary. Dev has 3 pre-PSGC addresses. Expect the two
+     Makati ones to match the city only (no barangay was ever saved), and
+     "Las Piñas / Pineda" to match the city only (Pineda is in Pasig).
+     All three then show "Needs updating".
+  3. [x] **Terminal**: `npm test`. The PSGC tests now run. The only
+     expected failures are the two seed-product files (the item below).
+     Done 2026-10-17 by the developer agent: 196 passed, 19 skipped, and
+     only those two files failed.
+  4. [ ] Work through MANUAL_TESTING.md → "Nationwide delivery (PSGC
+     address dropdowns)". The first pass was done 2026-10-17 with three
+     findings (City of Manila districts, and remove the "Needs updating"
+     and old-address handling). Re-test those after the fixes.
+- [ ] **Blocks releasing nationwide delivery (`develop` → `main`): run
+  migration `0025` and the PSGC seed on prod, *before* the release
+  deploys.** Prod starts with no saved addresses, so the seed only loads
+  the reference data there.
+  1. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
+     It should list only `0025_nationwide_delivery_psgc.sql`. Then run it
+     for real without `--dry-run`. The live site keeps working, because
+     the migration only adds tables and columns.
+  2. [ ] **Supabase · prod** → Project Settings → Data API (Project URL)
+     and API Keys (`service_role`). Then, in **Terminal**:
+     `SUPABASE_URL="https://<prod-ref>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<prod service_role key>" node supabase/psgc/seed.mjs`.
+     Check that it prints `Target: <prod-ref>.supabase.co` and
+     `Upserted 42010 psgc_barangays`.
+  3. [ ] **GitHub**: merge `develop` → `main`. Wait for **Vercel** to
+     finish the Production deploy.
+  4. [ ] **Live site** → `/checkout`: place one order to an address
+     outside Metro Manila (e.g. Cebu → City of Cebu → Lahug), using your
+     own email. Check the email shows the full address. Then cancel it in
+     `/admin/orders` (stock goes back).
+- [ ] **At the nationwide release: update shop text that still says
+  "Metro Manila only".** This is content you edit in the admin, not code.
+  Do it right after the release above is live.
+  - [ ] **Live site** → `/admin/faq`: rewrite the shipping answer. Say
+    you deliver anywhere in the Philippines at one flat fee, and that
+    provincial deliveries take longer than Metro Manila.
+  - [ ] **Live site** → `/admin/settings` → Payment instructions text: if
+    it mentions Metro Manila, update it.
+  - [ ] **Live site** → `/admin/settings` → Shipping fee: decide whether
+    the flat fee still works now that provincial orders cost more to
+    ship. It's one fee for every order (no zones), so set what you're
+    comfortable absorbing.
+  - [ ] *Optional:* mention the longer provincial delivery in product
+    descriptions or lead-time copy where it matters.
 - [ ] **Go-live, not a phase blocker: set up a receiving address on your
   domain** (e.g. `hello@hirayaleather.com`) so customer replies aren't
   lost. The sending address on `mail.hirayaleather.com` has no inbox.
@@ -205,6 +264,16 @@ blockers, then items that don't block any phase.
   catalog with a different 5-product set, not `0001_init.sql`'s
   originals). Re-seed those two products (or re-run `0001_init.sql`'s
   product seed) against the dev DB so the full suite passes clean again.
+- [ ] **Doesn't block any phase: refresh the PSGC address data now and
+  then.** The bundled copy is PSA's 2Q 2026 release (30 June 2026). It was
+  taken from a GitHub mirror because PSA's site blocks scripted
+  downloads, so it's worth swapping in a file you downloaded from PSA
+  yourself. In a browser, download the newest "PSGC Publication
+  Datafile" `.xlsx` from <https://psa.gov.ph/classification/psgc>. Then
+  follow `supabase/psgc/README.md` → "Refreshing to a newer PSA release":
+  build, `npm test`, seed dev, seed prod. No migration is needed. Once or
+  twice a year is plenty, or sooner if a customer can't find their
+  barangay.
 - [ ] **Doesn't block any phase: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.

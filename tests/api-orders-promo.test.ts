@@ -5,6 +5,7 @@ import { createProduct, type ProductInput } from "@/lib/admin/catalog";
 import { getOrCreateTestCategoryId } from "./helpers/test-category";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/settings";
+import { assertPsgcSeeded, MAKATI_BEL_AIR } from "./helpers/psgc-fixtures";
 
 // End-to-end coverage for promo codes through the real order-creation path
 // (not just validatePromoCode in isolation) — confirms the discount lands
@@ -21,6 +22,8 @@ let productSlug: string;
 let shippingCentavos: number;
 
 beforeAll(async () => {
+  // POST /api/orders validates the address against PSGC (migration 0025).
+  await assertPsgcSeeded();
   // Read the real, admin-configurable shipping fee rather than assuming
   // 0001_init.sql's default — /admin/settings may have changed it since.
   ({ shippingFeeCentavos: shippingCentavos } = await getSettings());
@@ -107,9 +110,8 @@ function orderBody(email: string, code?: string) {
     customer: { name: "Vitest", email, phone: "123" },
     shippingAddress: {
       street: "1 Test St",
-      barangay: "Test Barangay",
-      city: "Pasig",
-      postalCode: "1600",
+      ...MAKATI_BEL_AIR,
+      postalCode: "1209",
     },
     items: [{ slug: productSlug, selectedOptions: {}, quantity: 1 }],
     promoCode: code,

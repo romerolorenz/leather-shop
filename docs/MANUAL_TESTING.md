@@ -14,6 +14,89 @@ fixed).
 
 ## Outstanding
 
+### Nationwide delivery (PSGC address dropdowns)
+
+Spec: docs/design/checkout.md §4 and docs/IMPROVEMENTS.md (Done). Needs
+migration `0025` + `supabase/psgc/seed.mjs` run on dev first
+(MANUAL_TASKS.md). Use `npm run dev`. Test in a guest window and while
+logged in with a Google account that has saved addresses.
+
+**Checkout, guest**
+- [x] `/cart` shows "Shipping (₱X flat rate) calculated at checkout" with
+      no "Metro Manila".
+      Findings:
+- [x] `/checkout`: the fields read Region, Province, City / municipality,
+      then Barangay | Postal code. The old "Delivery is available in Metro
+      Manila only" note is gone, and the summary says "Shipping (flat
+      rate)".
+      Findings:
+- [x] Before a region is picked, Province / City / Barangay are disabled.
+      Pick **Region VII** → Province lists Cebu, Bohol, … → pick **Cebu**.
+      City shows "Loading…" briefly, then lists the cities and towns,
+      including **City of Cebu** (a highly urbanized city, filed under
+      Cebu) → pick it → Barangay lists **Lahug**.
+      Findings:
+- [x] Pick **National Capital Region (NCR)**. Province is disabled and
+      shows "Metro Manila", and City lists the 16 cities plus Pateros.
+      Pick **City of Manila**. Barangays show their district, e.g.
+      "Barangay 1 (Tondo I/II)".
+      Findings: clean it up, don't show barangay 1, 2, etc; Tondo, Binondo, etc should be there
+- [x] Change the region after picking everything. Province, City and
+      Barangay clear, so you can't submit a stale combination.
+      Findings:
+- [x] Place an order to a Cebu address. The confirmation page says
+      "Delivery is a flat ₱X anywhere in the Philippines." The customer
+      confirmation and admin notification emails show
+      "Brgy. Lahug, City of Cebu" and "Cebu, Region VII (Central Visayas)
+      6000".
+      Findings:
+- [x] `/admin/orders`: that order shows the street line, then
+      barangay + city, then province + region + postal code. Send payment
+      details and mark shipped: both emails show the same full address.
+      Cancel the order afterwards.
+      Findings:
+- [x] DevTools → Network, offline: picking a province shows "Couldn't
+      load the city list. Try again" under City. Go back online and click
+      Try again. The list loads.
+      Findings:
+
+**Saved addresses, logged in**
+- [x] `/account/addresses` → + Add address. The modal has the same
+      dropdowns, with placeholders instead of labels. Save a provincial
+      address. A success toast shows, the modal closes, and the list shows
+      its full barangay/city/province/region lines.
+      Findings:
+- [x] Edit that address. The dropdowns open prefilled at every level.
+      Switch it to an NCR address and save. The toast shows and the list
+      updates.
+      Findings:
+- [x] A pre-PSGC address (dev's old Makati / Las Piñas ones after the
+      seed) shows a "Needs updating" tag. Editing it shows the "We now
+      deliver nationwide…" note.
+      Findings: let's remove
+- [x] `/checkout` with that old address selected: the card says "Needs a
+      quick update before ordering". The entry fields appear prefilled
+      (name, phone, street, postal code) with the note on top, and there's
+      no "Save this address" checkbox. Pick the barangay and place the
+      order. Back in `/account/addresses` the address is updated and the
+      tag is gone.
+      Findings: lets remove this handling; database will start from scratch
+- [x] Picking a complete saved address at checkout places the order
+      without showing any fields, as before.
+      Findings: 
+
+**Admin + mobile**
+- [x] `/admin/settings`: the "Delivery cities" textarea is gone, and the
+      shipping fee has the hint "One flat fee for every order, anywhere in
+      the Philippines." Saving still shows the toast.
+      Findings:
+- [x] `/contact`: the intro no longer mentions Metro Manila.
+      Findings:
+- [x] At 375px width, the long region names (e.g. BARMM) don't overflow
+      the checkout or the modal. Barangay | Postal code stays two columns
+      and is usable.
+      Findings:
+
 ### Promo codes + categories (docs/IMPROVEMENTS.md's "Promo code capability")
 
 Migrations `0014_categories.sql`/`0015_promo_codes.sql`/

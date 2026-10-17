@@ -70,97 +70,15 @@ later work. Not started until explicitly requested — see items below.
   split, so do it right after MANUAL_TASKS.md's "split production from
   dev" item.
 
-- [ ] **Deliver nationwide (whole Philippines), with PSGC address
-  dropdowns** (decided 2026-10-15). This replaces the earlier "NCR first,
-  expand later" PSGC item. Today delivery is Metro Manila only: `city` is
-  validated against `settings.delivery_cities`, a flat admin-typed list
-  (`src/lib/settings.ts`), shown as a single `<select>` in
-  `CheckoutForm.tsx` and `AddressFormModal.tsx`, and enforced in
-  `POST /api/orders` (`src/app/api/orders/route.ts:57`). Barangay,
-  address line 2 and postal code are free text (migration `0018`).
-  Decisions, made through user Q&A:
-  - **Shipping stays one flat fee nationwide.** The existing
-    `settings.shipping_fee_centavos` is kept as-is, with no zones or
-    per-region pricing. The owner may want to revisit the amount in
-    `/admin/settings`, since provincial shipping costs more than Metro
-    Manila.
-  - **Always nationwide, with no per-area on/off switch.** Every PH
-    address can order. This is a deliberate exception to CLAUDE.md's
-    "configurable by default" rule (owner's call, 2026-10-15). Note it
-    with a comment at the validation point. `settings.delivery_cities`
-    and its `/admin/settings` field are removed rather than repurposed.
-  - **Address entry becomes cascading PSGC dropdowns**: region →
-    province → city/municipality → barangay, from the official Philippine
-    Standard Geographic Code data. Street, address line 2 and postal code
-    stay free text (PSGC has no ZIP codes).
-
-  Build notes:
-  - **Data source: a bundled PSGC snapshot, not a live API.** Seed
-    `psgc_regions`/`psgc_provinces`/`psgc_cities`/`psgc_barangays`
-    reference tables from the PSA's published PSGC file (about 42k
-    barangays, fine for Postgres). No third-party dependency or
-    uptime/cost risk. Refresh by re-running a seed script when the PSA
-    publishes an update (rare; the shop doesn't need every quarterly
-    release). Two PSGC quirks to handle:
-    - Metro Manila (NCR) has no provinces, so its cities sit directly
-      under the region (or under its four districts). The province step
-      is skipped or shows "Metro Manila".
-    - Highly urbanized and independent component cities (e.g. Cebu City,
-      Davao City) aren't administratively under a province. List them
-      under their geographic province so customers find them where they
-      expect.
-  - **Don't ship 42k barangays to the browser.** Regions and provinces can
-    load with the page. Cities and barangays load on demand per selection
-    (e.g. `GET /api/locations/cities?province=…` and
-    `…/barangays?city=…`), with caching, since the data rarely changes.
-  - **Schema:** `customer_addresses` and `orders` gain PSGC code columns
-    (`region_code`, `province_code`, `city_code`, `barangay_code`;
-    `shipping_`-prefixed on `orders`) plus **snapshotted names**, so
-    orders, emails and admin views never depend on a later PSGC refresh.
-    `city`/`barangay` text columns stay as the display snapshot. Add a
-    `province` name too, since addresses outside NCR need it on the
-    shipping label.
-  - **Validation:** `POST /api/orders` and the address save actions check
-    that the codes exist and form a consistent chain (barangay in city, in
-    province, in region), replacing the `deliveryCities.includes(city)`
-    check.
-  - **Existing data:** the dev DB has a handful of saved addresses and
-    orders with NCR city names from the fixed list. Past orders keep
-    their text snapshot, so no backfill is needed. Saved addresses get a
-    best-effort match of city name to PSGC code; anything unmatched
-    (e.g. a free-typed barangay) is flagged so the customer re-picks it
-    the next time it's used at checkout. Production starts clean, so this
-    only matters on dev.
-  - **Copy that says "Metro Manila" and must change:**
-    - `src/app/cart/CartView.tsx:183`: "flat, Metro Manila" becomes
-      "flat rate".
-    - `src/app/checkout/CheckoutForm.tsx:175`, `:276`, `:405`, `:414`: the
-      shipping hint, summary label, "Select a Metro Manila city" and the
-      "Delivery is available in Metro Manila only…" note.
-    - `src/app/account/addresses/AddressFormModal.tsx:149`.
-    - `src/app/api/orders/route.ts:59`: the error message.
-    - `src/app/contact/page.tsx:31`: "order for delivery outside Metro
-      Manila?". Drop it or change it to international.
-    - Admin-edited content (not code): the FAQ shipping answer and
-      `settings.payment_instructions_text`, if they mention Metro Manila.
-      Add a MANUAL_TASKS.md item for the owner to update these.
-    - Docs: PRD §5/§6 ("Metro Manila delivery only", ₱150 flat, "Outside
-      Metro Manila? Contact us") and docs/ARCHITECTURE.md.
-  - **Shown everywhere an address appears:** `/admin/orders`, order
-    emails (confirmation, payment details, shipped) and
-    `/account/addresses` should show the full
-    barangay/city/province/region line.
-  - **Tests:** PSGC lookup and chain validation (valid chain, mismatched
-    chain, unknown code), `POST /api/orders` accepting a non-NCR address
-    and rejecting an inconsistent one, address create/update with codes,
-    and the email address block including the province.
-  - **Rollout:** a migration plus the PSGC seed script run on dev, then on
-    prod before the release. Track both in MANUAL_TASKS.md when this is
-    picked up.
-  - **Out of scope:** international delivery, per-area pricing, courier
-    integration and delivery-time estimates by area. Consider updating
-    product lead-time copy or the FAQ to mention longer provincial
-    delivery.
+- [ ] **Delete the unused `settings.delivery_cities` row.** Nationwide
+  delivery (Done, 2026-10-17) stopped reading it, but migration `0025`
+  deliberately leaves it in place. The code before that release reads it
+  at checkout, and `supabase db push` applies every pending migration at
+  once, so deleting it in the same release would break prod checkout
+  between the migration and the deploy. Add
+  `delete from settings where key = 'delivery_cities';` to the next
+  migration written after the nationwide release is live on prod. It's
+  one line and harmless until then.
 - [ ] **Audit the app for actions missing success/error feedback.** Per
   CLAUDE.md's new rule ("every user-triggered action gets visible
   feedback — never a silent success or a bare error page"), sweep both
@@ -289,6 +207,50 @@ later work. Not started until explicitly requested — see items below.
     edited/deactivated.
 
 ## Done
+
+- [x] **Deliver nationwide (whole Philippines), with PSGC address
+  dropdowns** (built 2026-10-17, branch `feat/nationwide-delivery`.
+  **Goes live once migration `0025_nationwide_delivery_psgc.sql` plus
+  `supabase/psgc/seed.mjs` are run on dev, then on prod**; see
+  MANUAL_TASKS.md). Owner's decisions, 2026-10-15: one flat fee
+  nationwide (`settings.shipping_fee_centavos`, unchanged), and always
+  nationwide with no area switch. The second one is a deliberate
+  exception to "configurable by default", commented in
+  `src/app/api/orders/route.ts`. `settings.delivery_cities` and its
+  `/admin/settings` field are gone from the app.
+  - **Data:** PSA PSGC 2Q 2026 (published 30 June 2026). It's a bundled
+    1.4 MB TSV snapshot in `supabase/psgc/data/`, built from PSA's `.xlsx`
+    by `build-snapshot.mjs` and loaded by `seed.mjs` into
+    `psgc_regions/provinces/cities/barangays` (18 / 84 / 1,642 / 42,010
+    rows). Refreshing means re-running the seed, with no migration
+    (`supabase/psgc/README.md`). Quirks: NCR has no province. HUCs are
+    filed under their geographic province (via PSA's correspondence
+    code). Manila's 897 barangays are folded in from its 14
+    sub-municipalities, which are shown in the dropdown.
+  - **UI:** cascading native selects in one shared component
+    (`AddressLocationFields`) used by checkout and the account modal.
+    Regions and provinces load with the page. Cities and barangays come
+    from the cached `GET /api/locations/{cities,barangays}`. Spec:
+    `docs/design/checkout.md` §4. The account address modal now uses
+    `ActionForm` (toast, closes on success only).
+  - **Data model:** PSGC codes plus snapshotted names (including province
+    and region) on `customer_addresses` and `orders` (`shipping_`), with
+    no FK to `psgc_*`, so a PSA refresh can't break history.
+    `resolveAddressCodes()` validates the chain on every order and address
+    save, and never trusts client names. Pre-PSGC dev addresses get a
+    best-effort NCR name match in the seed. The rest show "Needs updating"
+    and are re-picked at checkout, which updates the saved address.
+  - **Display:** full barangay/city/province/region lines on checkout
+    cards, `/account/addresses`, `/admin/orders` and all four order
+    emails (shared `src/lib/address-format.ts`). Metro Manila copy is
+    replaced in the cart, checkout and contact page.
+  - **Tests:** `psgc-snapshot`, `address-format` (no DB), `psgc`,
+    `api-orders-nationwide`, plus updates to `customer-addresses`,
+    `email`, `api-orders(-promo)`, `orders` and `db-function-permissions`.
+    The DB-backed ones need `0025` + the seed on dev.
+  - Follow-ups: delete the `delivery_cities` row (Outstanding above). The
+    owner updates the FAQ/payment-instructions text and may revisit the
+    flat fee (MANUAL_TASKS.md).
 
 - [x] **Security: lock down execute permissions on older database
   functions** (fixed 2026-10-04, branch `fix/lock-down-db-functions`;

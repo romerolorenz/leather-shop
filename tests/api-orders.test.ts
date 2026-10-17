@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { POST } from "@/app/api/orders/route";
 import { getProductBySlug, type Product } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { MAKATI_BEL_AIR } from "./helpers/psgc-fixtures";
 
 const createdOrderIds: string[] = [];
 
@@ -48,7 +49,10 @@ afterAll(async () => {
 });
 
 describe("POST /api/orders", () => {
-  it("rejects a non-Metro-Manila city", async () => {
+  // Nationwide acceptance and chain mismatches are covered in
+  // tests/api-orders-nationwide.test.ts; this just checks that an address
+  // without PSGC codes (the old free-text shape) is refused.
+  it("rejects an address without PSGC codes", async () => {
     const res = await POST(
       makeRequest({
         customer: { name: "Test", email: "t@example.com", phone: "123" },
@@ -76,9 +80,8 @@ describe("POST /api/orders", () => {
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: {
           street: "1 St",
-          barangay: "Test Barangay",
-          city: "Pasig",
-          postalCode: "1600",
+          ...MAKATI_BEL_AIR,
+          postalCode: "1209",
         },
         items: [],
       })
@@ -92,9 +95,8 @@ describe("POST /api/orders", () => {
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: {
           street: "1 St",
-          barangay: "Test Barangay",
-          city: "Pasig",
-          postalCode: "1600",
+          ...MAKATI_BEL_AIR,
+          postalCode: "1209",
         },
         items: [
           {
@@ -128,9 +130,8 @@ describe("POST /api/orders", () => {
           customer: { name: "Test", email: "t@example.com", phone: "123" },
           shippingAddress: {
             street: "1 St",
-            barangay: "Test Barangay",
-            city: "Pasig",
-            postalCode: "1600",
+            ...MAKATI_BEL_AIR,
+            postalCode: "1209",
           },
           items: [
             {
@@ -156,9 +157,8 @@ describe("POST /api/orders", () => {
         customer: { name: "Test", email: "vitest-api@example.com", phone: "123" },
         shippingAddress: {
           street: "1 St",
-          barangay: "Test Barangay",
-          city: "Pasig",
-          postalCode: "1600",
+          ...MAKATI_BEL_AIR,
+          postalCode: "1209",
         },
         items: [
           {

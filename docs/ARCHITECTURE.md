@@ -14,11 +14,11 @@ flowchart TD
 
     subgraph NextJS["Next.js (Vercel)"]
         UI["Pages / UI \n (App Router)"]
-        API["API routes \n POST /api/orders \n /api/admin/* \n GET /api/orders/expire"]
+        API["API routes \n POST /api/orders \n /api/admin/* \n GET /api/orders/expire \n GET /api/locations/*"]
     end
 
     subgraph SB["Supabase"]
-        DB[("Postgres \n products, product_variants, \n orders, order_items, settings")]
+        DB[("Postgres \n products, product_variants, \n orders, order_items, settings, \n psgc_* address reference data")]
         Auth["Auth \n Google OAuth \n (customers + admin allow-list)"]
         Storage["Storage \n product photos"]
     end
@@ -46,6 +46,11 @@ Single codebase, both roles:
   - `POST /api/orders` — validates cart contents against real stock,
     recomputes totals server-side, writes the order, decrements stock,
     triggers both emails.
+  - `GET /api/locations/cities?region=…&province=…` and
+    `GET /api/locations/barangays?city=…` — the on-demand halves of the
+    checkout/address PSGC dropdowns (see "Delivery area" below). Public,
+    read-only, and cached hard (a day in the browser, a week at Vercel's
+    edge), since the data only changes when the snapshot is re-seeded.
   - `/api/admin/*` — product CRUD, order status updates, FAQ content edits.
     All gated on the admin allow-list (see Auth below).
   - `GET /api/orders/expire` — the order-hold check (PRD §5, §6): reads
@@ -200,7 +205,13 @@ orders
   payment details sent, mark paid, mark shipped, or cancel — overwritten
   each time rather than tracked per status/event; null until the first
   one happens), customer_name, customer_email, customer_phone,
-  shipping_street, shipping_city, subtotal_centavos,
+  shipping_street, shipping_address2, shipping_barangay, shipping_city,
+  shipping_province, shipping_region, shipping_postal_code,
+  shipping_region_code, shipping_province_code, shipping_city_code,
+  shipping_barangay_code (the PSGC codes and names are snapshotted at
+  order time, migration `0025`, so a later PSGC refresh never rewrites a
+  past order; province is null for Metro Manila, and every PSGC column is
+  null on orders placed before nationwide delivery), subtotal_centavos,
   shipping_centavos, promo_code_id (fk, nullable), discount_centavos
   (snapshot at order time, same reasoning as unit_price_centavos — a
   later edit/deactivation of the code shouldn't rewrite a past order's
@@ -248,9 +259,32 @@ payment_methods
   > was still empty in production at that point so there was no data to
   > migrate. Both run against the dev DB.
 
+customer_addresses
+  id, user_email, label, recipient_name, phone, street, address2,
+  barangay, city, province, region, postal_code, region_code,
+  province_code, city_code, barangay_code, is_default — saved shipping
+  addresses (Phase 8), scoped to the logged-in customer's email in app
+  code. Same PSGC code + name snapshot as orders (migration `0025`). An
+  address saved before nationwide delivery that couldn't be matched to
+  PSGC has null codes and is shown as "needs updating" until the
+  customer re-picks it.
+
+psgc_regions / psgc_provinces / psgc_cities / psgc_barangays
+  Read-only PSA reference data (migration `0025`, seeded by
+  `supabase/psgc/seed.mjs`). code (10-digit PSGC, text) + name on each;
+  provinces and cities carry region_code; cities carry a nullable
+  province_code (their *geographic* province: highly urbanized cities
+  like Cebu City are filed under the province they sit in; null only in
+  NCR), kind (city/municipality) and city_class (HUC/ICC/CC); barangays
+  carry city_code and sub_municipality (the City of Manila's districts).
+  provinces also include PSA's two province-level groupings that aren't
+  provinces ("City of Isabela", BARMM's "Special Geographic Area").
+  Default-deny RLS; read server-side only.
+
 settings
   key, value — single-row or key/value table holding admin-editable shop
-  config: shipping_fee_centavos, delivery_cities, admin_notification_email,
+  config: shipping_fee_centavos (one flat fee nationwide),
+  admin_notification_email,
   order_payment_hold_hours (default 48), payment_instructions_text
   (free-form text shown in the payment details email, alongside the
   payment_methods list above). Read by /api/orders, /api/orders/expire,
@@ -263,13 +297,47 @@ later price change on the product doesn't rewrite historical order totals.
 requirement real — every value in it is what a config constant would
 otherwise have held.
 
+## Delivery area (nationwide, PSGC)
+
+Delivery is **always nationwide**: any Philippine address can order, at
+the one flat `settings.shipping_fee_centavos`. There's no delivery-area
+setting. That's a deliberate exception to the "configurable by default"
+rule (owner's decision, 2026-10-15), noted at the validation point in
+`src/app/api/orders/route.ts`.
+
+Addresses are entered as cascading region → province → city/municipality
+→ barangay dropdowns built from the PSA's **Philippine Standard
+Geographic Code**. The data is a bundled snapshot (`supabase/psgc/`,
+currently PSA's 2Q 2026 release) seeded into four reference tables. It's
+not a live third-party API. Regions and provinces load with the page.
+Cities and barangays load per selection, so the ~42k barangays never ship
+to the browser. Refreshing to a newer PSA release means re-running the
+seed script, with no migration (see `supabase/psgc/README.md`).
+
+```mermaid
+erDiagram
+    psgc_regions ||--o{ psgc_provinces : contains
+    psgc_regions ||--o{ psgc_cities : contains
+    psgc_provinces |o--o{ psgc_cities : "geographic province (null in NCR)"
+    psgc_cities ||--o{ psgc_barangays : contains
+    customer_addresses }o..o| psgc_barangays : "codes + snapshotted names (no FK)"
+    orders }o..o| psgc_barangays : "shipping_* codes + names (no FK)"
+```
+
+Every address save and every order runs the submitted codes through
+`resolveAddressCodes()` (`src/lib/psgc.ts`). It checks that the barangay
+is in the city, the city is in the province (or has none, for NCR), and
+the province is in the region. Then it snapshots the PSGC names onto the
+row. Names are never taken from the client.
+
 ## Request flow: placing an order
 
 1. Browser: cart lives in `localStorage`, nothing server-side yet.
 2. Checkout form submits → `POST /api/orders` with cart contents + shipping
    info.
 3. API route: re-fetches each product/variant from Supabase (never trusts
-   client-submitted prices), checks Metro-Manila-only city and stock/
+   client-submitted prices), validates the shipping address's PSGC code
+   chain (any region; see "Delivery area" above) and stock/
    ordering-enabled, decrements the product's `stock_quantity` at this
    point (not at payment confirmation — see PRD §5 for why), writes
    `orders` + `order_items` rows.
@@ -316,7 +384,7 @@ otherwise have held.
 | Orders | Supabase table | ✅ done (Phase 3) |
 | Stock | Real quantity, decremented at order placement | ✅ done (Phase 3) — atomic via Postgres function, race-safe |
 | Order expiry | Configurable-duration (default 48h) auto-cancel + stock restore via Vercel Cron | Route built (Phase 3); actual cron trigger only fires once deployed to Vercel (see MANUAL_TASKS.md) |
-| Shop config (shipping fee, delivery cities, hold duration, etc.) | Admin-editable `settings` table | ✅ done (Phase 1/3) — reads live; admin editing UI still Phase 5 |
+| Shop config (shipping fee, hold duration, etc.; delivery area is always nationwide, not a setting) | Admin-editable `settings` table | ✅ done (Phase 1/3) — reads live; admin editing UI still Phase 5 |
 | Auth | Google OAuth (customers + admin allow-list) | ✅ done (Phase 4 admin, Phase 8 customer) — allow-listed email reaches `/admin`, other Google accounts denied; any Google account reaches `/account` (order history + saved addresses), no allow-list |
 | Product photos | Supabase Storage | ✅ done (Phase 5) — multi-photo gallery, admin upload/delete, clickable PDP thumbnails |
 | Cart | localStorage (unchanged) | ✅ already matches target |
