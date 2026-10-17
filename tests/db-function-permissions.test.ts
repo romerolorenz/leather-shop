@@ -6,8 +6,8 @@ import { createClient } from "@supabase/supabase-js";
 // so anything it can reach through PostgREST is reachable by anyone. This
 // file pins down what it must NOT reach:
 //   1. Database functions (RPCs) — only the server's service-role key may
-//      execute them. See supabase/migrations/0023_set_setting_fn.sql and
-//      0024_lock_down_function_grants.sql.
+//      execute them. See supabase/migrations/0023_set_setting_fn.sql,
+//      0024_lock_down_function_grants.sql and 0026_atomic_orders.sql.
 //   2. Tables — every app table is RLS default-deny (no policies), so anon
 //      reads come back empty. See supabase/migrations/0001_init.sql.
 //
@@ -49,6 +49,10 @@ describe("database functions are not executable with the anon key", () => {
         p_order_id: randomUUID(),
       },
     ],
+    // 0026. create_order raises "no items" before writing anything, and
+    // the cancel matches no order, so both are no-ops even if permitted.
+    ["create_order", { p_order: {}, p_items: [] }],
+    ["cancel_order_and_restore_stock", { p_order_id: randomUUID() }],
     [
       "set_setting",
       { p_key: "__anon_permission_test_nonexistent__", p_value: null },

@@ -125,6 +125,34 @@ uppercase with letter spacing, nothing overflows or wraps awkwardly.
       rest of the admin looks unchanged.
       Findings:
 
+### Order safety (branch `fix/order-safety`, migration `0026`)
+
+Run after migration `0026` is on dev (MANUAL_TASKS.md). The database
+behaviour (rollbacks, races, double cancel, sweep) is covered by
+`npm test`; these check the shopper and admin side in a real browser.
+
+- [ ] **Checkout, email with capitals** — place an order typing your email
+      with a capital letter (e.g. `You@Gmail.com`). It goes through
+      normally and the confirmation email arrives.
+      Findings:
+- [ ] **My Account** — log in with Google as that same address and open
+      `/account`: the order from the step above is listed.
+      Findings:
+- [ ] **Invalid email** — at checkout, type an email like `you@gmail`
+      (no dot after the @) and place the order. A clear message appears
+      ("Enter a valid email address.") and no order is placed.
+      Findings:
+- [ ] **Not enough stock** — set a product's stock to 1 in
+      `/admin/products`, put 2 in the cart, and place the order. The
+      message names the product ("… no longer has enough stock."), and the
+      stock in `/admin/products` is still 1.
+      Findings:
+- [ ] **Admin cancel** — in `/admin/orders`, cancel the order from the
+      first step: a success toast, and the product's stock goes back up by
+      the order's quantity in `/admin/products`. Cancelling again isn't
+      offered (or shows "nothing to cancel").
+      Findings:
+
 ## Done
 
 - [x] **Nationwide delivery (PSGC address dropdowns)** (docs/design/checkout.md

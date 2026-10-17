@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/products";
+import { normalizeEmail } from "@/lib/email-address";
 
 export type PromoCode = {
   id: string;
@@ -219,9 +220,10 @@ export type PromoValidationResult =
 // order-creation time. The per-customer-redemption rule is only checked
 // when customerEmail is provided — the cart page doesn't know the
 // shopper's email yet (guest checkout), so that rule is deferred to the
-// order-creation call, paired with the atomic redeem_promo_code() RPC
-// which re-checks it (and the total cap) under a row lock to close the
-// race between this preview and the actual order submission.
+// order-creation call, paired with redeem_promo_code() inside the
+// create_order() transaction (migration 0026), which re-checks it (and the
+// total cap) under a row lock to close the race between this preview and
+// the actual order submission. Emails compare case-insensitively.
 export async function validatePromoCode(
   rawCode: string,
   {
@@ -309,7 +311,7 @@ export async function validatePromoCode(
       .from("promo_code_redemptions")
       .select("id", { count: "exact", head: true })
       .eq("promo_code_id", promo.id)
-      .eq("customer_email", customerEmail);
+      .eq("customer_email", normalizeEmail(customerEmail));
 
     if (redemptionErr) throw redemptionErr;
     if ((count ?? 0) > 0) {
@@ -354,23 +356,4 @@ export class PromoCodeRedemptionError extends Error {
     );
     this.name = "PromoCodeRedemptionError";
   }
-}
-
-// Final, atomic step at order-creation time — see redeem_promo_code() in
-// supabase/migrations/0015_promo_codes.sql for what it re-checks under a
-// row lock (total cap + per-customer, closing the race this function's
-// caller (validatePromoCode above) can't fully close on its own).
-export async function redeemPromoCode(
-  promoCodeId: string,
-  customerEmail: string,
-  orderId: string
-): Promise<void> {
-  const supabase = getSupabaseServerClient();
-  const { error } = await supabase.rpc("redeem_promo_code", {
-    p_promo_code_id: promoCodeId,
-    p_customer_email: customerEmail,
-    p_order_id: orderId,
-  });
-
-  if (error) throw new PromoCodeRedemptionError();
 }

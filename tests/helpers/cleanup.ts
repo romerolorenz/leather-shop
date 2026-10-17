@@ -44,32 +44,41 @@ export class CleanupErrors {
   }
 }
 
-/** Deletes rows by id, one request each, recording any failure. */
+/**
+ * Deletes rows by id in one request. A failed delete removes none of them
+ * (one statement), and the error is recorded.
+ */
 export async function deleteRowsById(
   errors: CleanupErrors,
   table: string,
   ids: Iterable<string>
 ): Promise<void> {
-  const supabase = getSupabaseServerClient();
-  for (const id of ids) {
-    errors.check(
-      `delete ${table} ${id}`,
-      await supabase.from(table).delete().eq("id", id)
-    );
-  }
+  const idList = [...new Set(ids)];
+  if (!idList.length) return;
+  errors.check(
+    `delete ${idList.length} row(s) from ${table}: ${idList.join(", ")}`,
+    await getSupabaseServerClient().from(table).delete().in("id", idList)
+  );
 }
 
 /**
- * Deletes each order, then puts back the stock it took. An order that's
+ * Deletes the orders, then puts back the stock they took. An order that's
  * already cancelled has had its stock restored (by
  * cancelOrderAndRestoreStock or the expiry sweep), so it's only deleted.
  *
- * Order of operations: read the items, delete the order, then restore
- * stock from the in-memory item list. So an order that can't be deleted
- * still holds its stock (nothing to double-restore later), and an order
- * whose status or items can't be read is kept, since its items are the
- * only record of how much stock it took. A restore that fails after the
- * delete names the product and quantity to put back by hand.
+ * Batched (a handful of requests however many orders), with the same
+ * safety rules as one at a time:
+ * - The orders' items are read first, since they're the only record of
+ *   how much stock was taken. If they can't be read, nothing is deleted.
+ * - Orders that aren't cancelled are deleted with a status condition, and
+ *   stock is restored only for the ones that delete actually removed. So
+ *   an order cancelled between the read and the delete (its stock already
+ *   back) isn't restored twice; it's removed by the cancelled-orders
+ *   delete instead.
+ * - A failed delete removes none of its orders (one statement), so
+ *   nothing is restored for them.
+ * - A restore that fails after the delete names the product and quantity
+ *   to put back by hand.
  *
  * Any promo_code_redemptions pointing at an order must be deleted first
  * (that FK has no ON DELETE).
@@ -79,40 +88,45 @@ export async function deleteOrdersRestoringStock(
   orderIds: Iterable<string>
 ): Promise<void> {
   const supabase = getSupabaseServerClient();
-  for (const orderId of orderIds) {
-    const order = await supabase
-      .from("orders")
-      .select("status")
-      .eq("id", orderId)
-      .maybeSingle();
-    if (!errors.check(`look up order ${orderId} (kept)`, order)) continue;
-    if (!order.data) continue; // already gone
+  const idList = [...new Set(orderIds)];
+  if (!idList.length) return;
+  const label = `orders ${idList.join(", ")}`;
 
-    let toRestore: { product_id: string; quantity: number }[] = [];
-    if (order.data.status !== "cancelled") {
-      const items = await supabase
-        .from("order_items")
-        .select("product_id, quantity")
-        .eq("order_id", orderId);
-      if (!errors.check(`read items of order ${orderId} (kept)`, items)) continue;
-      toRestore = items.data ?? [];
-    }
+  const items = await supabase
+    .from("order_items")
+    .select("order_id, product_id, quantity")
+    .in("order_id", idList);
+  if (!errors.check(`read items of ${label} (kept)`, items)) return;
 
-    const deleted = errors.check(
-      `delete order ${orderId} (kept, stock not restored)`,
-      await supabase.from("orders").delete().eq("id", orderId)
+  const removed = await supabase
+    .from("orders")
+    .delete()
+    .in("id", idList)
+    .neq("status", "cancelled")
+    .select("id");
+  if (!errors.check(`delete ${label} (kept, stock not restored)`, removed)) return;
+
+  // Already cancelled (stock already back), including any cancelled since
+  // the read above: delete only.
+  errors.check(
+    `delete cancelled ${label}`,
+    await supabase.from("orders").delete().in("id", idList).eq("status", "cancelled")
+  );
+
+  const removedIds = new Set((removed.data ?? []).map((o) => o.id));
+  const byProduct = new Map<string, number>();
+  for (const item of items.data ?? []) {
+    if (!removedIds.has(item.order_id)) continue;
+    byProduct.set(item.product_id, (byProduct.get(item.product_id) ?? 0) + item.quantity);
+  }
+  for (const [productId, quantity] of byProduct) {
+    errors.check(
+      `restore stock after deleting orders: add ${quantity} back to product ` +
+        `${productId} by hand`,
+      await supabase.rpc("restore_product_stock", {
+        p_product_id: productId,
+        p_quantity: quantity,
+      })
     );
-    if (!deleted) continue;
-
-    for (const item of toRestore) {
-      errors.check(
-        `restore stock after deleting order ${orderId}: add ${item.quantity} ` +
-          `back to product ${item.product_id} by hand`,
-        await supabase.rpc("restore_product_stock", {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity,
-        })
-      );
-    }
   }
 }
