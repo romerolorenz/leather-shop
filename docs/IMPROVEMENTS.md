@@ -5,41 +5,162 @@ later work. Not started until explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Use PSGC (Philippine Standard Geographic Code) data for
-  region/city/barangay address fields, instead of the current flat
-  admin-typed city list.** Today's address model is much simpler:
-  `customer_addresses`/orders only store free-standing `street` + `city`
-  text columns (`src/lib/customer/addresses.ts`), and `city` is validated
-  against `settings.deliveryCities` — a flat admin-editable string array
-  (`src/lib/settings.ts`, key `delivery_cities`) rendered as a plain
-  `<select>` in `AddressFormModal.tsx` and `CheckoutForm.tsx`. There's no
-  region or barangay concept anywhere in the schema. This replaces that
-  with real PSGC-sourced reference data (region → province/HUC → city/
-  municipality → barangay) so address entry becomes cascading
-  region/city/barangay dropdowns instead of one hand-maintained flat
-  list.
-  - **Phase 1 scope**: NCR only, matching the current Metro-Manila-only
-    delivery area — the region level may not even need a selector yet if
-    it's a single fixed value, but city and barangay should be real PSGC
-    entities for NCR's cities/municipalities from day one so the later PH
-    expansion doesn't need a data-model rework, just more rows.
-  - **Expandable to PH**: the schema (likely a `psgc_regions`/
-    `psgc_cities`/`psgc_barangays` reference table set, seeded from the
-    published PSGC dataset) should support the full hierarchy nationwide
-    even though delivery is currently NCR-only — `settings.deliveryCities`
-    (or its replacement) then becomes "which PSGC city codes are
-    deliverable" rather than a free-typed list, so opening a new delivery
-    area later is admin config, not a schema change.
-  - **Touches**: `customer_addresses` + orders' shipping-address columns
-    (add region/city/barangay code references, likely alongside or
-    replacing the plain `city` text), `AddressFormModal.tsx` and
-    `CheckoutForm.tsx`'s city `<select>` (become cascading selects), admin
-    delivery-area configuration (`/admin/settings`'s delivery cities
-    field), and anywhere shipping address is displayed (`/admin/orders`,
-    order confirmation emails, `/account/addresses`).
-  - Not scoped in detail yet — needs a data-source decision (bundling a
-    PSGC dataset snapshot vs. an API) and a proper migration plan before
-    building.
+- [ ] **Auto-expire only orders whose payment details were sent, counting
+  the hold from the first send** (decided 2026-10-15). Today the daily
+  sweep (`GET /api/orders/expire`, `src/app/api/orders/expire/route.ts`)
+  cancels orders in **both** `pending_payment` and `payment_details_sent`,
+  measuring the hold from `created_at`
+  (`getExpiredPendingOrderIds()`, `src/lib/orders.ts:275`). That's unfair
+  to the customer: they can't pay until the admin sends payment details,
+  so a `pending_payment` order can expire before they were ever able to
+  pay, and late-sent details shorten their window.
+  - **New rule:** only `payment_details_sent` orders auto-expire.
+    `pending_payment` orders are never auto-cancelled and stay until the
+    admin sends details or cancels them by hand.
+  - **Clock:** the hold (`settings.order_payment_hold_hours`, default 48)
+    counts from when payment details were **first** sent. Resending
+    doesn't restart it. That's deliberate, so a resend can't silently
+    extend a deadline. `status_updated_at` can't be used for this,
+    because `markPaymentDetailsSent()` refreshes it on every resend
+    (`src/lib/orders.ts:450`–`468`).
+  - **Needs:** a new nullable `orders.payment_details_first_sent_at
+    timestamptz`. `markPaymentDetailsSent()` sets it only when it's null,
+    on the `pending_payment` → `payment_details_sent` transition. The
+    migration backfills it from `status_updated_at` for orders currently
+    in `payment_details_sent`. Those are the only orders the sweep looks
+    at. Their `status_updated_at` is the latest send, not the first, which
+    is close enough for a one-time backfill. Closed orders can stay null.
+    `getExpiredPendingOrderIds()` then filters
+    `status = 'payment_details_sent'` and
+    `payment_details_first_sent_at < now − hold`. Rename the function to
+    match, e.g. `getExpiredAwaitingPaymentOrderIds`, and update the
+    comment at `src/lib/orders.ts:272`.
+  - **Side effects to handle:**
+    - `pending_payment` orders now reserve stock indefinitely. The
+      `/admin` dashboard's "Needs attention" list already surfaces them,
+      but consider showing how old each one is, so stale ones get
+      cancelled by hand.
+    - Relabel `/admin/settings`' "Order payment hold (hours)" (`src/app/admin/settings/page.tsx:81`)
+      with a hint like "after payment details are sent".
+    - Update any customer-facing copy that implies a deadline from order
+      placement. Check the payment-instructions text and the
+      confirmation email.
+    - Update PRD §5/§6 and docs/ARCHITECTURE.md § "Request flow: order
+      expiry" to match.
+  - **Tests:** update the expiry cases in `tests/orders.test.ts`. A
+    `pending_payment` order older than the hold is **not** returned. A
+    `payment_details_sent` order is returned only once
+    `payment_details_first_sent_at` is past the hold. A resend doesn't
+    move `payment_details_first_sent_at`.
+  - **Rollout:** the migration runs on dev, then on prod before the
+    release (MANUAL_TASKS.md tracks both).
+  - Unchanged: the sweep still runs once a day at ~00:00 Manila (`0 16 * * *` UTC),
+    so actual cancellation lands at the first midnight after the hold
+    runs out.
+
+- [ ] **Stop `npm test` from ever running against the production
+  database.** Once prod and dev are separate Supabase projects
+  ([PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)), a stale `.env.local`
+  could still point tests at prod, where they create orders, change stock
+  and create promo codes. Add a Vitest setup check (`vitest.config.ts`
+  already loads `.env.local`) that aborts the whole run if `SUPABASE_URL`
+  points at the production project. One option: an explicit
+  `SUPABASE_ENV=dev` marker that must be present. The other: compare the
+  URL against a known prod project ref. Small, and only useful after the
+  split, so do it right after MANUAL_TASKS.md's "split production from
+  dev" item.
+
+- [ ] **Deliver nationwide (whole Philippines), with PSGC address
+  dropdowns** (decided 2026-10-15). This replaces the earlier "NCR first,
+  expand later" PSGC item. Today delivery is Metro Manila only: `city` is
+  validated against `settings.delivery_cities`, a flat admin-typed list
+  (`src/lib/settings.ts`), shown as a single `<select>` in
+  `CheckoutForm.tsx` and `AddressFormModal.tsx`, and enforced in
+  `POST /api/orders` (`src/app/api/orders/route.ts:57`). Barangay,
+  address line 2 and postal code are free text (migration `0018`).
+  Decisions, made through user Q&A:
+  - **Shipping stays one flat fee nationwide.** The existing
+    `settings.shipping_fee_centavos` is kept as-is, with no zones or
+    per-region pricing. The owner may want to revisit the amount in
+    `/admin/settings`, since provincial shipping costs more than Metro
+    Manila.
+  - **Always nationwide, with no per-area on/off switch.** Every PH
+    address can order. This is a deliberate exception to CLAUDE.md's
+    "configurable by default" rule (owner's call, 2026-10-15). Note it
+    with a comment at the validation point. `settings.delivery_cities`
+    and its `/admin/settings` field are removed rather than repurposed.
+  - **Address entry becomes cascading PSGC dropdowns**: region →
+    province → city/municipality → barangay, from the official Philippine
+    Standard Geographic Code data. Street, address line 2 and postal code
+    stay free text (PSGC has no ZIP codes).
+
+  Build notes:
+  - **Data source: a bundled PSGC snapshot, not a live API.** Seed
+    `psgc_regions`/`psgc_provinces`/`psgc_cities`/`psgc_barangays`
+    reference tables from the PSA's published PSGC file (about 42k
+    barangays, fine for Postgres). No third-party dependency or
+    uptime/cost risk. Refresh by re-running a seed script when the PSA
+    publishes an update (rare; the shop doesn't need every quarterly
+    release). Two PSGC quirks to handle:
+    - Metro Manila (NCR) has no provinces, so its cities sit directly
+      under the region (or under its four districts). The province step
+      is skipped or shows "Metro Manila".
+    - Highly urbanized and independent component cities (e.g. Cebu City,
+      Davao City) aren't administratively under a province. List them
+      under their geographic province so customers find them where they
+      expect.
+  - **Don't ship 42k barangays to the browser.** Regions and provinces can
+    load with the page. Cities and barangays load on demand per selection
+    (e.g. `GET /api/locations/cities?province=…` and
+    `…/barangays?city=…`), with caching, since the data rarely changes.
+  - **Schema:** `customer_addresses` and `orders` gain PSGC code columns
+    (`region_code`, `province_code`, `city_code`, `barangay_code`;
+    `shipping_`-prefixed on `orders`) plus **snapshotted names**, so
+    orders, emails and admin views never depend on a later PSGC refresh.
+    `city`/`barangay` text columns stay as the display snapshot. Add a
+    `province` name too, since addresses outside NCR need it on the
+    shipping label.
+  - **Validation:** `POST /api/orders` and the address save actions check
+    that the codes exist and form a consistent chain (barangay in city, in
+    province, in region), replacing the `deliveryCities.includes(city)`
+    check.
+  - **Existing data:** the dev DB has a handful of saved addresses and
+    orders with NCR city names from the fixed list. Past orders keep
+    their text snapshot, so no backfill is needed. Saved addresses get a
+    best-effort match of city name to PSGC code; anything unmatched
+    (e.g. a free-typed barangay) is flagged so the customer re-picks it
+    the next time it's used at checkout. Production starts clean, so this
+    only matters on dev.
+  - **Copy that says "Metro Manila" and must change:**
+    - `src/app/cart/CartView.tsx:183`: "flat, Metro Manila" becomes
+      "flat rate".
+    - `src/app/checkout/CheckoutForm.tsx:175`, `:276`, `:405`, `:414`: the
+      shipping hint, summary label, "Select a Metro Manila city" and the
+      "Delivery is available in Metro Manila only…" note.
+    - `src/app/account/addresses/AddressFormModal.tsx:149`.
+    - `src/app/api/orders/route.ts:59`: the error message.
+    - `src/app/contact/page.tsx:31`: "order for delivery outside Metro
+      Manila?". Drop it or change it to international.
+    - Admin-edited content (not code): the FAQ shipping answer and
+      `settings.payment_instructions_text`, if they mention Metro Manila.
+      Add a MANUAL_TASKS.md item for the owner to update these.
+    - Docs: PRD §5/§6 ("Metro Manila delivery only", ₱150 flat, "Outside
+      Metro Manila? Contact us") and docs/ARCHITECTURE.md.
+  - **Shown everywhere an address appears:** `/admin/orders`, order
+    emails (confirmation, payment details, shipped) and
+    `/account/addresses` should show the full
+    barangay/city/province/region line.
+  - **Tests:** PSGC lookup and chain validation (valid chain, mismatched
+    chain, unknown code), `POST /api/orders` accepting a non-NCR address
+    and rejecting an inconsistent one, address create/update with codes,
+    and the email address block including the province.
+  - **Rollout:** a migration plus the PSGC seed script run on dev, then on
+    prod before the release. Track both in MANUAL_TASKS.md when this is
+    picked up.
+  - **Out of scope:** international delivery, per-area pricing, courier
+    integration and delivery-time estimates by area. Consider updating
+    product lead-time copy or the FAQ to mention longer provincial
+    delivery.
 - [ ] **Audit the app for actions missing success/error feedback.** Per
   CLAUDE.md's new rule ("every user-triggered action gets visible
   feedback — never a silent success or a bare error page"), sweep both

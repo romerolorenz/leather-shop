@@ -10,6 +10,190 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 Ordered by what it blocks — next-phase blockers first, then later-phase
 blockers, then items that don't block any phase.
 
+- [ ] **Go-live blocker: split production from dev**
+  (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)). A **new** Supabase
+  project becomes **production** and starts clean, with no data copied.
+  The current project stays as **dev**, so `.env.local` doesn't change.
+  Do the steps in order. Steps 1–3 don't affect the live site. Steps 4–7
+  should be done in one sitting, because the live storefront is empty
+  from the cutover until the content is entered. Throughout,
+  `<your domain>` means the domain listed under Vercel → Project →
+  Settings → Domains, and `<prod-ref>` is the ID in the new project's URL
+  (`https://<prod-ref>.supabase.co`).
+
+  Each sub-step starts with the place to do it:
+  - **Supabase · dev**: [supabase.com/dashboard](https://supabase.com/dashboard), opened on the existing project.
+  - **Supabase · prod**: the same dashboard, opened on the new `leather-shop-prod` project.
+  - **Vercel**: [vercel.com](https://vercel.com), opened on the leather-shop project.
+  - **Google Cloud**: [console.cloud.google.com](https://console.cloud.google.com), opened on the project that holds the OAuth client.
+  - **GitHub**: [github.com/romerolorenz/leather-shop](https://github.com/romerolorenz/leather-shop).
+  - **Terminal**: your Mac's terminal, in the repo folder.
+  - **Live site**: `https://<your domain>` in a browser.
+  - **Inbox**: your email.
+
+  1. **Create the production Supabase project and its tables.**
+     - [x] **Supabase · dev** → Project Settings → General → note the
+       Region.
+     - [x] **Supabase** (dashboard home, no project open) → New project.
+       Name it `leather-shop-prod`, pick the **same region**, and
+       generate a strong database password. Save the password in your
+       password manager. You need it in the next step, and it can't be
+       viewed again (only reset).
+     - [x] **Terminal**: `brew install supabase/tap/supabase`.
+     - [x] **Supabase · prod** → **Connect** (top bar) → Connection
+       String → **Session pooler** → copy the URI. Replace
+       `[YOUR-PASSWORD]` with the password. If the password has
+       `@ # / ? : %`, URL-encode them (or reset it to letters and digits).
+     - [x] **Terminal** (repo root): run a dry run,
+       `supabase db push --db-url "<prod URI>" --dry-run`. It should list
+       `0001_init.sql` through `0024_lock_down_function_grants.sql`. If it
+       asks for a config file, run `supabase init` once (answer **N** to
+       the VS Code/IntelliJ prompts) and retry.
+     - [x] **Terminal**: run it for real,
+       `supabase db push --db-url "<prod URI>"`. It should finish with no
+       errors.
+     - [x] **Supabase · prod** → Table Editor should show `products`,
+       `orders`, `settings`, `admin_users` and the rest. `admin_users`
+       should have one row, your email. **Supabase · prod** → Storage
+       should show two buckets, `product-photos` and `site-images`.
+     - *If you'd rather not install the CLI:* in **Terminal**, run
+       `cat supabase/migrations/*.sql | pbcopy`. Then in
+       **Supabase · prod** → SQL Editor → New query, paste it and click
+       Run. Then do the same checks.
+  2. **Set up Google login for production.** None of this affects the
+     live site yet.
+     - [x] **Supabase · dev** → Authentication → Sign In / Providers →
+       Google → copy the client ID and secret. If the secret is hidden,
+       get it from **Google Cloud** → APIs & Services → Credentials →
+       your OAuth client.
+     - [x] **Supabase · prod** → Authentication → Sign In / Providers →
+       Google → Enable. Paste the same client ID and secret, then Save.
+       Copy the **Callback URL** shown there
+       (`https://<prod-ref>.supabase.co/auth/v1/callback`).
+     - [x] **Google Cloud** → APIs & Services → Credentials → your OAuth
+       client → **Authorized redirect URIs** → Add URI → paste that
+       callback URL → Save. Keep dev's existing URI there too.
+     - [x] **Supabase · prod** → Authentication → URL Configuration. Set
+       **Site URL** to `https://<your domain>`. Under **Redirect URLs**,
+       add `https://<your domain>/**`. The `/**` wildcard is required
+       (see the localhost login fix in Done).
+  3. **Create `main` and make it the production branch.** The live site
+     keeps using the old database, and only the deploy branch changes.
+     - [x] **Terminal**: `git checkout develop && git pull && git checkout -b main && git push -u origin main`.
+     - [x] **Vercel** → Settings → **Environments** → Production →
+       Branch Tracking → set it to `main` → Save. (On older dashboards
+       this is Settings → Git → Production Branch.)
+     - [x] **GitHub** → Settings → General → check that Default branch is
+       still `develop`.
+     - [x] **Vercel** → Deployments → redeploy the latest `main` commit
+       as Production. Check that the deployment shows branch `main` and
+       that the **Live site** still loads.
+  4. **Point production at the new database.** Here the live site
+     switches over and goes empty.
+     - [x] **Supabase · prod** → Project Settings → **Data API**: copy
+       the Project URL. **Supabase · prod** → Project Settings → **API
+       Keys**: copy the `anon` key and the `service_role` key. If the
+       page shows "publishable/secret" keys first, open the **Legacy API
+       Keys** tab so prod matches what dev uses.
+     - [x] **Vercel** → Settings → Environment Variables. For each of
+       `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+       `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (and
+       `SUPABASE_ANON_KEY` if it's listed): Edit → untick
+       **Production**, so it stays on Preview + Development only → Save.
+     - [x] **Vercel** → Settings → Environment Variables → Add each of
+       those vars again with the prod values, ticking **Production
+       only**. The URL vars get the Project URL, both anon vars get the
+       `anon` key, and `SUPABASE_SERVICE_ROLE_KEY` gets the
+       `service_role` key.
+     - [x] **Vercel**: leave `RESEND_API_KEY`, `RESEND_FROM_EMAIL`,
+       `CRON_SECRET` and `NEXT_PUBLIC_SITE_URL` unchanged.
+     - [x] **Vercel** → Deployments → latest Production deployment → ⋯ →
+       **Redeploy**. Untick "Use existing build cache", because the
+       `NEXT_PUBLIC_*` values are baked in at build time.
+     - [x] **Live site** → `/products` should show only the two sample
+       products from `0001`. That confirms it's reading the new database.
+  5. **Check login.**
+     - [x] **Live site** → `/admin` in a private window → sign in with
+       `marcolorenzoromero@gmail.com`. You should reach the dashboard.
+     - [x] **Live site**: sign out, then sign in with a different Google
+       account. It should be denied `/admin` but able to reach
+       `/account`.
+     - [x] **Supabase · prod** → Authentication → Users should now list
+       both accounts.
+  6. **Enter the real content.** Everything here is on the **Live site**
+     → `/admin`. Do it in this order so each step has what it needs:
+     - [x] **Live site** → `/admin/categories`: create the real
+       categories.
+     - [x] **Live site** → `/admin/options`: create the option types and
+       values (Color, Thread Color, etc.).
+     - [x] **Live site** → `/admin/products`: create each real product
+       with its category, options, price, stock, details and photos. Set
+       it visible.
+     - [x] **Live site** → `/admin/products`: delete or hide (untick
+       "Visible in shop") the two samples, **Classic Bifold Wallet** and
+       **Everyday Tote Bag**. Then, in `/admin/categories`, delete their
+       sample categories if they aren't used.
+     - [x] **Live site** → `/admin/payment-methods`: add each bank and
+       e-wallet with its QR image.
+     - [ ] **Live site** → `/admin/settings`: go through **every** field.
+       That includes contact email, Instagram handle, admin notification
+       email, shipping fee, delivery cities, order hold duration and
+       payment instructions text. These are all defaults until you change
+       them.
+     - [x] **Live site** → `/admin/homepage`: in the **Hero** tab, set
+       the image and focal point. In **Featured**, pick products. In
+       **Studio**, set the photo and text, or leave them until the Studio
+       photo/text items below are done.
+     - [x] **Live site** → `/admin/faq`: replace the placeholder
+       questions.
+     - [ ] **Live site** → `/admin/promo-codes`: recreate any real promo
+       codes. Dev's codes don't carry over.
+     - [x] **Live site**, on your phone: browse the homepage, `/products`,
+       one product page, `/faq`, `/contact` and `/privacy`. There should
+       be no sample products and no placeholder text.
+  7. **Place one real order end to end.**
+     - [ ] **Live site**: place an order using your own email.
+     - [ ] **Inbox**: check that both emails arrive. One is the customer
+       confirmation. The other is the admin notification, sent to the
+       address set in step 6.
+     - [ ] **Live site** → `/admin/orders` → open the order → **Send
+       payment details**. Then, in your **Inbox**, check that the email
+       arrives with the QR images.
+     - [ ] **Live site** → `/admin/orders`: cancel the order. Then, in
+       `/admin/products`, check that the product's stock goes back to
+       what it was.
+  8. **Check the cron job.**
+     - [ ] **Vercel** → Settings → **Cron Jobs**: `/api/orders/expire`
+       should be listed and enabled, scheduled `0 16 * * *` (midnight
+       Manila time).
+     - [ ] **Vercel** → Settings → Cron Jobs → `/api/orders/expire` →
+       View Logs, the morning after. The run should show 200, not 401.
+       A 401 means `CRON_SECRET` isn't set for Production.
+  9. **Make the repo private** (optional, recommended).
+     - [ ] **GitHub** → Settings → General → Danger Zone → **Change
+       repository visibility** → Private.
+     - [ ] **GitHub**: merge any small PR into `develop`. Then, in
+       **Vercel** → Deployments, check that a Preview still builds. If it
+       doesn't, reconnect the repo in **Vercel** → Settings → Git.
+  10. **Decide on plans** (see PRODUCTION_SETUP.md § Open questions).
+      - [ ] **Vercel** → Settings → Billing: check the plan. Hobby is for
+        non-commercial use only, and Pro is US$20/month.
+      - [ ] **Supabase** (dashboard home) → your organization → Billing.
+        Billing is per organization, not per project. Decide whether to
+        upgrade to Pro (US$25/month, daily backups). If not
+        yet, take a manual backup before any risky migration. In
+        **Terminal**, run
+        `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
+- [ ] **Go-live, not a phase blocker: set up a receiving address on your
+  domain** (e.g. `hello@hirayaleather.com`) so customer replies aren't
+  lost. The sending address on `mail.hirayaleather.com` has no inbox.
+  Free option: forward it to Gmail. In Namecheap → Advanced DNS → Mail
+  Settings: if it shows "Email Forwarding", add the forward under Domain →
+  Redirect Email; if it shows "Custom MX" (from the Resend setup), use a
+  free forwarder like ImprovMX (its MX + SPF records on host `@`, which
+  doesn't affect Resend on the `mail` subdomain). Optionally add it to
+  Gmail "Send mail as". Then set **Contact email** in `/admin/settings` to
+  it, and send a test email to confirm it arrives.
 - [ ] **Blocks clean `npm test` runs, not a phase or go-live blocker: the
   dev DB is missing `classic-bifold-wallet`/`tote-bag`, the seed products
   `tests/orders.test.ts` and `tests/api-orders.test.ts` depend on.** Both
