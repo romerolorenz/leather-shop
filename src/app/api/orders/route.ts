@@ -110,17 +110,35 @@ export async function POST(request: Request) {
     // A hidden product is treated the same as a nonexistent one here —
     // it's not listed anywhere a shopper could have legitimately gotten
     // this slug from.
-    if (!product || !product.visible || quantity < 1) {
+    if (!product || !product.visible) {
       return NextResponse.json(
         { error: "One or more cart items are invalid." },
         { status: 400 }
       );
     }
 
+    // Whole items only: a hand-edited 1.5 would give a line total that
+    // isn't whole centavos.
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return NextResponse.json(
+        {
+          error: `Quantity for ${product.name} must be a whole number of 1 or more.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Option types with no values have nothing to choose, so they're
+    // skipped, matching ProductDetail.tsx (buy-now.md section 4).
+    // getProductBySlug already hides them; this keeps the route correct
+    // even if that changes.
+    const choosableTypes = product.optionTypes.filter(
+      (type) => type.values.length > 0
+    );
     const selectedOptions = requested.selectedOptions ?? {};
     const validSelection =
-      Object.keys(selectedOptions).length === product.optionTypes.length &&
-      product.optionTypes.every((type) =>
+      Object.keys(selectedOptions).length === choosableTypes.length &&
+      choosableTypes.every((type) =>
         type.values.includes(selectedOptions[type.name])
       );
 
@@ -141,7 +159,7 @@ export async function POST(request: Request) {
     orderItems.push({
       slug: product.slug,
       name: product.name,
-      options: product.optionTypes.map((type) => ({
+      options: choosableTypes.map((type) => ({
         optionTypeName: type.name,
         optionValue: selectedOptions[type.name],
       })),

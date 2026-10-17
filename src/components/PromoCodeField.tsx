@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { useToast } from "@/components/ToastProvider";
+import { BTN, BTN_COMPACT, BTN_SECONDARY } from "@/components/button-styles";
 
 // Shared by the cart page and checkout page (docs/IMPROVEMENTS.md's promo
 // code capability) — same field, same validation call
@@ -133,13 +134,14 @@ export function PromoCodeField({ customerEmail }: { customerEmail?: string }) {
           onChange={(e) => setCode(e.target.value)}
           placeholder="Promo code"
           aria-label="Promo code"
-          className="flex-1 rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm uppercase dark:border-[rgba(243,241,236,.14)]"
+          className="flex-1 rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm uppercase dark:border-[rgba(243,241,236,.14)]"
         />
         <button
           type="button"
           disabled={pending || !code.trim()}
           onClick={() => attemptApply(code, false)}
-          className="whitespace-nowrap rounded-full border border-[rgba(28,26,24,.12)] px-4 py-2 text-sm disabled:opacity-50 dark:border-[rgba(243,241,236,.14)]"
+          aria-busy={pending || undefined}
+          className={`${BTN} ${BTN_COMPACT} ${BTN_SECONDARY}`}
         >
           {pending ? "Applying…" : "Apply"}
         </button>

@@ -1,6 +1,12 @@
 "use client";
 
 import { useRef } from "react";
+import {
+  BTN,
+  BTN_COMPACT,
+  BTN_PRIMARY,
+  BTN_SECONDARY,
+} from "@/components/button-styles";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import {
@@ -11,7 +17,7 @@ import type { ActionResult } from "@/lib/action-result";
 import type { PsgcProvince, PsgcRegion } from "@/lib/psgc";
 
 const FIELD_CLASS =
-  "w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]";
+  "w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]";
 
 type AddressFormValues = LocationCodes & {
   label: string;
@@ -61,7 +67,7 @@ export default function AddressFormModal({
         <button
           type="button"
           onClick={open}
-          className="whitespace-nowrap rounded-full border border-[rgba(28,26,24,.12)] px-4 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+          className={`${BTN} ${BTN_COMPACT} ${BTN_SECONDARY}`}
         >
           + Add address
         </button>
@@ -191,13 +197,13 @@ export default function AddressFormModal({
             <button
               type="button"
               onClick={close}
-              className="rounded-full border border-[rgba(28,26,24,.12)] px-4 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+              className={`${BTN} ${BTN_COMPACT} ${BTN_SECONDARY}`}
             >
               Cancel
             </button>
             <SubmitButton
               pendingLabel="Saving…"
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
+              className={`${BTN} ${BTN_COMPACT} ${BTN_PRIMARY}`}
             >
               {submitLabel}
             </SubmitButton>

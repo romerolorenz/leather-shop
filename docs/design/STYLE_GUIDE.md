@@ -14,10 +14,13 @@ reference.
 [docs/design/cart-account-concept.md](cart-account-concept.md) for
 cart/account). Every other page (checkout, admin, etc.) still uses the
 original look — system font stack (`Arial, Helvetica, sans-serif`, via
-`globals.css` `body`), Tailwind's default `zinc` palette for muted text,
-and plain `rounded-full bg-foreground` pill buttons. Treat that as the
-"before" state to migrate *from* when a page gets reworked into this
-system, not as a second parallel style to maintain.
+`globals.css` `body`) and Tailwind's default `zinc` palette for muted
+text. Treat that as the "before" state to migrate *from* when a page gets
+reworked into this system, not as a second parallel style to maintain.
+**Buttons are the exception (2026-10-17):** every customer-facing button,
+on restyled pages or not, moves from `rounded-full` pills to the 2px
+rectangles in [§ Buttons](#buttons). `rounded-full` pill buttons are now
+the retired style. The admin keeps its own buttons for now.
 
 **New pattern from the cart/account pass**: grouped structured data (an
 order's line items, an address's fields) drops the "no cards" rule's
@@ -108,11 +111,9 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
 
 ## Components
 
-- **Ghost button** (primary CTA over a photo): `inline-flex items-center
-  rounded-full border border-white/70 px-6 py-3 text-xs font-medium
-  uppercase tracking-[0.08em] text-white transition-colors hover:bg-white
-  hover:text-[#1C1A18] sm:text-sm`. Transparent fill, inverts to solid on
-  hover — stays quiet against the photo rather than competing with it.
+- **Buttons**: see [§ Buttons](#buttons) below. That section is the
+  single source for every storefront button, including the hero's ghost
+  button over a photo.
 - **Eyebrow + heading pairing**: a small uppercase tracked label
   (ink-soft color) directly above a semibold heading — used for every
   section intro ("Chosen by the Studio" / "The Selection").
@@ -138,6 +139,150 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
   Safari/iOS). Simple opacity/translate-y-4-to-0 fade, no bounce, no
   stagger. Respects `motion-reduce:` (Tailwind's `prefers-reduced-motion`
   variant) by snapping straight to the visible end state.
+
+## Buttons
+
+Decided 2026-10-17 (owner): storefront buttons are **rectangles with a
+2px corner**, not pills. This applies to every customer-facing page and
+component, but not to `src/app/admin/**` or `src/components/admin/**`.
+Rollout inventory: [buttons.md](buttons.md).
+
+### Shape token
+
+One theme token in `src/app/globals.css`, so the radius lives in exactly
+one place:
+
+```css
+@theme { --radius-btn: 2px; }   /* gives the `rounded-btn` utility */
+```
+
+Every storefront button uses `rounded-btn`. **Going fully square later
+is a one-token change** (`--radius-btn: 0`). 2px matches the existing
+`UnavailableTag` (`rounded-[2px]`). That tag should move to `rounded-btn`
+too, so tags and buttons stay in step.
+
+### Label style: small uppercase, tracked
+
+All button labels use the existing UI-label recipe: `text-xs
+sm:text-sm font-medium uppercase tracking-[0.08em]`.
+
+- **Why:** the guide already defines this as the label for anything
+  interactive (Typography table, "Eyebrow / UI label"). The hero button,
+  the "Learn more" link and the sold-out tag already use it, and with the
+  square corners it gives one consistent "small tag" voice instead of
+  two (caps on the hero, sentence case everywhere else).
+- **Readability check:** the longest storefront labels are "Going to
+  checkout…" (18 characters), "Currently unavailable" (21), "Sign in
+  with Google" (19) and "Shop the Collection" (19). At 12px caps with
+  +0.08em tracking they run about 170–190px, well inside a 343px mobile
+  button. The cap height is about the same as 14px lowercase x-height,
+  so short labels stay legible. **Rule: keep button labels to four words
+  or fewer.** Anything longer belongs in body text next to the button.
+- **Write labels in sentence case in the source** ("Add to cart") and let
+  `uppercase` do the transform. Screen readers read the source text, and
+  typed caps can be spelled out letter by letter.
+
+### Sizes
+
+| Size | Classes | Height | Use |
+|---|---|---|---|
+| Default | `h-12 px-6` | 48px | Page-level actions (Buy now, Checkout, Place order, Send message, Sign in, hero) |
+| Compact | `h-10 px-4` | 40px | Inline with a form field (promo "Apply") and the address modal's actions |
+
+Shared base for both: `inline-flex items-center justify-center gap-2
+rounded-btn whitespace-nowrap text-xs sm:text-sm font-medium uppercase
+tracking-[0.08em] transition-colors focus-visible:outline-2
+focus-visible:outline-offset-2 disabled:cursor-not-allowed`. Add `w-full`
+for full-width buttons. Use explicit heights rather than `py-*` so a
+`<Link>` and a `<button>` come out identical.
+
+### Variants
+
+The site is light-only, so no `dark:` values are specified. Existing
+`dark:` classes can stay as they are (they're shelved, not deleted).
+
+**1. Primary: solid ink.** One per view, for the main action.
+Used by Buy now, Checkout (`/cart`), Place order, Send message, Sign in
+with Google, and Save in the address modal.
+
+| State | Classes | Contrast |
+|---|---|---|
+| Rest | `bg-foreground text-background` (`#171717` / white) | 17.9:1 |
+| Hover | `hover:bg-[#383838]` | 11.7:1 |
+| Active | `active:bg-[#383838]` | 11.7:1 |
+| Focus | `focus-visible:outline-[#1C1A18]` (2px ring, 2px offset) | n/a |
+| Disabled | `disabled:opacity-50` | exempt |
+| Pending | `disabled` + `aria-busy="true"` + a pending label ("Placing order…"); `aria-busy:disabled:opacity-100` keeps it at full strength | 17.9:1 |
+
+**2. Secondary: sand fill.** For the second action next to a primary, and
+for standalone minor actions. It replaces the hairline-outline pills
+(promo "Apply", "+ Add address", modal "Cancel"), so there is one
+secondary style rather than two.
+
+| State | Classes | Contrast (ink text) |
+|---|---|---|
+| Rest | `bg-[#E7E2D9] text-[#1C1A18]` | 13.5:1 |
+| Hover | `hover:bg-[#DDD6CA]` | 12.0:1 |
+| Active | `active:bg-[#D3CBBD]` | 10.8:1 |
+| Focus | `focus-visible:outline-[#1C1A18]` | n/a |
+| Disabled | `disabled:bg-[#F3F1EC] disabled:text-[#6E6A64]` (not opacity, because faded sand disappears on white) | 4.76:1 |
+| Pending | Same rule as primary (label change, `aria-busy`, stays at full strength) | 13.5:1 |
+
+Sand rather than cream (`#F3F1EC`) for the rest state: cream is only
+1.13:1 against the white page, so the button's edge disappears. Sand is
+1.29:1, enough to read as a shape. No border, no shadow.
+
+**3. Ghost on photo.** Only over full-bleed photography (today, the
+homepage hero CTA). It stays quiet against the image.
+
+| State | Classes | Contrast |
+|---|---|---|
+| Rest | `border border-white/70 text-white` (sits on the hero's black scrim) | depends on the photo; the scrim is required |
+| Hover | `hover:bg-white hover:text-[#1C1A18]` | 17.4:1 |
+| Active | `active:bg-white/90 active:text-[#1C1A18]` | about 15:1 |
+| Focus | `focus-visible:outline-white` | n/a |
+
+**4. Text link.** For quiet actions in running text or under a section.
+Not a button shape, so no radius or height.
+
+- Inline: `text-[#7A3B22] underline underline-offset-4 hover:no-underline`
+  (accent on white is 8.5:1). Examples: "Browse the collection" and
+  checkout's `ACCENT_LINK`.
+- Standalone (section CTA): `text-sm font-medium uppercase
+  tracking-[0.08em] text-[#7A3B22] hover:underline
+  focus-visible:outline-2 focus-visible:outline-offset-2
+  focus-visible:outline-[#7A3B22]`. Example: the Studio band's "Learn
+  more". Needs `inline-block py-3` (or equivalent) to reach a 44px tap
+  height on mobile.
+
+**Not a button: status block.** When an action can't be taken (sold out,
+paused), the button area shows a non-interactive `<p>` in the button's
+shape: `flex h-12 w-full items-center justify-center rounded-btn
+bg-[#F3F1EC] px-6 text-xs sm:text-sm font-medium uppercase
+tracking-[0.08em] text-[#6E6A64]` (4.76:1). This avoids a dimmed button
+that looks broken. See [buy-now.md](buy-now.md).
+
+### What stays round
+
+The rule (owner, 2026-10-17): **every rectangular storefront element
+uses the same 2px corner (`rounded-btn`), and only things that are round
+on purpose stay round.** That covers buttons and button-like links,
+option value pills, the cart quantity stepper, form fields (inputs,
+selects, textareas) and selectable address cards. See
+[buttons.md](buttons.md) → Decisions. These keep their current shape:
+
+- **Avatars and portraits**, for example the Studio portrait (`size-12
+  rounded-full`).
+- **Count badges**, for example the header cart count (`rounded-full`).
+- **Radio and checkbox controls**, including the checkout address card's
+  round radio dot.
+- **Icon-only buttons** (remove, edit, close), which keep their small
+  `rounded-md` hover area.
+- **Status tags and chips** keep their own shape. The sold-out photo tag
+  is already 2px.
+- **Anything round on purpose** (dots, spinners).
+- **Overlays, not covered:** the modal dialog (`rounded-lg`), and toasts
+  and tooltips (`rounded-md`).
 
 ## Motion
 

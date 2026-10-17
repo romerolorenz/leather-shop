@@ -43,6 +43,88 @@ deferred as of 2026-10-17):
       and `/checkout` — usable, not visually broken.
       Findings:
 
+### Buy now + rectangular buttons (docs/design/buy-now.md, docs/design/buttons.md)
+
+Branch `design/buy-now`. Check each page at desktop width and at 375px
+(browser dev tools, iPhone SE size, or a real phone).
+
+**Buy now (product page)**
+- [x] On an in-stock product that is **not** in the cart, pick options and
+      tap **Buy now** — the label changes to "Going to checkout…" right
+      away, both buttons lock, no toast appears, and `/checkout` opens with
+      the item (with the chosen options) plus anything already in the cart.
+      Findings:
+- [x] Go back to the same product, keep the same options, and tap **Buy
+      now** again — checkout opens and the quantity for that line is
+      **unchanged** (not bumped by 1). Then change an option and tap Buy
+      now — a second, separate line is added.
+      Findings:
+- [x] Double-tap **Buy now** quickly on an item not yet in the cart —
+      only one is added (quantity 1 in the order summary).
+      Findings:
+- [x] After Buy now, press the browser's Back button — the product page
+      shows "Buy now" again and it still works.
+      Findings:
+- [x] A **paused** product (ordering turned off in admin) — no buttons;
+      a cream "Currently unavailable" block sits where they were.
+      Findings:
+- [x] A **sold-out** product — no buttons; a cream "Sold out" block, with
+      "Back soon — we're making more." below it.
+      Findings:
+- [x] **Add to cart** (sand button under Buy now) still shows "Added ✓"
+      for about 1.5s and the "Added to cart" toast, and the header count
+      goes up.
+      Findings:
+
+**Rectangular buttons, every changed page (desktop and 375px)**
+
+For each: buttons have a small 2px corner (not pills), labels are small
+uppercase with letter spacing, nothing overflows or wraps awkwardly.
+- [x] Home — hero "Shop the Collection" (white outline on the photo,
+      fills white on hover); Studio "Learn more" link still lines up.
+      Findings:
+- [x] Product page — Buy now / Add to cart, option value pills (now
+      rectangles, still sentence case), and the option dropdown if a
+      product has one.
+      Findings:
+- [x] Cart — quantity stepper (−/+ box), promo code field and **Apply**
+      (sand; greyed cream while empty; "Applying…" while working),
+      **Checkout** button.
+      Findings:
+- [x] Checkout — text fields, saved-address cards and the dashed "new
+      address" card (2px corners, radio dot still round), promo Apply,
+      **Place order** ("Placing order…" while submitting, stays dark, can't
+      be tapped twice).
+      Findings:
+- [x] Account › Addresses — "+ Add address" (sand), the modal's fields,
+      **Cancel** (sand) and **Save** (dark); the edit/delete/close icons
+      are unchanged. "Sign out" in the top bar is now a brown underlined
+      link.
+      Findings:
+  - [ ] (After merging develop's nationwide delivery.) In the add/edit
+        address modal, the new location dropdowns (Region, Province,
+        City/Municipality, Barangay) and Postal code also have 2px
+        corners, matching the other fields; **Save** reads "Saving…"
+        while saving and stays dark (not faded). Same 2px corners on
+        checkout's new-address location dropdowns.
+        Findings:
+- [x] Contact — fields and **Send message** ("Sending…" while submitting,
+      stays dark).
+      Findings:
+- [x] Login (`/login`) — **Sign in with Google** is a dark rectangle.
+      Findings:
+- [x] FAQ — looks unchanged apart from the shared header/footer.
+      Findings:
+- [x] **Keyboard focus** — Tab through the product page, cart, checkout
+      and the hero: every button shows a 2px outline with a small gap
+      (dark on white, white on the hero photo). Tab on a fresh page load:
+      the "Skip to content" link appears with the same 2px corner.
+      Findings:
+- [x] **Admin login** (`/login?next=/admin`, titled "Admin Login") —
+      the sign-in button is the new dark rectangle (accepted change); the
+      rest of the admin looks unchanged.
+      Findings:
+
 ## Done
 
 - [x] **Nationwide delivery (PSGC address dropdowns)** (docs/design/checkout.md

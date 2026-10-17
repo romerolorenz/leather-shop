@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 import { Reveal } from "@/components/Reveal";
 import { UnavailableTag } from "@/components/UnavailableTag";
 import { productAvailability } from "@/lib/availability";
+import { BTN, BTN_DEFAULT, BTN_GHOST_ON_PHOTO } from "@/components/button-styles";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -92,7 +93,7 @@ export default async function Home() {
       </p>
       <Link
         href="/faq"
-        className="mt-4 inline-block text-sm font-medium uppercase tracking-[0.08em] text-[#7A3B22] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7A3B22] dark:text-[#C97A4E]"
+        className="mt-1 inline-block py-3 text-sm font-medium uppercase tracking-[0.08em] text-[#7A3B22] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7A3B22] dark:text-[#C97A4E]"
       >
         Learn more
       </Link>
@@ -130,7 +131,7 @@ export default async function Home() {
           </p>
           <Link
             href="/products"
-            className="mt-8 inline-flex items-center rounded-full border border-white/70 px-6 py-3 text-xs font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white hover:text-[#1C1A18] sm:text-sm"
+            className={`${BTN} ${BTN_DEFAULT} ${BTN_GHOST_ON_PHOTO} mt-8`}
           >
             Shop the Collection
           </Link>
