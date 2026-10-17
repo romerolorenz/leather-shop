@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import type { ActionResult } from "@/lib/action-result";
 import {
@@ -20,6 +20,7 @@ export function ActionForm({
   action,
   directUpload,
   className,
+  onSuccess,
   children,
 }: {
   action: (
@@ -32,6 +33,9 @@ export function ActionForm({
   // src/lib/direct-upload.ts). Plain data, so Server Components can pass it.
   directUpload?: DirectUploadConfig;
   className?: string;
+  // e.g. closing the dialog the form lives in — only on success, so a
+  // rejected save keeps what the customer typed on screen.
+  onSuccess?: () => void;
   children: React.ReactNode;
 }) {
   const { showToast } = useToast();
@@ -56,6 +60,12 @@ export function ActionForm({
     null
   );
   const [remountKey, setRemountKey] = useState(0);
+  // Ref so a new inline callback each render doesn't re-run the effect
+  // (and re-show the toast).
+  const onSuccessRef = useRef(onSuccess);
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  });
 
   useEffect(() => {
     if (!state) return;
@@ -79,6 +89,7 @@ export function ActionForm({
     if (state.success) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRemountKey((k) => k + 1);
+      onSuccessRef.current?.();
     }
   }, [state, showToast]);
 

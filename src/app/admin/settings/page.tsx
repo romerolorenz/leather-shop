@@ -37,19 +37,9 @@ export default async function AdminSettingsPage() {
                 defaultValue={(settings.shippingFeeCentavos / 100).toFixed(2)}
                 className={FIELD_CLASS}
               />
-            </div>
-            <div className="col-span-2 flex flex-col gap-1">
-              <label className={LABEL_CLASS} htmlFor="deliveryCities">
-                Delivery cities (one per line)
-              </label>
-              <textarea
-                id="deliveryCities"
-                name="deliveryCities"
-                rows={8}
-                required
-                defaultValue={settings.deliveryCities.join("\n")}
-                className={`${FIELD_CLASS} font-mono`}
-              />
+              <p className={HINT_CLASS}>
+                One flat fee for every order, anywhere in the Philippines.
+              </p>
             </div>
           </div>
         </div>

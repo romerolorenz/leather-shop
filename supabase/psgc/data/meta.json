@@ -1,0 +1,15 @@
+{
+  "source": "Philippine Statistics Authority (PSA), Philippine Standard Geographic Code",
+  "sourceUrl": "https://psa.gov.ph/classification/psgc",
+  "sourceFile": "PSGC-2Q-2026-Publication-Datafile.xlsx",
+  "sourceSha256": "31892bc2bdde3ea0682562d9412b5bab4d45a0be5e5a5b4f6c9d7714b94bca5d",
+  "publicationDate": "30 June 2026",
+  "useConstraints": "Acknowledgement of the Philippine Statistics Authority (PSA) as the source",
+  "builtAt": "2026-10-17",
+  "counts": {
+    "regions": 18,
+    "provinces": 84,
+    "cities": 1642,
+    "barangays": 42010
+  }
+}

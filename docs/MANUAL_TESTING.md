@@ -23,7 +23,8 @@ remove flow, category-restricted partial discounts, and all four
 rejection cases are verified — see Done below for the full summary and
 the bugs found/fixed along the way.
 
-Deferred to a later pass — not blocking, just not done yet:
+Deferred to a later pass — not blocking, just not done yet (still
+deferred as of 2026-10-17):
 
 **End-to-end order + usage limits**
 - [ ] Place a full order (cart → checkout → confirm) with a valid code —
@@ -100,6 +101,13 @@ uppercase with letter spacing, nothing overflows or wraps awkwardly.
       are unchanged. "Sign out" in the top bar is now a brown underlined
       link.
       Findings:
+  - [ ] (After merging develop's nationwide delivery.) In the add/edit
+        address modal, the new location dropdowns (Region, Province,
+        City/Municipality, Barangay) and Postal code also have 2px
+        corners, matching the other fields; **Save** reads "Saving…"
+        while saving and stays dark (not faded). Same 2px corners on
+        checkout's new-address location dropdowns.
+        Findings:
 - [x] Contact — fields and **Send message** ("Sending…" while submitting,
       stays dark).
       Findings:
@@ -118,6 +126,23 @@ uppercase with letter spacing, nothing overflows or wraps awkwardly.
       Findings:
 
 ## Done
+
+- [x] **Nationwide delivery (PSGC address dropdowns)** (docs/design/checkout.md
+  §4, docs/IMPROVEMENTS.md). Passed 2026-10-17 on dev after migration 0025
+  + the PSGC seed: guest checkout cascades (Cebu → City of Cebu → Lahug;
+  NCR with Metro Manila province), region change resets the lower levels,
+  a Cebu order with the full address in the confirmation/admin/payment-
+  details/shipped emails, `/admin/orders` address display, offline "Try
+  again", add/edit saved address in the modal, complete saved address at
+  checkout, `/admin/settings` delivery-cities field gone with the flat-fee
+  hint, `/contact` copy, 375px layout. Findings: (a) City of Manila —
+  tried swapping numbered barangays for its 14 districts, reverted the
+  same day; Manila keeps numbered barangays shown as "Barangay 1 (Tondo
+  I/II)". (b) The "Needs updating" tag/note and checkout fix-up for
+  pre-PSGC addresses were removed (prod starts from an empty DB);
+  addresses without PSGC codes are no longer offered at checkout —
+  re-tested OK. Commits 0c609be + 36d61bb on `feat/nationwide-delivery`.
+  Not live on prod yet; the release is tracked in MANUAL_TASKS.md.
 
 - [x] **Hero height on mobile** (docs/design/homepage.md). Passed
   2026-10-05 on a real phone via the Vercel preview: hero no longer

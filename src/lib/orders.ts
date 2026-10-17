@@ -49,12 +49,21 @@ export type Order = {
     email: string;
     phone: string;
   };
+  // Names are snapshotted at order time (migration 0025), so a later PSGC
+  // refresh never rewrites a past order's address. province/region and the
+  // codes are empty/null on orders placed before nationwide delivery.
   shippingAddress: {
     street: string;
     address2: string;
     barangay: string;
     city: string;
+    province: string;
+    region: string;
     postalCode: string;
+    regionCode: string | null;
+    provinceCode: string | null;
+    cityCode: string | null;
+    barangayCode: string | null;
   };
   items: OrderItem[];
   subtotalCentavos: number;
@@ -113,7 +122,13 @@ export async function createOrder(input: NewOrder): Promise<Order> {
       shipping_address2: input.shippingAddress.address2 || null,
       shipping_barangay: input.shippingAddress.barangay,
       shipping_city: input.shippingAddress.city,
+      shipping_province: input.shippingAddress.province || null,
+      shipping_region: input.shippingAddress.region || null,
       shipping_postal_code: input.shippingAddress.postalCode,
+      shipping_region_code: input.shippingAddress.regionCode,
+      shipping_province_code: input.shippingAddress.provinceCode,
+      shipping_city_code: input.shippingAddress.cityCode,
+      shipping_barangay_code: input.shippingAddress.barangayCode,
       subtotal_centavos: input.subtotalCentavos,
       shipping_centavos: input.shippingCentavos,
       promo_code_id: input.promoCodeId,
@@ -299,7 +314,13 @@ type OrderRow = {
   shipping_address2: string | null;
   shipping_barangay: string | null;
   shipping_city: string;
+  shipping_province: string | null;
+  shipping_region: string | null;
   shipping_postal_code: string | null;
+  shipping_region_code: string | null;
+  shipping_province_code: string | null;
+  shipping_city_code: string | null;
+  shipping_barangay_code: string | null;
   subtotal_centavos: number;
   shipping_centavos: number;
   discount_centavos: number;
@@ -333,7 +354,13 @@ function mapOrderRow(row: OrderRow): Order {
       address2: row.shipping_address2 ?? "",
       barangay: row.shipping_barangay ?? "",
       city: row.shipping_city,
+      province: row.shipping_province ?? "",
+      region: row.shipping_region ?? "",
       postalCode: row.shipping_postal_code ?? "",
+      regionCode: row.shipping_region_code,
+      provinceCode: row.shipping_province_code,
+      cityCode: row.shipping_city_code,
+      barangayCode: row.shipping_barangay_code,
     },
     items: row.order_items.map((item) => ({
       slug: item.products?.slug ?? "",
@@ -357,7 +384,7 @@ function mapOrderRow(row: OrderRow): Order {
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_postal_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, status_updated_at, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_province, shipping_region, shipping_postal_code, shipping_region_code, shipping_province_code, shipping_city_code, shipping_barangay_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, status_updated_at, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
 // Single-order lookup — needed by markOrderShippedAction to build the
 // shipped email, which needs the full order (items, address), not just the

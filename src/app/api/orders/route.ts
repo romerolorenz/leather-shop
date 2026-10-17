@@ -16,14 +16,24 @@ import {
   sendOrderConfirmationEmail,
 } from "@/lib/email";
 import { logEvent } from "@/lib/events";
+import {
+  readAddressCodes,
+  resolveAddressCodes,
+  AddressValidationError,
+  type ResolvedLocation,
+} from "@/lib/psgc";
 
 type OrderRequestBody = {
   customer?: { name?: string; email?: string; phone?: string };
   shippingAddress?: {
     street?: string;
     address2?: string;
-    barangay?: string;
-    city?: string;
+    // PSGC codes from the checkout dropdowns. Names are looked up
+    // server-side from these, never taken from the client.
+    regionCode?: string;
+    provinceCode?: string | null;
+    cityCode?: string;
+    barangayCode?: string;
     postalCode?: string;
   };
   items?: {
@@ -43,8 +53,6 @@ export async function POST(request: Request) {
   const phone = body.customer?.phone?.trim();
   const street = body.shippingAddress?.street?.trim();
   const address2 = body.shippingAddress?.address2?.trim() ?? "";
-  const barangay = body.shippingAddress?.barangay?.trim();
-  const city = body.shippingAddress?.city;
   const postalCode = body.shippingAddress?.postalCode?.trim();
 
   if (!name || !email || !phone) {
@@ -54,18 +62,30 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!street || !city || !settings.deliveryCities.includes(city)) {
+  if (!street) {
     return NextResponse.json(
-      { error: "A valid Metro Manila shipping address is required." },
+      { error: "A shipping address is required." },
       { status: 400 }
     );
   }
 
-  if (!barangay) {
-    return NextResponse.json(
-      { error: "Barangay is required." },
-      { status: 400 }
+  // Delivery is always nationwide: any address that forms a valid PSGC
+  // chain (barangay in city, in province, in region) is accepted, with no
+  // admin-editable delivery-area list. This is a deliberate exception to
+  // CLAUDE.md's "settings are configurable by default" rule — the owner's
+  // call on 2026-10-15 (docs/IMPROVEMENTS.md, "Deliver nationwide"), which
+  // replaced the old settings.delivery_cities list. The shipping fee itself
+  // is still the admin-editable settings.shipping_fee_centavos.
+  let location: ResolvedLocation;
+  try {
+    location = await resolveAddressCodes(
+      readAddressCodes(body.shippingAddress ?? {})
     );
+  } catch (err) {
+    if (err instanceof AddressValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    throw err;
   }
 
   if (!postalCode || !/^\d{4}$/.test(postalCode)) {
@@ -191,7 +211,19 @@ export async function POST(request: Request) {
   try {
     order = await createOrder({
       customer: { name, email, phone },
-      shippingAddress: { street, address2, barangay, city, postalCode },
+      shippingAddress: {
+        street,
+        address2,
+        barangay: location.barangay,
+        city: location.city,
+        province: location.province ?? "",
+        region: location.region,
+        postalCode,
+        regionCode: location.regionCode,
+        provinceCode: location.provinceCode,
+        cityCode: location.cityCode,
+        barangayCode: location.barangayCode,
+      },
       items: orderItems,
       subtotalCentavos,
       shippingCentavos: settings.shippingFeeCentavos,

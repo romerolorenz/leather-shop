@@ -95,6 +95,10 @@ describe("app tables return nothing to the anon key (RLS default-deny)", () => {
     "promo_code_categories",
     "promo_code_redemptions",
     "promo_codes",
+    "psgc_barangays",
+    "psgc_cities",
+    "psgc_provinces",
+    "psgc_regions",
     "settings",
   ])("%s", async (table) => {
     const { data, error } = await anon.from(table).select("*").limit(1);

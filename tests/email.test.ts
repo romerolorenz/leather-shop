@@ -21,9 +21,15 @@ const order: Order = {
   shippingAddress: {
     street: "123 Rizal St",
     address2: "",
-    barangay: "Bel-Air",
-    city: "Makati",
-    postalCode: "1209",
+    barangay: "Lahug",
+    city: "City of Cebu",
+    province: "Cebu",
+    region: "Region VII (Central Visayas)",
+    postalCode: "6000",
+    regionCode: "0700000000",
+    provinceCode: "0702200000",
+    cityCode: "0730600000",
+    barangayCode: "0730600041",
   },
   items: [
     {
@@ -70,7 +76,7 @@ describe("buildOrderNotificationEmail", () => {
     expect(email.text).toContain(`New order placed: ${SHORT_REF}`);
     expect(email.text).toContain("Juan Dela Cruz");
     expect(email.text).toContain("juan@example.com");
-    expect(email.text).toContain("123 Rizal St, Brgy. Bel-Air, Makati 1209");
+    expect(email.text).toContain("123 Rizal St, Brgy. Lahug, City of Cebu, Cebu, Region VII (Central Visayas) 6000");
     expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
     expect(email.text).toContain("  Color: Chestnut Brown");
     expect(email.text).toContain("₱3,948.00");
@@ -123,7 +129,7 @@ describe("buildOrderConfirmationEmail", () => {
 
     // Text ends on the delivery address, with no double or trailing blank lines.
     expect(email.text).not.toMatch(/\n\n\n/);
-    expect(email.text.endsWith("123 Rizal St, Brgy. Bel-Air, Makati 1209")).toBe(true);
+    expect(email.text.endsWith("123 Rizal St, Brgy. Lahug, City of Cebu, Cebu, Region VII (Central Visayas) 6000")).toBe(true);
   });
 
   it("embeds the product photo in the HTML version when provided", () => {
@@ -181,11 +187,8 @@ describe("buildOrderConfirmationEmail", () => {
       ...order,
       customer: { ...order.customer, name: '<script>alert(1)</script>' },
       shippingAddress: {
+        ...order.shippingAddress,
         street: '<b>evil</b>',
-        address2: "",
-        barangay: "Bel-Air",
-        city: "Makati",
-        postalCode: "1209",
       },
     };
 
@@ -206,7 +209,7 @@ describe("buildOrderShippedEmail", () => {
     expect(email.text).toContain("Hi Juan Dela Cruz");
     expect(email.text).toContain("2x Classic Bifold Wallet — ₱3,798.00");
     expect(email.text).toContain("  Color: Chestnut Brown");
-    expect(email.text).toContain("123 Rizal St, Brgy. Bel-Air, Makati 1209");
+    expect(email.text).toContain("123 Rizal St, Brgy. Lahug, City of Cebu, Cebu, Region VII (Central Visayas) 6000");
     expectHeadingRefNoFooter(email);
     expect(email.html).not.toContain("Subtotal");
     expect(email.html).not.toContain("Total");
@@ -252,11 +255,8 @@ describe("buildOrderShippedEmail", () => {
       ...order,
       customer: { ...order.customer, name: '<script>alert(1)</script>' },
       shippingAddress: {
+        ...order.shippingAddress,
         street: '<b>evil</b>',
-        address2: "",
-        barangay: "Bel-Air",
-        city: "Makati",
-        postalCode: "1209",
       },
     };
 
@@ -343,11 +343,8 @@ describe("buildPaymentDetailsEmail", () => {
       ...order,
       customer: { ...order.customer, name: '<script>alert(1)</script>' },
       shippingAddress: {
+        ...order.shippingAddress,
         street: '<b>evil</b>',
-        address2: "",
-        barangay: "Bel-Air",
-        city: "Makati",
-        postalCode: "1209",
       },
     };
 
@@ -390,5 +387,45 @@ describe("buildContactMessageEmail", () => {
     expect(email.html).toContain("&lt;script&gt;");
     expect(email.html).not.toContain("<b>hi</b>");
     expect(email.html).toContain("&lt;b&gt;hi&lt;/b&gt;");
+  });
+});
+
+describe("delivery address block (nationwide)", () => {
+  const emails = (o: Order) => [
+    buildOrderNotificationEmail(o, "owner@example.com"),
+    buildOrderConfirmationEmail(o),
+    buildOrderShippedEmail(o),
+    buildPaymentDetailsEmail(o, [], ""),
+  ];
+
+  it("includes barangay, city, province and region in every order email", () => {
+    for (const email of emails(order)) {
+      expect(email.text).toContain(
+        "Brgy. Lahug, City of Cebu, Cebu, Region VII (Central Visayas) 6000"
+      );
+    }
+    // HTML versions put each address line on its own line.
+    for (const email of emails(order).slice(1)) {
+      expect(email.html).toContain(
+        "Brgy. Lahug, City of Cebu<br />Cebu, Region VII (Central Visayas) 6000"
+      );
+    }
+  });
+
+  it("leaves the province out for a Metro Manila address", () => {
+    const ncrOrder: Order = {
+      ...order,
+      shippingAddress: {
+        ...order.shippingAddress,
+        barangay: "Bel-Air",
+        city: "City of Makati",
+        province: "",
+        region: "National Capital Region (NCR)",
+        postalCode: "1209",
+      },
+    };
+    expect(buildOrderConfirmationEmail(ncrOrder).text).toContain(
+      "Brgy. Bel-Air, City of Makati, National Capital Region (NCR) 1209"
+    );
   });
 });
