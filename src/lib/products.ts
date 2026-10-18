@@ -15,6 +15,12 @@ export type Product = {
   name: string;
   categoryId: string;
   category: string;
+  // Shop order (docs/design/shop-order.md, migration 0027): the category's
+  // place among categories, and this product's place within its category.
+  // Lower comes first; both are set by dragging on /admin/categories.
+  categoryPosition: number;
+  position: number;
+  createdAt: string;
   priceCentavos: number;
   leadTimeDays: number;
   orderingEnabled: boolean;
@@ -43,7 +49,7 @@ export type Product = {
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, dimensions, details, " +
+  "id, slug, name, description, category_id, categories(name, position), position, created_at, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, dimensions, details, " +
   "product_photos(url, position), " +
   "product_options(position, option_types(id, name, display_style), product_option_selections(option_values(value, position)))";
 
@@ -53,7 +59,9 @@ type ProductRow = {
   name: string;
   description: string;
   category_id: string;
-  categories: { name: string } | null;
+  categories: { name: string; position: number } | null;
+  position: number;
+  created_at: string;
   price_centavos: number;
   lead_time_days: number;
   ordering_enabled: boolean;
@@ -101,6 +109,9 @@ function mapRow(row: ProductRow): Product {
     name: row.name,
     categoryId: row.category_id,
     category: row.categories?.name ?? "",
+    categoryPosition: row.categories?.position ?? 0,
+    position: row.position,
+    createdAt: row.created_at,
     priceCentavos: row.price_centavos,
     leadTimeDays: row.lead_time_days,
     orderingEnabled: row.ordering_enabled,
@@ -118,18 +129,66 @@ function mapRow(row: ProductRow): Product {
   };
 }
 
+// Shop order: category sections in the admin's category order, then
+// products in the admin's order within their category. Ties (two rows
+// created at the same instant, or the gap a product leaves when it changes
+// category) fall back to oldest first, the old flat-grid order. Ids break
+// any remaining tie so the order never flickers between requests.
+export function compareShopOrder(
+  a: Pick<Product, "id" | "categoryId" | "categoryPosition" | "position" | "createdAt">,
+  b: Pick<Product, "id" | "categoryId" | "categoryPosition" | "position" | "createdAt">
+): number {
+  return (
+    a.categoryPosition - b.categoryPosition ||
+    a.categoryId.localeCompare(b.categoryId) ||
+    a.position - b.position ||
+    a.createdAt.localeCompare(b.createdAt) ||
+    a.id.localeCompare(b.id)
+  );
+}
+
 // Listing/sitemap use — hidden products are excluded outright, not shown
-// as unavailable.
+// as unavailable. Returned in shop order (compareShopOrder). The sort is
+// done here rather than in the query because PostgREST can't order parent
+// rows by an embedded table's column (categories.position).
 export async function getProducts(): Promise<Product[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
-    .eq("visible", true)
-    .order("created_at", { ascending: true });
+    .eq("visible", true);
 
   if (error) throw error;
-  return (data as unknown as ProductRow[]).map(mapRow);
+  return (data as unknown as ProductRow[]).map(mapRow).sort(compareShopOrder);
+}
+
+export type ShopSection = {
+  categoryId: string;
+  name: string;
+  products: Product[];
+};
+
+// /products' category sections. Expects products already in shop order
+// (getProducts) and keeps that order. A category only appears when it has
+// at least one product in the list, so empty categories (or ones whose
+// products are all hidden) never render.
+export function groupProductsByCategory(products: Product[]): ShopSection[] {
+  const sections: ShopSection[] = [];
+  const byId = new Map<string, ShopSection>();
+  for (const product of products) {
+    let section = byId.get(product.categoryId);
+    if (!section) {
+      section = {
+        categoryId: product.categoryId,
+        name: product.category,
+        products: [],
+      };
+      byId.set(product.categoryId, section);
+      sections.push(section);
+    }
+    section.products.push(product);
+  }
+  return sections;
 }
 
 // Deliberately not filtered by visible — order history (getOrderItemPhotos

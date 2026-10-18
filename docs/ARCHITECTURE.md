@@ -119,14 +119,20 @@ products
   product but shows it as unavailable. getProducts() filters to
   visible=true; getProductBySlug() deliberately doesn't, since order
   history needs to resolve a since-hidden product's photo — the PDP and
-  checkout route check product.visible themselves)
+  checkout route check product.visible themselves),
+  position (migration `0027_shop_order_positions.sql` — order within its
+  category on /products; a trigger puts a new product, or one moved to
+  another category, at the end of that category)
 
 categories
   id, name (unique) — normalizes what was a free-text products.category
-  column (migration `0014_categories.sql`). Internal-only: no storefront
-  browsing/filtering by category, the shop page stays a flat grid; exists
-  purely so promo codes (and future admin tooling) reference a real id
-  instead of a typo-prone string. Managed at `/admin/categories`.
+  column (migration `0014_categories.sql`), used by promo-code
+  restrictions. position (0027) — order of the category sections on
+  /products (one section per category with visible products; no heading
+  when only one has any), new categories go last via a trigger. Category
+  and product order are dragged at `/admin/categories`
+  (docs/design/shop-order.md). getProducts() returns products in this
+  shop order (category position, then product position).
 
 option_types
   id, name (e.g. "Color", "Thread Color", "Size" — unique, shop-wide),

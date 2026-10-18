@@ -7,6 +7,13 @@ import { formatPrice } from "@/lib/products";
 import { FormModal } from "@/components/admin/FormModal";
 import { createProductAction } from "@/app/admin/actions";
 import type { AdminProduct } from "@/lib/admin/catalog";
+import {
+  CHIP_BASE,
+  CHIP_HIDDEN,
+  CHIP_OUT,
+  CHIP_PAUSED,
+  CHIP_VISIBLE,
+} from "@/components/admin/product-status-chips";
 
 function SearchIcon() {
   return (
@@ -35,18 +42,12 @@ const FIELD_CLASS =
 
 function statusChip(product: AdminProduct) {
   if (!product.visible) {
-    return { label: "Hidden", className: "bg-black/[.05] text-[#6E6A64] dark:bg-white/[.08] dark:text-[#A39C90]" };
+    return { label: "Hidden", className: CHIP_HIDDEN };
   }
   if (!product.orderingEnabled) {
-    return {
-      label: "Paused",
-      className: "bg-[rgba(138,100,21,.12)] text-[#8A6415] dark:bg-[rgba(224,176,82,.16)] dark:text-[#E0B052]",
-    };
+    return { label: "Paused", className: CHIP_PAUSED };
   }
-  return {
-    label: "Visible",
-    className: "bg-[rgba(85,105,47,.12)] text-[#55692F] dark:bg-[rgba(168,193,126,.16)] dark:text-[#A8C17E]",
-  };
+  return { label: "Visible", className: CHIP_VISIBLE };
 }
 
 export function ProductsCatalog({
@@ -247,14 +248,14 @@ export function ProductsCatalog({
                   <td className="px-3.5 py-2.5 text-right text-sm tabular-nums text-[#1C1A18] dark:text-[#F3F1EC]">
                     {product.stockQuantity}
                     {product.stockQuantity === 0 && (
-                      <span className="ml-1.5 rounded-full bg-[rgba(140,59,50,.12)] px-1.5 py-0.5 text-[.6875rem] font-semibold uppercase tracking-[.05em] text-[#8C3B32] dark:bg-[rgba(224,138,120,.16)] dark:text-[#E08A78]">
+                      <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[.6875rem] font-semibold uppercase tracking-[.05em] ${CHIP_OUT}`}>
                         Out
                       </span>
                     )}
                   </td>
                   <td className="px-3.5 py-2.5">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[.6875rem] font-semibold uppercase tracking-[.05em] ${status.className}`}
+                      className={`${CHIP_BASE} ${status.className}`}
                     >
                       {status.label}
                     </span>

@@ -120,6 +120,18 @@ Ordered by what it blocks.
   Vercel BotID or Cloudflare Turnstile on checkout and contact, and/or a
   per-IP rate limit. Pair it with an admin-editable max quantity per order
   line in `settings` (not hardcoded).
+- [ ] *Blocks: nothing.* **Keyboard (and touch) reordering for drag
+  lists.** `src/components/admin/DragReorderList.tsx` uses native HTML5
+  drag-and-drop, so it only works with a mouse: no ↑/↓ on a focused grip
+  handle, and no dragging on phones. It drives every reorder list (FAQ,
+  payment methods, product photos/options, homepage featured, and the
+  category and product order on `/admin/categories`). The shop-order
+  mockup (DESIGN_LOG.md, 2026-10-18) showed ↑/↓ on the focused handle;
+  the build left it out because the brief said to keep the list's
+  current interaction. Fix: make the grip a real `<button>` that moves
+  its item up/down with the arrow keys and saves through the same
+  `onReorder`, with a polite live-region announcement of the new
+  position.
 - [ ] *Blocks: nothing.* **Prevent a double order on a flaky connection**
   (repo review). If the response is lost after the server created the
   order, the shopper sees "Could not reach the server", resubmits, and
@@ -133,7 +145,7 @@ Ordered by what it blocks.
     `sendPaymentDetailsEmailAction`);
   - `getSalesSummary`.
   (The order races and the expiry sweep actually cancelling an order are
-  now covered by the order-safety work, see Done.)
+  now covered by the order-safety work, see completed/IMPROVEMENTS-archive.md.)
 - [ ] *Blocks: nothing.* **Small cleanups from the reviews:**
   - `MAX_FEATURED = 3` is defined three times (`catalog.ts`,
     `admin/homepage/page.tsx`, `HomepageFeatured.tsx`), so the copies can
@@ -152,207 +164,4 @@ Ordered by what it blocks.
 
 ## Done
 
-- [x] **Order safety** (from the 2026-10-17 repo review, built on
-  `fix/order-safety`, migration `0026_atomic_orders.sql`. **Not live
-  yet:** the migration runs on dev, then prod before the release; see
-  MANUAL_TASKS.md).
-  - Placing an order is one database transaction (`create_order()`):
-    order, items, options, stock decrement and promo redemption all
-    succeed or all roll back. Before, a timeout part-way could leave a
-    pending order that never took stock, and cancelling it later inflated
-    stock (overselling a handmade item). Stock, promo and other failures
-    now get their own shopper message instead of everything reading as
-    "no longer has enough stock".
-  - Cancelling (admin button and the expiry sweep) is one transaction
-    (`cancel_order_and_restore_stock()`), so stock can't be lost if it
-    fails part-way. The sweep carries on past a failing order, lists it in
-    its response and returns a 500 so Vercel's cron logs flag the run.
-  - Emails are case-insensitive: stored lowercased (trigger, plus existing
-    rows normalised) and compared with `lower()`. Closes "Juan@x.com"
-    getting past a one-per-customer promo, and My Account missing an order
-    typed with capitals.
-  - `/api/orders` rejects an invalid email; it and
-    `/api/promo-codes/apply` return a 400 (not a 500) for a malformed
-    body.
-  - Tests: `tests/order-safety.test.ts` (atomicity, races for the last
-    unit and a promo cap, double cancel, paid/shipped refused, email case),
-    the real expiry sweep in `api-orders-expire.test.ts`, input checks in
-    `api-orders-validation.test.ts` (now on the shared test helpers) and
-    `api-promo-codes-apply.test.ts`.
-
-- [x] **Stop `npm test` from ever running against the production
-  database** (2026-10-17): tests abort unless `.env.local` has
-  `SUPABASE_ENV=dev` (`tests/setup/test-target.mjs`).
-
-- [x] **Deliver nationwide (whole Philippines), with PSGC address
-  dropdowns** (built 2026-10-17 on `feat/nationwide-delivery`, commits
-  0c609be + 36d61bb; migration `0025` + PSGC seed run on dev and manually
-  tested. **Not live yet:** waiting on the prod release in
-  MANUAL_TASKS.md). Spec: `docs/design/checkout.md` §4.
-  - Decisions (owner, 2026-10-15): one flat fee nationwide
-    (`settings.shipping_fee_centavos`), and always nationwide with no area
-    switch. That's a deliberate exception to "configurable by default",
-    commented in `src/app/api/orders/route.ts`.
-    `settings.delivery_cities` is no longer used; the row is deleted later
-    (Outstanding).
-  - Built: a bundled PSA PSGC 2Q 2026 snapshot seeded into `psgc_*`
-    tables (refresh = re-seed, no migration; `supabase/psgc/README.md`).
-    Shared `AddressLocationFields` cascading selects at checkout and in
-    the account modal. Full address on cards, `/admin/orders` and all
-    order emails. Manila keeps its numbered barangays, shown with their
-    district ("Barangay 1 (Tondo I/II)").
-  - Why codes + snapshotted names with no FK to `psgc_*`: a PSA refresh
-    can't break order history. `resolveAddressCodes()` validates the chain
-    server-side. Addresses without PSGC codes aren't offered at checkout
-    (prod starts empty, so there's no legacy fix-up).
-
-- [x] **Security: lock down execute permissions on older database
-  functions** (fixed 2026-10-04, `fix/lock-down-db-functions`, migration
-  `0024`, live on dev and prod). Stock and promo RPCs were callable by
-  anon. That wasn't exploitable (SECURITY INVOKER + RLS default-deny), but
-  one policy or `security definer` away from a hole. 0024 grants execute
-  to `service_role` only and locks future functions by default.
-  Trade-off: a function the browser or RLS must call needs an explicit
-  grant. Test: `tests/db-function-permissions.test.ts`.
-
-- [x] **Show short order refs (`#xxxxxxxx`) everywhere a person sees an
-  order** (fixed 2026-10-03; follow-ups 2026-10-03/04). One helper,
-  `formatOrderRef()` in `src/lib/order-ref.ts`. The 8-character length is
-  hardcoded with an exception comment because it's a display format, not
-  a business setting. Admin search ignores a leading `#`. The "Order ID:"
-  footer was removed from the customer emails (redundant with the subject
-  and heading). The confirmation email's payment note moved under the
-  greeting and no longer says "Delivery is Metro Manila only." Checkout's
-  Metro Manila address hint was later removed by nationwide delivery.
-
-- [x] **Bug: image uploads over ~4.5 MB failed with `413` on Vercel**
-  (fixed 2026-10-03). All admin image uploads now go browser → Supabase
-  Storage directly via signed upload URLs, because Vercel Functions have a
-  hard 4.5 MB body cap. Paths are re-validated server-side before saving.
-  Client-side downscaling (`src/lib/image-resize.ts`) uses hardcoded
-  parameters with an exception comment (technical, not a business
-  setting).
-
-- [x] **"Order shipped" email, matching the order-confirmation email's
-  aesthetic.** `buildOrderShippedEmail()`/`sendOrderShippedEmail()`: same
-  shell and item rows, no cost table. It's sent from
-  `markOrderShippedAction` with a swallowed error, so an email hiccup
-  can't undo the status change. Options are listed one per line in both
-  emails. (Its "Order ID:" footer was later removed; see Short order
-  refs.)
-- [x] **Admin-triggered "payment details" email, with admin-editable
-  payment info, plus order-status tracking** (scoped 2026-07-20;
-  migrations `0019`–`0021`; commit `14b5bb9`, merged via `24783d1`).
-  "Send payment details" on `/admin/orders` emails the shop-wide payment
-  methods (`/admin/payment-methods`) and the instructions text.
-  - Manual, per-order trigger, resendable any time: the admin decides
-    when to send.
-  - QR is per payment method, not one shared image. One flat list,
-    because the bank vs. e-wallet split wasn't needed (`0020`).
-  - Why `payment_details_sent` is a real status (`pending_payment` →
-    `payment_details_sent` → `paid` → `shipped`) with one shared
-    `status_updated_at`: one column instead of one per event. A resend
-    only refreshes the timestamp and never moves the status backward.
-    Expiry currently treats it like `pending_payment` (changing; see the
-    expiry rule in Outstanding).
-  - Manual testing found two bugs, both fixed: the status timestamp now
-    shows the time, and the send button no longer shows on `paid`
-    orders.
-- [x] **"Product Details" section on the storefront product page**
-  (migration `0017`). Optional `dimensions`/`details` fields. They're
-  edit-page only, matching the pattern where quick-create defers
-  secondary fields. The section shows only when one of them is set.
-- [x] **Pre-select the first value for "buttons"-style product options, not
-  just dropdowns**, so "Add to cart" isn't blocked until an explicit
-  click.
-- [x] **Checkout order summary: list each item's selected options one per
-  line, not comma-joined in parentheses** (matches the cart, emails and
-  `/admin/orders`).
-- [x] **Show a toast when an item is added to cart** (via the app-wide
-  `useToast()`).
-
-- [x] **`/admin/options` uses an edit-modal pattern instead of inline
-  batch-editable fields.** One dialog per option type. Nothing commits
-  until "Save options", and deletes are staged too. Why it's hard to
-  dismiss (inert backdrop; Cancel/X/Escape confirm if anything changed):
-  real edits could otherwise be lost.
-- [x] **Drag-to-reorder instead of ↑/↓ buttons**, across `/admin/faq`,
-  product options and homepage featured (`DragReorderList`). It uses a
-  dedicated grip handle, so inputs inside rows stay usable.
-- [x] Homepage content management (US-38): migration `0013`. Up to 3
-  featured products, a standalone hero image with a focal-point picker,
-  and six editable text settings. The hero is deliberately not one of the
-  3 featured products.
-- [x] **Promo code capability** (scoped 2026-07-19; migrations
-  `0014`–`0016`). Customer codes on both `/cart` and `/checkout` (either
-  can be the last stop before payment), with admin CRUD for codes and
-  categories. **Still deferred:** the 4 end-to-end order and usage-limit
-  checks in MANUAL_TESTING.md's "Promo codes + categories".
-  - Shape: % off the eligible merchandise subtotal with an admin cap,
-    never shipping. One code per order; a new code replaces the old one.
-  - Category scope, Option B: the code applies if any cart item is
-    eligible, and discounts only those items. Why: a mixed cart shouldn't
-    be rejected outright. The minimum order checks the whole cart.
-  - Usage limits: per customer, a total cap and a date range, enforced
-    via `promo_code_redemptions` and an atomic `redeem_promo_code()`.
-    `limit_one_per_customer` (`0016`) lets a publicly shared code be
-    reused.
-  - Categories were normalized into a real table so promos have something
-    validated to reference. Internal-only: no storefront category
-    browsing.
-  - Applied codes carry from cart to checkout and are re-validated
-    silently. Orders snapshot `discount_amount`, so editing a code doesn't
-    rewrite history.
-- [x] Fixed a dropdown-style option with only one value permanently blocking
-  Add to Cart — `ProductDetail.tsx`'s `selectedOptions` started empty and
-  relied on `<select>`'s `onChange`, which never fires when there's only one
-  `<option>`. Now seeded from each dropdown option's first value instead.
-- [x] Fixed `/admin/options`'s breadcrumb (stray "Products" crumb left over
-  from copying `/admin/products/page.tsx`) — now just `Admin / Options`.
-- [x] `/admin/options` saves the whole library in one submit
-  (`updateOptionLibraryAction`) instead of a save button per row, matching
-  the per-product options pattern; create/delete stay immediate single-row
-  actions.
-- [x] Admin → Products (US-41): `products.visible` toggle to hide a product
-  from the shop entirely (migration `0012`); Options section batches
-  selection saves into one submit and gained ↑/↓ reorder.
-- [x] Admin → Products list shows each product's photo thumbnail.
-- [x] Dropped the variant entity — any combination of a product's option
-  values is orderable without an admin-created variant row (migration
-  `0011`); selected options snapshot onto the order directly
-  (`order_item_options`) instead of via `variant_id`. See
-  [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md).
-- [x] Shop-wide reusable option library (US-40) — option types/values
-  defined once (`option_types`/`option_values`) and attached to any product
-  via `/admin/options`, same migration `0011`. See
-  [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md).
-- [x] Product options beyond color (US-39) — admin-configurable option
-  types per product with swatch/dropdown display style, single
-  production-capacity stock per product rather than per variant/combination
-  (migrations `0009`/`0010`). See
-  [PRODUCT_OPTIONS_DESIGN.md](./PRODUCT_OPTIONS_DESIGN.md).
-- [x] Icon-only controls got hover/focus tooltips (`Tooltip.tsx`, pure CSS),
-  later narrowed to the header navbar only. Cart's −/+ quantity buttons were
-  deliberately left untooltipped — self-explanatory glyphs, a tooltip was
-  noise.
-- [x] Contact Us page shows email + Instagram icons with the real handle
-  instead of the word "Instagram"; added a configurable
-  `contactInstagramHandle` setting (migration `0008`).
-- [x] Admin save actions (save product, add/save variants, upload photo,
-  create product, FAQ, settings) now show a success toast via new
-  `ActionForm`/`SubmitButton` components, matching delete/mark/cancel
-  actions.
-- [x] Customer-facing order history (`/account`) and saved addresses
-  (`/account/addresses`) — US-18, shipped as part of Phase 8.
-- [x] Admin → Products: variant list and product photo Delete are trash
-  icons instead of text, matching FAQ/addresses.
-- [x] Admin → Products: variant list saved all rows in one submit instead
-  of one form per variant.
-- [x] Cart page: each line item shows a photo thumbnail (placeholder
-  fallback for pre-existing localStorage carts) and Remove is a trash icon.
-- [x] Header nav: Shop/Cart are icons instead of text (Cart keeps its
-  item-count badge); footer stays text-only. Log In is an icon too,
-  matching the rest of the nav regardless of auth state.
-- [x] Admin: delete variant/photo/FAQ item and cancel order show a native
-  `window.confirm()` prompt first; those plus mark paid/mark shipped show a
-  toast on success or thrown error (new `ActionButton` component).
+Finished items are archived in [completed/IMPROVEMENTS-archive.md](./completed/IMPROVEMENTS-archive.md). Move items there once they're done.
