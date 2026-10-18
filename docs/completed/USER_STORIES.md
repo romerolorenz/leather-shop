@@ -1,5 +1,11 @@
 # User Stories — Leather Shop
 
+> **Archived 2026-10-18.** Every story here is built or retired, except
+> US-1's price/availability filters and per-category pages, which moved
+> to [IMPROVEMENTS.md](../IMPROVEMENTS.md). New feature requirements now
+> live in each feature's brief under `docs/design/` and in IMPROVEMENTS.md.
+> Relative links below point to `docs/`, so read them as `../`.
+
 Derived from [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) (PRD
 section references in brackets). Two roles: **Shopper** (customer) and
 **Admin** (shop owner).

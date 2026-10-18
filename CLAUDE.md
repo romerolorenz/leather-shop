@@ -2,8 +2,9 @@
 
 # Project Rules
 
-Project docs (PRD, architecture, dev plan, user stories, manual
-tasks/testing) live in [docs/](./docs/), not the repo root.
+Project docs (PRD, architecture, manual tasks/testing) live in
+[docs/](./docs/), not the repo root. The finished dev plan and user
+stories are archived in [docs/completed/](./docs/completed/).
 
 - **Settings are configurable, not hardcoded, unless stated otherwise.**
   Any business value/amount that behaves like a "setting" (shipping fee,

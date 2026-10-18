@@ -22,9 +22,9 @@ the user:
 
 - **Featured picks stayed hardcoded** (`HERO_SLUG`/`FEATURED_SLUGS` in
   `src/app/page.tsx`) rather than adding a real `featured` column +
-  admin toggle now — matches the still-open US-38 in
-  [docs/USER_STORIES.md](../USER_STORIES.md), which already tracks the
-  admin-toggle work as a separate future item.
+  admin toggle now — matches the then-open US-38 in
+  [docs/completed/USER_STORIES.md](../completed/USER_STORIES.md), which
+  tracked the admin-toggle work as a separate item (since built).
 - **Hero**: single static image, Heritage Messenger Bag (revised from an
   earlier two-image crossfade, then a slow Ken Burns zoom — see the
   revision passes below).
