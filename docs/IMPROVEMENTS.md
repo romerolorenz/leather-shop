@@ -162,6 +162,14 @@ Ordered by what it blocks.
     conditional on the status not being cancelled, and add guard unit tests
     for a shell-only variable and a shell-only `SUPABASE_PROD_REF`.
 
+- [ ] *Blocks: nothing.* **Shop filters and category pages (rest of
+  US-1)** (moved from the archived `docs/completed/USER_STORIES.md`,
+  2026-10-18). The Shop page now groups products into category sections
+  (`docs/design/shop-order.md`), but these were never built: filtering by
+  category, price and availability (hide sold out), and a page per
+  category (e.g. `/shop/wallets`). Only worth it once the catalog is big
+  enough that scrolling the sections isn't enough. Needs a brief first.
+
 ## Done
 
 Finished items are archived in [completed/IMPROVEMENTS-archive.md](./completed/IMPROVEMENTS-archive.md). Move items there once they're done.
