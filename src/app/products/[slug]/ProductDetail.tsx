@@ -191,8 +191,8 @@ export default function ProductDetail({ product }: { product: Product }) {
                   }
                   className={`rounded-btn border px-3 py-1 text-sm transition-colors ${
                     selectedOptions[type.name] === value
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-[rgba(28,26,24,.12)] hover:border-foreground dark:border-[rgba(243,241,236,.14)]"
+                      ? "border-[#7A3B22] bg-[rgba(122,59,34,.15)] text-[#7A3B22] shadow-[inset_0_0_0_1px_#7A3B22] dark:border-[#C97A4E] dark:bg-[rgba(201,122,78,.15)] dark:text-[#C97A4E] dark:shadow-[inset_0_0_0_1px_#C97A4E]"
+                      : "border-[rgba(28,26,24,.12)] hover:border-[#7A3B22] hover:text-[#7A3B22] dark:border-[rgba(243,241,236,.14)] dark:hover:border-[#C97A4E] dark:hover:text-[#C97A4E]"
                   }`}
                 >
                   {value}

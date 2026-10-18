@@ -1,5 +1,20 @@
 # Design Log — Leather Shop
 
+- **2026-10-18 — Brown option buttons (exploration)**
+  [artifact](https://claude.ai/artifact/PZCPn6ReUkivhQfTfNSHQv) —
+  brief: [docs/design/option-buttons.md](design/option-buttons.md).
+  Real dev-site screenshots of the product page (Tote Bag, Medium + Tan
+  selected) with the button-style option values in brown, injected as
+  CSS: Current (ink fill), A brown fill with white text, B heavier brown
+  outline with brown text, C brown outline and text over an 8% brown wash.
+  "Compare all" shows each one's selected and hover states side by side;
+  desktop page, phone and hover views per option. **Revised same day**:
+  added three shades between A and C at the user's request: D3 softer
+  solid fill `#9A5338` with white text, D2 30% brown wash with deeper
+  `#5E2C18` text, D1 15% brown wash with brown text. B's selected text
+  was briefly made bold, then rolled back. D1 now has a thicker 2px
+  brown border when selected. **Chosen: D1** (2026-10-18).
+
 - **2026-10-04 — Studio section: photo and maker profile**
   [artifact](https://claude.ai/artifact/2s5kopj3Xv4MU181o4fVnw) —
   brief: [docs/design/studio-profile.md](design/studio-profile.md).
