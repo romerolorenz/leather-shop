@@ -8,7 +8,7 @@ const archivo = Archivo({
 });
 
 export const metadata = {
-  title: "FAQ — Leather Shop",
+  title: "FAQ — Hiraya Leather",
 };
 
 export default async function FaqPage() {

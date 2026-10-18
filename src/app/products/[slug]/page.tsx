@@ -19,7 +19,7 @@ export async function generateMetadata(
   if (!product || !product.visible) return {};
 
   return {
-    title: `${product.name} — Leather Shop`,
+    title: `${product.name} — Hiraya Leather`,
     description:
       product.description ||
       `${product.name} — handcrafted leather goods, made in small batches.`,

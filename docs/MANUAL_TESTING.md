@@ -140,6 +140,22 @@ and one paused or sold-out product.
       `/products`.
       Findings:
 
+### Brown option buttons (docs/design/option-buttons.md)
+
+- [ ] On a product with Size and Color button options, desktop: unselected
+      is a hairline border with ink text; hover turns border and text brown;
+      selected has a 2px brown border, light brown wash and brown text.
+      Findings:
+- [ ] Same check at 375px width.
+      Findings:
+- [ ] Picking a value doesn't shift or resize neighbouring buttons.
+      Findings:
+- [ ] Keyboard Tab to the option buttons: focus outline is clearly visible,
+      including on the selected one.
+      Findings:
+- [ ] With options selected, Buy now still works.
+      Findings:
+
 ## Done
 
 Finished items are archived in [completed/MANUAL_TESTING-archive.md](./completed/MANUAL_TESTING-archive.md). Move items there once they're done.
