@@ -57,6 +57,11 @@ if reintroduced — never as a background fill or large block).
 | Hairline | `rgba(28,26,24,.12)` | `rgba(243,241,236,.14)` | Dividers, borders | `border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]` |
 | Accent | `#7A3B22` | `#C97A4E` | "View" links, inline text links, CTA accents — used in very few places, nowhere as a fill | `text-[#7A3B22] dark:text-[#C97A4E]` |
 
+Exception: the selected state of product option chips may use a 15%
+accent wash (`rgba(122,59,34,.15)`; dark `rgba(201,122,78,.15)`) with a
+2px accent border. Solid accent
+fills are still not allowed. See [option-buttons.md](option-buttons.md).
+
 No secondary "material" accent colors (no brass/loden/cognac swatch
 system) — one accent, used sparingly, is the point.
 

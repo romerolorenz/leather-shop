@@ -43,6 +43,22 @@ deferred as of 2026-10-17):
       and `/checkout` — usable, not visually broken.
       Findings:
 
+### Brown option buttons (docs/design/option-buttons.md)
+
+- [ ] On a product with Size and Color button options, desktop: unselected
+      is a hairline border with ink text; hover turns border and text brown;
+      selected has a 2px brown border, light brown wash and brown text.
+      Findings:
+- [ ] Same check at 375px width.
+      Findings:
+- [ ] Picking a value doesn't shift or resize neighbouring buttons.
+      Findings:
+- [ ] Keyboard Tab to the option buttons: focus outline is clearly visible,
+      including on the selected one.
+      Findings:
+- [ ] With options selected, Buy now still works.
+      Findings:
+
 ## Done
 
 - [x] **Order safety** (branch `fix/order-safety`, PR #25, migration
