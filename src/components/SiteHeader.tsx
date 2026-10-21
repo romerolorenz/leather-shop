@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Noto_Sans_Tagalog } from "next/font/google";
+import { Archivo, Noto_Sans_Tagalog } from "next/font/google";
 import { Tooltip } from "@/components/Tooltip";
 import CartLink from "@/components/CartLink";
 import CartWordLink from "@/components/CartWordLink";
@@ -16,10 +16,17 @@ const notoTagalog = Noto_Sans_Tagalog({
   weight: "400",
 });
 
+// Same face the storefront pages use; header words only. Weight 600 exists
+// in Archivo, so font-semibold draws true semibold, not synthesised bold.
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["600"],
+});
+
 // Desktop (sm+) word links; see docs/design/header-nav.md. Source text is
 // normal case, `uppercase` sets the capitals so screen readers read words.
 const NAV_WORD =
-  "inline-flex items-center py-2 text-xs font-medium uppercase tracking-[0.1em] text-[#1C1A18] dark:text-[#F3F1EC] underline-offset-[6px] decoration-1 hover:underline hover:decoration-[rgba(28,26,24,.35)] dark:hover:decoration-[rgba(243,241,236,.4)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7A3B22] dark:focus-visible:outline-[#C97A4E]";
+  "inline-flex items-center py-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#1C1A18] dark:text-[#F3F1EC] underline-offset-[6px] decoration-1 hover:underline hover:decoration-[rgba(28,26,24,.35)] dark:hover:decoration-[rgba(243,241,236,.4)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7A3B22] dark:focus-visible:outline-[#C97A4E]";
 const NAV_WORD_CURRENT =
   " underline decoration-[#1C1A18] dark:decoration-[#F3F1EC]";
 
@@ -133,7 +140,7 @@ export default function SiteHeader({
             <CartLink />
           </Tooltip>
         </div>
-        <div className="hidden items-center gap-8 sm:flex">
+        <div className={`${archivo.className} hidden items-center gap-8 sm:flex`}>
           <Link
             href="/products"
             aria-current={shopCurrent ? "page" : undefined}

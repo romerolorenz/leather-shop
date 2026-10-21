@@ -149,7 +149,7 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
   words from `sm` (640px) up, today's icons and badge below it. Words are
   `SHOP`, `ACCOUNT` / `LOG IN`, `CART` / `CART (n)`, written in normal
   case in source and set by the `NAV_WORD` classes in `SiteHeader.tsx`
-  (12px medium, `uppercase`, 0.1em tracking, ink, 32px apart). The current
+  (Archivo, 12px semibold, `uppercase`, 0.1em tracking, ink, 32px apart). The current
   page gets a solid ink underline plus `aria-current="page"`; other links
   show a faint underline on hover only, with no motion. The cart count is
   written as text on desktop (`CART (2)`), plain `CART` when empty.

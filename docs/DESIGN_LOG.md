@@ -1,5 +1,34 @@
 # Design Log — Leather Shop
 
+- **2026-10-22 — Favicon & home-screen icon options**
+  [artifact](https://claude.ai/artifact/NEMb1mag4j8cBtob1o48C3) —
+  brief: [docs/design/favicon.md](design/favicon.md).
+  Stand-in icon to replace the create-next-app triangle until real brand
+  assets arrive. Five marks from three directions: 1a ᜑ and 1b ᜑᜒ ("Hi")
+  in brown on transparent; 2 brown "H" on a cream tile; 3a cream ᜑ and
+  3b cream "H" on a brown `#7A3B22` tile (12.5% corner radius). Glyphs are
+  outlined from Noto Sans Tagalog and Archivo Bold. Each option is shown
+  at 16px and 32px in a fake browser tab bar ("Hiraya Leather" among four
+  other tabs) in light and dark chrome, on a real 16×16 pixel grid
+  magnified 8×, as a 60pt iPhone home-screen icon, and at 512px. A
+  switcher shows one option or all. Finding: the brown-on-transparent
+  Baybayin marks fail at 16px (thin tilde, nearly invisible on dark
+  chrome); 3a holds as a shape only; 2 and 3b are crisp. 3b marked
+  recommended. Open: which option; ᜑ or ᜑᜒ if Baybayin; whether to move
+  the "Hiraya" wordmark (renders in Arial today) to Archivo. Made by the
+  designer agent.
+  **Revised 2026-10-22: option 4, ᜑᜒ brown on cream.** Owner liked ᜑᜒ
+  and asked for it on a cream tile. Added option 4 and made it the default
+  view. It uses a 16px-only drawing: the dot is a solid 2×2 pixel square
+  and the wave is about 2px thick. A 1px `#D9D0C1` edge keeps the cream
+  tile visible on white tabs (the pixel check compares with and without
+  it). True glyph proportions from 32px up; full-bleed cream for the
+  iPhone icon. It holds at 16px, so the recommendation moved from 3b to 4,
+  with 3b kept as the sharper fallback.
+  **Agreed 2026-10-22: option 4, no edge. Built on release/0.3.0 (favicon.ico, icon.svg, apple-icon.png).** Edge removed
+  from the mockup (republished to the same link); brief has the decisions,
+  final SVG drawing data and the developer hand-off.
+
 - **2026-10-22 — Header navigation: icons or words**
   [artifact](https://claude.ai/artifact/HKfKv1Ucndrzc9p29XJEek) —
   brief: [docs/design/header-nav.md](design/header-nav.md).

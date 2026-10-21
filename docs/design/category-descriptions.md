@@ -68,7 +68,12 @@ cut from thick…          [card]   …
   still **3 cards per row**. Grid gap 24px; column gap 40px.
 - The rail is `position: sticky`. Its `top` must clear the site's sticky
   header (header height + ~24px), **not** `top: 24px` as in the mockup.
-  It stays pinned until that category's products end.
+  It stays **pinned until its top reaches the top of the last row's
+  photos** (owner, 2026-10-22), then scrolls away with the products, so
+  it never slides down beside the last row's names and prices. The stop
+  is measured in the browser from the last row (any number of cards in
+  it) and re-measured on resize and as photos/fonts load. If the rail is
+  taller than the room above that line, it just scrolls normally.
 - A 1px hairline (`rgba(28,26,24,.12)`) above each section, 32px padding
   under it, 80px between sections.
 - Heading: 22px, medium (500), `tracking-tight` (−0.02em).
