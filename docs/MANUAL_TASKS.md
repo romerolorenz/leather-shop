@@ -8,10 +8,66 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 ## Outstanding
 
 Ordered by what it blocks. All DEVELOPMENT_PLAN.md phases are complete, so
-the order is: go-live / production blockers, then release blockers for
-pending work, then dev-only or optional items, then items that don't
-block anything (content, brand, photos).
+the order is: the next production release, then the rest of go-live, then
+dev-only or optional items, then items that don't block anything
+(content, brand, photos).
 
+- [ ] **Release 0.2.0: ship `release/0.2.0` to production** (everything merged
+  since the go-live split: nationwide delivery #22, Buy now #23, test
+  safety #24, order safety #25, shop order + order success #26, Hiraya
+  titles #27, brown option buttons #28). Needs migrations `0025`, `0026`
+  and `0027` on prod. **Order matters:** run the migrations *before*
+  merging to `main`. The new code and the Vercel build fail without them,
+  while the live code keeps working with them in place.
+  1. [ ] **Terminal**: take a backup first:
+     `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
+  2. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
+     It should list exactly `0025_nationwide_delivery_psgc.sql`,
+     `0026_atomic_orders.sql` and `0027_shop_order_positions.sql`. Then
+     run it for real without `--dry-run`.
+  3. [ ] *Optional:* swap in a PSGC file you downloaded from PSA yourself
+     before seeding (see `supabase/psgc/README.md` → "Refreshing to a
+     newer PSA release"). The bundled 2Q 2026 copy is fine.
+  4. [ ] **Supabase · prod** → Project Settings → Data API (Project URL)
+     and API Keys (`service_role`). Then, in **Terminal**:
+     `SUPABASE_URL="https://<prod-ref>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<prod service_role key>" node supabase/psgc/seed.mjs`.
+     Check that it prints `Target: <prod-ref>.supabase.co` and
+     `Upserted 42010 psgc_barangays`. If you re-seed prod later (a PSGC
+     refresh), redeploy prod afterwards (Vercel → Deployments → latest
+     Production → Redeploy) to clear the cached location lists.
+  5. [ ] **GitHub**: merge `release/0.2.0` → `main` (git flow: the
+     release branch holds the version bump and these docs; no new features
+     go on it). Wait for **Vercel** to finish the Production deploy. Then,
+     in **Terminal**: `git checkout main && git pull && git tag v0.2.0 &&
+     git push origin v0.2.0`.
+  6. [ ] **Live site** → `/checkout`: place one order to an address
+     outside Metro Manila (e.g. Cebu → City of Cebu → Lahug), typing your
+     email with a capital letter (e.g. `You@gmail.com`). Check the success
+     screen lists the items, totals and address, and the email shows the
+     full address. Logged in, check it shows in **My Account**. Then
+     cancel it in `/admin/orders` and check the stock goes back in
+     `/admin/products`.
+  7. [ ] **Live site** → `/products`: categories show alphabetically,
+     products oldest first within each. Set the order you want in
+     `/admin/categories` and check `/products` follows it.
+  8. **Update shop text that still says "Metro Manila only"** (admin
+     content, not code), right after the release is live:
+     - [ ] `/admin/faq`: rewrite the shipping answer (anywhere in the
+       Philippines at one flat fee; provincial deliveries take longer).
+     - [ ] `/admin/settings` → Payment instructions text: update it if it
+       mentions Metro Manila.
+     - [ ] `/admin/settings` → Shipping fee: decide whether the flat fee
+       still works now that provincial orders cost more to ship.
+     - [ ] *Optional:* mention the longer provincial delivery in product
+       descriptions or lead-time copy where it matters.
+  9. [ ] **GitHub**: merge `release/0.2.0` back into `develop`, so the
+     version bump and docs land there too. Then delete the release
+     branch.
+- [ ] **Alongside the release: browser checks for #26 and #28.** Merged
+  before these were run; work through "Order success screen + shop
+  order" and "Brown option buttons" in
+  [MANUAL_TESTING.md](./MANUAL_TESTING.md), on dev or on the live site
+  once the release is out.
 - [ ] **Go-live blocker: split production from dev**
   (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)). A **new** Supabase
   project is **production** and started clean; the old project stays as
@@ -77,89 +133,6 @@ block anything (content, brand, photos).
         yet, take a manual backup before any risky migration. In
         **Terminal**, run
         `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
-- [ ] **Blocks the nationwide-delivery release on prod: get it into
-  `develop`, run migration `0025` and the PSGC seed on prod, then merge
-  `develop` → `main`.** Holds up nationwide delivery going live. Needs the
-  go-live split's prod database (steps 1–4 above, done). Prod starts with
-  no saved addresses, so the seed only loads the reference data there.
-  0. [x] Merged into `develop` (PR #22).
-  1. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
-     It should list only `0025_nationwide_delivery_psgc.sql`. Then run it
-     for real without `--dry-run`. The live site keeps working, because
-     the migration only adds tables and columns.
-  2. [ ] *Optional:* swap in a PSGC file you downloaded from PSA yourself
-     before seeding prod (see `supabase/psgc/README.md` → "Refreshing to a
-     newer PSA release"). Not required; the bundled 2Q 2026 copy is fine.
-  3. [ ] **Supabase · prod** → Project Settings → Data API (Project URL)
-     and API Keys (`service_role`). Then, in **Terminal**:
-     `SUPABASE_URL="https://<prod-ref>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<prod service_role key>" node supabase/psgc/seed.mjs`.
-     Check that it prints `Target: <prod-ref>.supabase.co` and
-     `Upserted 42010 psgc_barangays`. If you ever re-seed prod later (a
-     PSGC refresh), redeploy prod afterwards (Vercel → Deployments →
-     latest Production → Redeploy) to clear Vercel's edge cache of the
-     location lists.
-  4. [ ] **GitHub**: merge `develop` → `main`. Wait for **Vercel** to
-     finish the Production deploy.
-  5. [ ] **Live site** → `/checkout`: place one order to an address
-     outside Metro Manila (e.g. Cebu → City of Cebu → Lahug), using your
-     own email. Check the email shows the full address. Then cancel it in
-     `/admin/orders` (stock goes back).
-  6. **Update shop text that still says "Metro Manila only".** This is
-     content you edit in the admin, not code. Do it right after the
-     release is live.
-     - [ ] **Live site** → `/admin/faq`: rewrite the shipping answer. Say
-       you deliver anywhere in the Philippines at one flat fee, and that
-       provincial deliveries take longer than Metro Manila.
-     - [ ] **Live site** → `/admin/settings` → Payment instructions text:
-       if it mentions Metro Manila, update it.
-     - [ ] **Live site** → `/admin/settings` → Shipping fee: decide
-       whether the flat fee still works now that provincial orders cost
-       more to ship. It's one fee for every order (no zones), so set what
-       you're comfortable absorbing.
-     - [ ] *Optional:* mention the longer provincial delivery in product
-       descriptions or lead-time copy where it matters.
-- [ ] **Blocks the order-safety release on prod: run migration `0026` on
-  prod, then merge `develop` → `main`.** Do this after the
-  nationwide-delivery release above (`0026` needs `0025`'s columns).
-  Needs `fix/order-safety` merged into `develop` (`0026` already ran on
-  dev, see completed/MANUAL_TASKS-archive.md). Safe to run before the deploy: it only adds functions and a
-  trigger, and lowercases stored emails; the live code keeps working with
-  it in place (see the header comment in the migration).
-  1. [ ] *Recommended:* take a backup first. **Terminal**:
-     `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
-  2. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
-     It should list only `0026_atomic_orders.sql` (plus `0025` if the
-     nationwide release hasn't gone out yet; then do that item first).
-     Then run it for real without `--dry-run`.
-  3. [ ] **GitHub**: merge `develop` → `main`. Wait for **Vercel** to
-     finish the Production deploy.
-  4. [ ] **Live site** → `/checkout`: place one order with your email
-     typed with a capital letter (e.g. `You@gmail.com`). Then, logged in,
-     check it shows in **My Account**. Then cancel it in `/admin/orders`
-     and check the product's stock goes back in `/admin/products`.
-- [ ] **Blocks merging `feat/order-success-shop-order`: manual browser
-  checks.** Migration `0027` ran on dev on 2026-10-18, and `npm test` and
-  `npm run build` pass (apart from the two known seed-product files). Work
-  through "Order success screen + shop order" in
-  [MANUAL_TESTING.md](./MANUAL_TESTING.md).
-- [ ] **Blocks the shop-order release on prod: run migration `0027` on
-  prod, then merge `develop` → `main`.** Do this after the order-safety
-  release above. Needs `feat/order-success-shop-order` merged into
-  `develop` and `0027` run on dev (item above). **Order matters:** run the
-  migration *before* merging to `main`. The new code (and the Vercel
-  build, which reads the database) fails without the new columns, while
-  the old code keeps working with them in place.
-  1. [ ] *Recommended:* take a backup first. **Terminal**:
-     `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
-  2. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
-     It should list only `0027_shop_order_positions.sql` (plus `0025`/
-     `0026` if those releases haven't gone out yet; do those items first).
-     Then run it for real without `--dry-run`.
-  3. [ ] **GitHub**: merge `develop` → `main`. Wait for **Vercel** to
-     finish the Production deploy.
-  4. [ ] **Live site** → `/products`: the categories show alphabetically,
-     products oldest first within each. Then set the order you want in
-     `/admin/categories` and check `/products` follows it.
 - [ ] **Go-live, doesn't block other steps: set up a receiving address on
   your domain** (e.g. `hello@hirayaleather.com`) so customer replies
   aren't lost. The sending address on `mail.hirayaleather.com` has no
