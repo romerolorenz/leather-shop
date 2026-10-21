@@ -8,7 +8,7 @@ import {
   validatePromoCode,
   type PromoCodeInput,
 } from "@/lib/promo-codes";
-import { createCategory, listCategories } from "@/lib/admin/categories";
+import { createCategory } from "@/lib/admin/categories";
 import { createProduct, type ProductInput } from "@/lib/admin/catalog";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { CleanupErrors, deleteRowsById } from "./helpers/cleanup";
@@ -132,13 +132,12 @@ async function makeScratchOrder(): Promise<string> {
   return data.id;
 }
 
+// The id comes back from the insert itself and is queued for cleanup
+// before anything else (a later read) can throw.
 async function createCategoryScratch(name: string): Promise<string> {
-  await createCategory(name);
-  const categories = await listCategories();
-  const created = categories.find((c) => c.name === name);
-  if (!created) throw new Error(`Category "${name}" wasn't created`);
-  scratchCategoryIds.push(created.id);
-  return created.id;
+  const { id } = await createCategory(name);
+  scratchCategoryIds.push(id);
+  return id;
 }
 
 function baseInput(overrides: Partial<PromoCodeInput> = {}): PromoCodeInput {

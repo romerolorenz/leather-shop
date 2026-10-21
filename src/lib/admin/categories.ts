@@ -1,16 +1,23 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { setPositions } from "@/lib/admin/reorder";
+import {
+  CATEGORY_DESCRIPTION_TOO_LONG,
+  normalizeCategoryDescription,
+} from "@/lib/category-description";
 
 export type Category = {
   id: string;
   name: string;
+  // Optional line shown under the category's heading on /products
+  // (docs/design/category-descriptions.md, migration 0028). Null = none.
+  description: string | null;
 };
 
 export async function listCategories(): Promise<Category[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name")
+    .select("id, name, description")
     .order("name", { ascending: true });
 
   if (error) throw error;
@@ -33,6 +40,7 @@ export type CategoryWithProducts = Category & {
 type CategoryWithProductsRow = {
   id: string;
   name: string;
+  description: string | null;
   position: number;
   products: {
     id: string;
@@ -58,7 +66,7 @@ export async function listCategoriesWithProducts(): Promise<
   const { data, error } = await supabase
     .from("categories")
     .select(
-      "id, name, position, products(id, name, position, created_at, visible, ordering_enabled, stock_quantity, product_photos(url, position))"
+      "id, name, description, position, products(id, name, position, created_at, visible, ordering_enabled, stock_quantity, product_photos(url, position))"
     )
     .order("position", { ascending: true })
     .order("id", { ascending: true });
@@ -67,6 +75,7 @@ export async function listCategoriesWithProducts(): Promise<
   return (data as unknown as CategoryWithProductsRow[]).map((row) => ({
     id: row.id,
     name: row.name,
+    description: row.description,
     products: [...row.products]
       .sort(
         (a, b) =>
@@ -151,24 +160,63 @@ export async function reorderCategoryProducts(
   );
 }
 
-export async function createCategory(name: string): Promise<{ id: string }> {
+export type CategoryInput = {
+  name: string;
+  // Raw text from the admin form; normalised here (see
+  // normalizeCategoryDescription) so every writer gets the same rule.
+  // Omitted = leave as is on update, none on create.
+  description?: string | null;
+};
+
+function readCategoryInput(input: CategoryInput): {
+  name: string;
+  description?: string | null;
+} {
+  const name = input.name.trim();
+  if (!name) throw new Error("Category name is required.");
+  return input.description === undefined
+    ? { name }
+    : { name, description: normalizeCategoryDescription(input.description) };
+}
+
+// Supabase errors aren't Error instances, so runAction would only show
+// "Something went wrong." — name the two the owner can actually cause.
+function categoryWriteError(error: { code?: string }): unknown {
+  if (error.code === "23505") {
+    return new Error("A category with that name already exists.");
+  }
+  if (error.code === "23514") return new Error(CATEGORY_DESCRIPTION_TOO_LONG);
+  return error;
+}
+
+export async function createCategory(
+  name: string,
+  description?: string | null
+): Promise<{ id: string }> {
+  const row = readCategoryInput({ name, description });
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("categories")
-    .insert({ name })
+    .insert(row)
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) throw categoryWriteError(error);
   return { id: data.id };
 }
 
-export async function renameCategory(id: string, name: string): Promise<void> {
+// Saves the "Edit category" pop-up: name and description together.
+export async function updateCategory(
+  id: string,
+  input: CategoryInput
+): Promise<void> {
+  const row = readCategoryInput(input);
   const supabase = getSupabaseServerClient();
-  const { error } = await supabase
-    .from("categories")
-    .update({ name })
-    .eq("id", id);
-  if (error) throw error;
+  const { error } = await supabase.from("categories").update(row).eq("id", id);
+  if (error) throw categoryWriteError(error);
+}
+
+export async function renameCategory(id: string, name: string): Promise<void> {
+  await updateCategory(id, { name });
 }
 
 // products.category_id has no ON DELETE behavior configured, so a

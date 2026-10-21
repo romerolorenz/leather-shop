@@ -6,11 +6,13 @@ import {
   groupProductsByCategory,
   formatPrice,
   type Product,
+  type ShopSection,
 } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Reveal } from "@/components/Reveal";
 import { UnavailableTag } from "@/components/UnavailableTag";
 import { productAvailability } from "@/lib/availability";
+import { ShopJumpNav } from "./ShopJumpNav";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -23,11 +25,17 @@ export const metadata = {
     "Shop handcrafted leather goods, made in small batches — wallets, bags, and more.",
 };
 
+const HAIRLINE =
+  "border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]";
+const INK_SOFT = "text-[#6E6A64] dark:text-[#A39C90]";
+
 export default async function ProductsPage() {
   const sections = groupProductsByCategory(await getProducts());
   // A lone category heading under "Shop the Collection" reads as noise
-  // (docs/design/shop-order.md), so with one category it's the plain grid.
+  // (docs/design/shop-order.md), so with one category it's the plain grid,
+  // with that category's description (if any) as an intro line.
   const showHeadings = sections.length > 1;
+  const intro = !showHeadings ? sections[0]?.description : null;
 
   return (
     <main
@@ -38,33 +46,97 @@ export default async function ProductsPage() {
         <h1 className="mb-8 text-2xl font-semibold tracking-tight sm:text-3xl">
           Shop the Collection
         </h1>
-        {sections.map((section, index) =>
-          showHeadings ? (
-            <section
-              key={section.categoryId}
-              aria-labelledby={`category-${section.categoryId}`}
-              className={index > 0 ? "mt-16" : undefined}
-            >
-              <h2
-                id={`category-${section.categoryId}`}
-                className="mb-6 text-lg font-semibold tracking-tight"
-              >
-                {section.name}
-              </h2>
-              <ProductGrid products={section.products} />
-            </section>
-          ) : (
+        {intro && (
+          <p className={`-mt-4 mb-8 max-w-2xl text-[15px] leading-relaxed ${INK_SOFT}`}>
+            {intro}
+          </p>
+        )}
+        {showHeadings ? (
+          <>
+            <ShopJumpNav
+              sections={sections.map((s) => ({ id: s.categoryId, name: s.name }))}
+            />
+            {sections.map((section, index) => (
+              <CategorySection
+                key={section.categoryId}
+                section={section}
+                first={index === 0}
+              />
+            ))}
+          </>
+        ) : (
+          sections.map((section) => (
             <ProductGrid key={section.categoryId} products={section.products} />
-          )
+          ))
         )}
       </div>
     </main>
   );
 }
 
-function ProductGrid({ products }: { products: Product[] }) {
+// Layout per docs/design/category-descriptions.md § Agreed layout:
+//   phone (< 640px)    "Bold type": 28px heading, ink description, stacked
+//                      over a 2-per-row grid; hairline above every
+//                      category but the first (the sticky jump bar has one)
+//   tablet (640–899px) stacked as on phones, desktop type, 3 per row
+//   desktop (≥ 900px)  side rail: heading + description pinned in a 1/4
+//                      column while the 3/4 grid scrolls past
+// The sticky rail and the scroll-margins read the offsets ShopJumpNav
+// measures (--shop-header-offset, --shop-jump-height), so they clear the
+// site header if it's sticky.
+function CategorySection({
+  section,
+  first,
+}: {
+  section: ShopSection;
+  first: boolean;
+}) {
+  const id = `category-${section.categoryId}`;
   return (
-    <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8">
+    <section
+      id={id}
+      aria-labelledby={`${id}-heading`}
+      aria-describedby={section.description ? `${id}-description` : undefined}
+      className={`scroll-mt-[calc(var(--shop-header-offset,0px)+var(--shop-jump-height,0px)+16px)] sm:scroll-mt-[calc(var(--shop-header-offset,0px)+24px)] min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] min-[900px]:items-start min-[900px]:gap-x-10 ${HAIRLINE} ${
+        first ? "sm:border-t sm:pt-8" : "mt-16 border-t pt-8 sm:mt-20"
+      }`}
+    >
+      <div className="mb-6 min-[900px]:sticky min-[900px]:top-[calc(var(--shop-header-offset,0px)+24px)] min-[900px]:mb-0">
+        <h2
+          id={`${id}-heading`}
+          className="text-[28px] font-medium leading-tight tracking-[-0.025em] sm:text-[22px] sm:leading-snug sm:tracking-[-0.02em]"
+        >
+          {section.name}
+        </h2>
+        {section.description && (
+          <p
+            id={`${id}-description`}
+            className="mt-2.5 text-[15px] leading-relaxed text-[#1C1A18] sm:mt-2 sm:text-[#6E6A64] dark:text-[#F3F1EC] sm:dark:text-[#A39C90]"
+          >
+            {section.description}
+          </p>
+        )}
+      </div>
+      <ProductGrid products={section.products} rail />
+    </section>
+  );
+}
+
+function ProductGrid({
+  products,
+  rail = false,
+}: {
+  products: Product[];
+  // Inside a category section: from 900px the grid is the 3/4 column
+  // beside the side rail, with a tighter 24px gap.
+  rail?: boolean;
+}) {
+  return (
+    <ul
+      className={`grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8 ${
+        rail ? "min-[900px]:gap-6" : ""
+      }`}
+    >
       {products.map((product) => {
         const availability = productAvailability(product);
         return (
@@ -77,7 +149,11 @@ function ProductGrid({ products }: { products: Product[] }) {
                       src={product.photos[0]}
                       alt={product.name}
                       fill
-                      sizes="(min-width: 640px) 33vw, 50vw"
+                      sizes={
+                        rail
+                          ? "(min-width: 900px) 25vw, (min-width: 640px) 33vw, 50vw"
+                          : "(min-width: 640px) 33vw, 50vw"
+                      }
                       className={`object-cover ${
                         availability.unavailable
                           ? ""

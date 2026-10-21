@@ -8,9 +8,29 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 ## Outstanding
 
 Ordered by what it blocks. All DEVELOPMENT_PLAN.md phases are complete and
-release 0.2.0 is live, so the order is: the rest of go-live, then dev-only
-or optional items, then items that don't block anything (content, brand,
-photos).
+release 0.2.0 is live, so the order is: work in progress and the next
+release, then the rest of go-live, then dev-only or optional items, then
+items that don't block anything (content, brand, photos).
+
+- [ ] **Blocks `feat/category-descriptions` (tests + manual testing) and
+  the next release: run migration `0028_category_descriptions.sql`.** It
+  adds the optional `categories.description` column. Until it's on a
+  database, the new code can't load categories or the shop there. It only
+  adds a nullable column, so it's safe to run before the code deploys,
+  and safe to re-run. (Claude couldn't apply it: no database connection
+  string or Supabase CLI login is available to it.)
+  1. [x] **Dev, now:** **Supabase · dev** (`yahrzlvemyzjcbveqzfb`) → SQL
+     Editor → paste the whole of
+     `supabase/migrations/0028_category_descriptions.sql` → Run. Then in
+     **Terminal**: `npx vitest run tests/category-descriptions.test.ts`
+     should pass, and `/admin/categories` should load.
+  2. [ ] **Prod, before the next release merges to `main`:** take a
+     backup first (see go-live step 10's `supabase db dump`), then check
+     the target is **prod** (`blwttockcyyxjdlejoav`, not dev's
+     `yahrzlvemyzjcbveqzfb`) and run `0028`: **Supabase · prod** → SQL
+     Editor → paste and run it, or in **Terminal**
+     `supabase db push --db-url "<prod URI>"`. Merging first would break
+     `/products` and `/admin/categories` on the live site until it runs.
 
 - [ ] **Go-live blocker: split production from dev**
   (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)). A **new** Supabase

@@ -49,6 +49,9 @@ export default function SiteHeader({
 
   return (
     <header
+      // Read by /products' ShopJumpNav to measure how much the header
+      // covers if it's ever sticky, so the shop's sticky rails clear it.
+      data-site-header
       className={`${isHome ? "absolute inset-x-0 top-0 z-20 " : ""}border-b border-black/[.08] bg-white/80 dark:border-white/[.145] dark:bg-[#121110]/80`}
     >
       <nav

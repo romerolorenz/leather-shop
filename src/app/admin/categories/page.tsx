@@ -18,8 +18,7 @@ import {
 import { SectionTabs } from "@/components/admin/SectionTabs";
 import { FormModal } from "@/components/admin/FormModal";
 import { ActionButton } from "@/components/ActionButton";
-import { ActionForm } from "@/components/admin/ActionForm";
-import { SubmitButton } from "@/components/admin/SubmitButton";
+import { CategoryFields } from "@/components/admin/CategoryFields";
 
 const PRODUCTS_TABS = [
   { label: "Catalog", href: "/admin/products" },
@@ -88,12 +87,7 @@ export default async function AdminCategoriesPage() {
           submitLabel="Add category"
           triggerLabel="Add category"
         >
-          <input
-            name="name"
-            placeholder="e.g. Travel"
-            required
-            className="w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
-          />
+          <CategoryFields idPrefix="new-category" />
         </FormModal>
       </div>
 
@@ -113,47 +107,41 @@ export default async function AdminCategoriesPage() {
             );
             return (
               <div key={category.id}>
-                <div className="flex items-center gap-3">
-                  <ActionForm
-                    action={updateAction}
-                    className="flex flex-1 items-center gap-3"
-                  >
-                    <input
-                      key={category.name}
-                      name="name"
-                      defaultValue={category.name}
-                      aria-label="Category name"
-                      required
-                      className="min-w-0 flex-1 rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
-                    />
-                    <SubmitButton
-                      ariaLabel="Save category"
-                      className="rounded-md p-1.5 text-[#6E6A64] transition-transform hover:bg-black/[.05] active:scale-95 disabled:opacity-50 dark:text-[#A39C90] dark:hover:bg-white/[.1]"
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
+                      {category.name}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm text-[#6E6A64] dark:text-[#A39C90]">
+                      {category.description ?? "No description"}
+                    </p>
+                  </div>
+                  <div className="flex flex-none items-center gap-1">
+                    <FormModal
+                      title="Edit category"
+                      action={updateAction}
+                      submitLabel="Save changes"
+                      triggerLabel="Edit category"
+                      triggerVariant="icon-edit"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                      >
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-                        <path d="M17 21v-8H7v8" />
-                        <path d="M7 3v5h8" />
-                      </svg>
-                    </SubmitButton>
-                  </ActionForm>
-                  <ActionButton
-                    action={removeAction}
-                    confirmMessage="Delete this category?"
-                    ariaLabel="Delete category"
-                    className="rounded-md p-1.5 text-[#8C3B32] transition-transform hover:bg-[rgba(140,59,50,.1)] active:scale-95 disabled:opacity-50 dark:text-[#E08A78]"
-                  >
-                    <TrashIcon />
-                  </ActionButton>
+                      <CategoryFields
+                        // Remount after a save elsewhere changes the stored
+                        // values, so the pop-up opens on what's saved.
+                        key={JSON.stringify([category.name, category.description])}
+                        idPrefix={`category-${category.id}`}
+                        defaultName={category.name}
+                        defaultDescription={category.description ?? ""}
+                      />
+                    </FormModal>
+                    <ActionButton
+                      action={removeAction}
+                      confirmMessage="Delete this category?"
+                      ariaLabel="Delete category"
+                      className="rounded-md p-1.5 text-[#8C3B32] transition-transform hover:bg-[rgba(140,59,50,.1)] active:scale-95 disabled:opacity-50 dark:text-[#E08A78]"
+                    >
+                      <TrashIcon />
+                    </ActionButton>
+                  </div>
                 </div>
 
                 {category.products.length > 0 ? (

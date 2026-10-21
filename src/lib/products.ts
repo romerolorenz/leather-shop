@@ -15,6 +15,9 @@ export type Product = {
   name: string;
   categoryId: string;
   category: string;
+  // The category's optional shop description (migration 0028), carried on
+  // each product so /products' sections can show it. Null = none.
+  categoryDescription: string | null;
   // Shop order (docs/design/shop-order.md, migration 0027): the category's
   // place among categories, and this product's place within its category.
   // Lower comes first; both are set by dragging on /admin/categories.
@@ -49,7 +52,7 @@ export type Product = {
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category_id, categories(name, position), position, created_at, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, dimensions, details, " +
+  "id, slug, name, description, category_id, categories(name, position, description), position, created_at, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, dimensions, details, " +
   "product_photos(url, position), " +
   "product_options(position, option_types(id, name, display_style), product_option_selections(option_values(value, position)))";
 
@@ -59,7 +62,7 @@ type ProductRow = {
   name: string;
   description: string;
   category_id: string;
-  categories: { name: string; position: number } | null;
+  categories: { name: string; position: number; description: string | null } | null;
   position: number;
   created_at: string;
   price_centavos: number;
@@ -109,6 +112,7 @@ function mapRow(row: ProductRow): Product {
     name: row.name,
     categoryId: row.category_id,
     category: row.categories?.name ?? "",
+    categoryDescription: row.categories?.description ?? null,
     categoryPosition: row.categories?.position ?? 0,
     position: row.position,
     createdAt: row.created_at,
@@ -165,6 +169,7 @@ export async function getProducts(): Promise<Product[]> {
 export type ShopSection = {
   categoryId: string;
   name: string;
+  description: string | null;
   products: Product[];
 };
 
@@ -181,6 +186,7 @@ export function groupProductsByCategory(products: Product[]): ShopSection[] {
       section = {
         categoryId: product.categoryId,
         name: product.category,
+        description: product.categoryDescription,
         products: [],
       };
       byId.set(product.categoryId, section);
