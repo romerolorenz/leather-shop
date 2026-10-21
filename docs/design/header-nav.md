@@ -1,6 +1,7 @@
 # Header Navigation: Icons or Words — Exploration Brief
 
-Status: **Agreed** (owner, 2026-10-22): Option 2. Not yet built.
+Status: **Built on `feat/header-words`** (agreed by owner 2026-10-22: Option 2).
+Files: `src/components/SiteHeader.tsx`, `src/components/CartWordLink.tsx` (new).
 Comparison mockup: [artifact](https://claude.ai/artifact/HKfKv1Ucndrzc9p29XJEek)
 (toggles: Option 1 / Option 2 / both stacked, desktop / phone, homepage /
 Shop page, signed in / signed out).

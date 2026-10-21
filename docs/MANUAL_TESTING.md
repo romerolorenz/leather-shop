@@ -14,6 +14,36 @@ collapsed to a short summary and moved to
 
 ## Outstanding
 
+### Header navigation (words) (`feat/header-words`)
+
+Brief: [design/header-nav.md](./design/header-nav.md). Use `npm run dev`
+and a real browser; resize for the widths. Test signed in and signed out.
+
+- [ ] **Desktop words.** At 640px and wider: `SHOP  ACCOUNT  CART (2)`
+  signed in, `SHOP  LOG IN  CART (2)` signed out. 12px medium capitals,
+  32px apart, ink. No icons, no tooltips.
+  Findings:
+- [ ] **Phones.** Below 640px: exactly today's icons, badge and tooltips.
+  No words.
+  Findings:
+- [ ] **Current page.** Underlined: Shop on `/products` and product
+  pages, Account on `/account/*`, Cart on `/cart`, Log In on `/login`.
+  Nothing underlined on the homepage. Other links show a faint underline
+  on hover only.
+  Findings:
+- [ ] **Keyboard focus.** Tab through the header: each word link shows a
+  brown focus outline.
+  Findings:
+- [ ] **Cart count.** Empty cart reads `CART`. Add an item: it becomes
+  `CART (1)` without a reload. A screen reader announces "Cart, 1 item".
+  Findings:
+- [ ] **Homepage.** The header still floats over the hero and the words
+  are readable on it. Elsewhere the header is solid.
+  Findings:
+- [ ] **Alignment.** The wordmark and the hero copy still line up at 640,
+  1024 and 1440px.
+  Findings:
+
 ### Category descriptions (`feat/category-descriptions`)
 
 Brief: [design/category-descriptions.md](./design/category-descriptions.md).
