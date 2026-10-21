@@ -25,8 +25,8 @@ component patterns, no page-specific deviation.
   image (no rounded corners; was `aspect-[4/5]` until 2026-10-03, switched
   to 1:1 to match the product-detail gallery and thumbnails), name + price on one line, then a
   description line, matching `src/app/page.tsx`'s featured-grid cards
-  exactly. Column count differs from the homepage (3 fixed) since this
-  page shows the full catalog: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`.
+  exactly. Same 3 per row as the homepage from 640px up; phones show 2:
+  `grid-cols-2 sm:grid-cols-3`.
 - **Colors**: paper/ink/ink-soft/accent tokens from STYLE_GUIDE.md.
   "Currently unavailable" stays a small ink-soft caption, not a
   warning color — matches the calm, unhurried tone (it's informational,

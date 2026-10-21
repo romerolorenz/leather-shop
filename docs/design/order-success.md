@@ -52,10 +52,11 @@ Single column, `max-w-3xl` (unchanged), same on mobile and desktop.
    and full address on separate lines (street, address 2, barangay,
    city, province (left out for Metro Manila), region, postal code). Same
    format as the emails and `/admin/orders` (`src/lib/address-format`).
-7. **What happens next.** One short ink-soft paragraph: we'll email
-   payment details; once paid, we'll make/ship it and email when it's on
-   the way. If the shopper is logged in, add "You can track it in
-   [My Account](/account)."
+7. **What happens next.** One short ink-soft paragraph: "Please give us
+   a little time to process your order. We'll send your payment
+   instructions as soon as we can."; then, once paid, we'll make/ship it
+   and email when it's on the way. If the shopper is logged in, add "You
+   can track it in [My Account](/account)."
 8. **Continue shopping.** The existing accent link, unchanged.
 
 ## Behaviour

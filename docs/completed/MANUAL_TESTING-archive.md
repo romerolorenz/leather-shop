@@ -4,6 +4,34 @@ Archived from [MANUAL_TESTING.md](../MANUAL_TESTING.md) on 2026-10-18. Finished 
 
 ## Done
 
+- [x] **Order success screen + shop order** (PR #26,
+  `docs/design/order-success.md`, `docs/design/shop-order.md`). Passed
+  2026-10-21 on dev after migration 0027: success screen as guest and
+  logged in, with and without a promo (totals match the email), "Delivering
+  to" for Metro Manila and Cebu, 375px layout, heading focus and VoiceOver,
+  refresh shows the empty checkout; `/products` category sections in admin
+  order, hidden/empty categories left out, single-category plain grid,
+  homepage featured unchanged; `/admin/categories` drag reorder for
+  categories and products with toasts, cross-list drops ignored,
+  rename/save/delete intact, offline error toast + snap back, new category
+  and new product go last, category change moves a product to the end.
+  Findings (logged as follow-ups): add a "please give us time to process
+  your order" line to "What happens next" (IMPROVEMENTS.md); make the shop
+  grid 3 items per row (DESIGN_IMPROVEMENTS.md).
+
+- [x] **Brown option buttons** (PR #28, `docs/design/option-buttons.md`).
+  Passed 2026-10-21: unselected/hover/selected states at desktop and
+  375px, no neighbouring button shift, visible keyboard focus, Buy now
+  works with options selected. No issues found.
+
+- [x] **Promo codes: end-to-end order + usage limits** (deferred part of
+  "Promo codes + categories"). Passed 2026-10-21: a full order with a
+  valid code shows the discounted total and a "Discount (CODE): -₱X" line
+  in both emails; the same email can't reuse the code; a usage-limit-1
+  code is refused for a second, different email; the promo field works at
+  mobile width on `/cart` and `/checkout`. No issues found. Promo codes +
+  categories is now fully verified.
+
 - [x] **Order safety** (branch `fix/order-safety`, PR #25, migration
   `0026`). Passed 2026-10-17 on dev: an order with a capitalised email goes
   through and the confirmation arrives; it shows in `/account` after Google

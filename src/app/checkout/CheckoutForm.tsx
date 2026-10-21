@@ -647,9 +647,10 @@ function OrderPlaced({
               What happens next
             </h2>
             <p className={`mt-2 max-w-[60ch] text-sm ${INK_SOFT}`}>
-              We&apos;ll email you the payment details. Once your payment is
-              in, we make or pack your order and email you when it&apos;s on
-              the way.
+              Please give us a little time to process your order. We&apos;ll
+              send your payment instructions as soon as we can. Once your
+              payment is in, we make or pack your order and email you when
+              it&apos;s on the way.
               {loggedIn && (
                 <>
                   {" "}

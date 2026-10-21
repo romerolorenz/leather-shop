@@ -64,7 +64,7 @@ export default async function ProductsPage() {
 
 function ProductGrid({ products }: { products: Product[] }) {
   return (
-    <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8 lg:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8">
       {products.map((product) => {
         const availability = productAvailability(product);
         return (
@@ -77,7 +77,7 @@ function ProductGrid({ products }: { products: Product[] }) {
                       src={product.photos[0]}
                       alt={product.name}
                       fill
-                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      sizes="(min-width: 640px) 33vw, 50vw"
                       className={`object-cover ${
                         availability.unavailable
                           ? ""
