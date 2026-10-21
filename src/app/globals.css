@@ -25,6 +25,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Storefront button corner (docs/design/STYLE_GUIDE.md § Buttons). Gives the
+   `rounded-btn` utility; set to 0 to make every storefront button square. */
+@theme {
+  --radius-btn: 2px;
+}
+
 /* Shelved dark theme — only active under <html data-theme="dark">. */
 :root[data-theme="dark"] {
   --background: #0a0a0a;

@@ -11,6 +11,7 @@ import {
 } from "../actions";
 import { ActionButton } from "@/components/ActionButton";
 import { formatOrderRef } from "@/lib/order-ref";
+import { formatAddressLines } from "@/lib/address-format";
 import { StatusTabs } from "@/components/admin/StatusTabs";
 
 const HAIRLINE = "border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]";
@@ -78,14 +79,11 @@ function OrderCard({ order }: { order: Order }) {
             {order.customer.email} · {order.customer.phone}
           </p>
           <p className={`text-sm ${INK_SOFT}`}>
-            {order.shippingAddress.street}
-            {order.shippingAddress.address2 &&
-              `, ${order.shippingAddress.address2}`}
-            {order.shippingAddress.barangay &&
-              ` · Brgy. ${order.shippingAddress.barangay}`}
-            {`, ${order.shippingAddress.city}`}
-            {order.shippingAddress.postalCode &&
-              ` ${order.shippingAddress.postalCode}`}
+            {formatAddressLines(order.shippingAddress).map((line, i) => (
+              <span key={i} className="block">
+                {line}
+              </span>
+            ))}
           </p>
           <div className="mt-2 flex flex-col gap-0.5">
             {order.items.map((item, index) => {

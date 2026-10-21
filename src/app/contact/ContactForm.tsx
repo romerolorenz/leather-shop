@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BTN, BTN_DEFAULT, BTN_PRIMARY } from "@/components/button-styles";
 
 export default function ContactForm() {
   const [submitting, setSubmitting] = useState(false);
@@ -58,7 +59,7 @@ export default function ContactForm() {
           id="name"
           name="name"
           required
-          className="mt-1 w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
+          className="mt-1 w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
         />
       </div>
       <div>
@@ -70,7 +71,7 @@ export default function ContactForm() {
           name="email"
           type="email"
           required
-          className="mt-1 w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
+          className="mt-1 w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
         />
       </div>
       <div>
@@ -82,7 +83,7 @@ export default function ContactForm() {
           name="message"
           rows={4}
           required
-          className="mt-1 w-full rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
+          className="mt-1 w-full rounded-btn border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 dark:border-[rgba(243,241,236,.14)]"
         />
       </div>
 
@@ -91,9 +92,10 @@ export default function ContactForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-[#ccc]"
+        aria-busy={submitting || undefined}
+        className={`${BTN} ${BTN_DEFAULT} ${BTN_PRIMARY} w-full`}
       >
-        {submitting ? "Sending..." : "Send message"}
+        {submitting ? "Sending…" : "Send message"}
       </button>
     </form>
   );

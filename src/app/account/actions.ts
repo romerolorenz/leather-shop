@@ -8,28 +8,22 @@ import {
   deleteAddress,
   type AddressInput,
 } from "@/lib/customer/addresses";
+import { readAddressCodes } from "@/lib/psgc";
 import { runAction, type ActionResult } from "@/lib/action-result";
 
 function parseAddressInput(formData: FormData): AddressInput {
-  const label = String(formData.get("label") ?? "").trim();
-  const recipientName = String(formData.get("recipientName") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
-  const street = String(formData.get("street") ?? "").trim();
-  const address2 = String(formData.get("address2") ?? "").trim();
-  const barangay = String(formData.get("barangay") ?? "").trim();
-  const city = String(formData.get("city") ?? "").trim();
-  const postalCode = String(formData.get("postalCode") ?? "").trim();
+  const field = (name: string) => String(formData.get(name) ?? "").trim();
+  const label = field("label");
+  const recipientName = field("recipientName");
+  const phone = field("phone");
+  const street = field("street");
+  const postalCode = field("postalCode");
 
-  if (
-    !label ||
-    !recipientName ||
-    !phone ||
-    !street ||
-    !barangay ||
-    !city ||
-    !postalCode
-  ) {
+  if (!label || !recipientName || !phone || !street || !postalCode) {
     throw new Error("All address fields are required.");
+  }
+  if (!/^\d{4}$/.test(postalCode)) {
+    throw new Error("Please enter a 4-digit postal code.");
   }
 
   return {
@@ -37,24 +31,42 @@ function parseAddressInput(formData: FormData): AddressInput {
     recipientName,
     phone,
     street,
-    address2,
-    barangay,
-    city,
+    address2: field("address2"),
     postalCode,
+    // The PSGC chain itself is validated in createAddress/updateAddress.
+    location: readAddressCodes({
+      regionCode: formData.get("regionCode"),
+      provinceCode: formData.get("provinceCode"),
+      cityCode: formData.get("cityCode"),
+      barangayCode: formData.get("barangayCode"),
+    }),
     isDefault: formData.get("isDefault") === "on",
   };
 }
 
-export async function createAddressAction(formData: FormData) {
-  const email = await assertCustomer();
-  await createAddress(email, parseAddressInput(formData));
-  revalidatePath("/account/addresses");
+// (prevState, formData) so these plug straight into ActionForm's
+// useActionState; checkout calls them directly with prevState = null.
+export async function createAddressAction(
+  _prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const email = await assertCustomer();
+    await createAddress(email, parseAddressInput(formData));
+    revalidatePath("/account/addresses");
+  }, "Address saved.");
 }
 
-export async function updateAddressAction(id: string, formData: FormData) {
-  const email = await assertCustomer();
-  await updateAddress(id, email, parseAddressInput(formData));
-  revalidatePath("/account/addresses");
+export async function updateAddressAction(
+  id: string,
+  _prevState: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  return runAction(async () => {
+    const email = await assertCustomer();
+    await updateAddress(id, email, parseAddressInput(formData));
+    revalidatePath("/account/addresses");
+  }, "Address updated.");
 }
 
 export async function deleteAddressAction(id: string): Promise<ActionResult> {

@@ -1,9 +1,20 @@
-import { listCategoriesWithProducts } from "@/lib/admin/categories";
+import Image from "next/image";
+import {
+  listCategoriesWithProducts,
+  type CategoryProduct,
+} from "@/lib/admin/categories";
 import {
   createCategoryAction,
   updateCategoryAction,
   deleteCategoryAction,
+  reorderCategoriesAction,
+  reorderCategoryProductsAction,
 } from "../actions";
+import { DragReorderList } from "@/components/admin/DragReorderList";
+import {
+  CHIP_BASE,
+  arrangementChip,
+} from "@/components/admin/product-status-chips";
 import { SectionTabs } from "@/components/admin/SectionTabs";
 import { FormModal } from "@/components/admin/FormModal";
 import { ActionButton } from "@/components/ActionButton";
@@ -67,7 +78,10 @@ export default async function AdminCategoriesPage() {
       </p>
       <SectionTabs items={PRODUCTS_TABS} />
 
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[.8125rem] text-[#6E6A64] dark:text-[#A39C90]">
+          Drag to set the order categories and products appear in the shop.
+        </p>
         <FormModal
           title="Add category"
           action={createCategoryAction}
@@ -84,15 +98,21 @@ export default async function AdminCategoriesPage() {
       </div>
 
       {categories.length > 0 ? (
-        <ul className="flex flex-col gap-3">
+        <DragReorderList
+          items={categories}
+          onReorder={reorderCategoriesAction}
+          className="flex flex-col gap-3"
+          itemClassName="rounded-lg border border-[rgba(28,26,24,.12)] p-4 dark:border-[rgba(243,241,236,.14)]"
+        >
           {categories.map((category) => {
             const updateAction = updateCategoryAction.bind(null, category.id);
             const removeAction = deleteCategoryAction.bind(null, category.id);
+            const reorderProductsAction = reorderCategoryProductsAction.bind(
+              null,
+              category.id
+            );
             return (
-              <li
-                key={category.id}
-                className="rounded-lg border border-[rgba(28,26,24,.12)] p-4 dark:border-[rgba(243,241,236,.14)]"
-              >
+              <div key={category.id}>
                 <div className="flex items-center gap-3">
                   <ActionForm
                     action={updateAction}
@@ -104,7 +124,7 @@ export default async function AdminCategoriesPage() {
                       defaultValue={category.name}
                       aria-label="Category name"
                       required
-                      className="flex-1 rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
+                      className="min-w-0 flex-1 rounded-md border border-[rgba(28,26,24,.12)] bg-transparent px-3 py-2 text-sm dark:border-[rgba(243,241,236,.14)]"
                     />
                     <SubmitButton
                       ariaLabel="Save category"
@@ -142,33 +162,59 @@ export default async function AdminCategoriesPage() {
                       <ChevronDownIcon />
                       {category.products.length}{" "}
                       {category.products.length === 1 ? "product" : "products"}{" "}
-                      tagged
+                      · arrange
                     </summary>
-                    <ul className="mt-1.5 flex flex-col gap-1 pl-5">
+                    <DragReorderList
+                      items={category.products}
+                      onReorder={reorderProductsAction}
+                      className="mt-1.5 flex flex-col gap-1"
+                    >
                       {category.products.map((product) => (
-                        <li
-                          key={product.id}
-                          className="text-[.8125rem] text-[#6E6A64] dark:text-[#A39C90]"
-                        >
-                          {product.name}
-                        </li>
+                        <ProductRow key={product.id} product={product} />
                       ))}
-                    </ul>
+                    </DragReorderList>
                   </details>
                 ) : (
                   <p className="mt-2 text-[.8125rem] text-[#6E6A64] dark:text-[#A39C90]">
                     No products tagged yet.
                   </p>
                 )}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </DragReorderList>
       ) : (
         <p className="text-sm text-[#6E6A64] dark:text-[#A39C90]">
           No categories yet.
         </p>
       )}
     </main>
+  );
+}
+
+function ProductRow({ product }: { product: CategoryProduct }) {
+  const chip = arrangementChip(product);
+  return (
+    <div className="flex min-h-8 items-center gap-2.5 text-[.8125rem]">
+      {product.photoUrl ? (
+        <Image
+          src={product.photoUrl}
+          alt=""
+          width={28}
+          height={28}
+          className="h-7 w-7 flex-none rounded-[3px] object-cover"
+        />
+      ) : (
+        <div className="h-7 w-7 flex-none rounded-[3px] bg-black/[.05] dark:bg-white/[.08]" />
+      )}
+      <span className="min-w-0 flex-1 truncate text-[#1C1A18] dark:text-[#F3F1EC]">
+        {product.name}
+      </span>
+      {chip && (
+        <span className={`flex-none ${CHIP_BASE} ${chip.className}`}>
+          {chip.label}
+        </span>
+      )}
+    </div>
   );
 }

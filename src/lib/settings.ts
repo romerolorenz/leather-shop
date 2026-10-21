@@ -2,7 +2,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type Settings = {
   shippingFeeCentavos: number;
-  deliveryCities: string[];
+  // No delivery-area setting: delivery is always nationwide (see the
+  // note in src/app/api/orders/route.ts).
   adminNotificationEmail: string;
   orderPaymentHoldHours: number;
   contactEmail: string;
@@ -43,7 +44,6 @@ export async function getSettings(): Promise<Settings> {
 
   const map = Object.fromEntries(data.map((row) => [row.key, row.value])) as {
     shipping_fee_centavos: number;
-    delivery_cities: string[];
     admin_notification_email: string;
     order_payment_hold_hours: number;
     contact_email: string;
@@ -71,7 +71,6 @@ export async function getSettings(): Promise<Settings> {
 
   return {
     shippingFeeCentavos: map.shipping_fee_centavos,
-    deliveryCities: map.delivery_cities,
     adminNotificationEmail: map.admin_notification_email,
     orderPaymentHoldHours: map.order_payment_hold_hours,
     contactEmail: map.contact_email,
@@ -104,7 +103,6 @@ export async function getSettings(): Promise<Settings> {
 
 const SETTINGS_KEYS: Record<keyof Settings, string> = {
   shippingFeeCentavos: "shipping_fee_centavos",
-  deliveryCities: "delivery_cities",
   adminNotificationEmail: "admin_notification_email",
   orderPaymentHoldHours: "order_payment_hold_hours",
   contactEmail: "contact_email",

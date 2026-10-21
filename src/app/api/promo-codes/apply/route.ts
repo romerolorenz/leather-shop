@@ -13,16 +13,22 @@ type ApplyRequestBody = {
 // rule, once a guest's email is known) happens again inside POST
 // /api/orders at order-creation time; see validatePromoCode's docstring.
 export async function POST(request: Request) {
-  const body: ApplyRequestBody = await request.json();
+  const body: ApplyRequestBody | null = await request.json().catch(() => null);
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return NextResponse.json(
+      { error: "Couldn't check that code. Please refresh the page and try again." },
+      { status: 400 }
+    );
+  }
 
-  if (!body.code?.trim()) {
+  if (typeof body.code !== "string" || !body.code.trim()) {
     return NextResponse.json(
       { error: "Enter a promo code." },
       { status: 400 }
     );
   }
 
-  if (!body.items || body.items.length === 0) {
+  if (!Array.isArray(body.items) || body.items.length === 0) {
     return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   }
 

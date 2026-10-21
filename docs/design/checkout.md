@@ -6,6 +6,11 @@ admin's order view, and both order emails updated. Blocked on
 dev project before it can be live-verified — tracked in
 [MANUAL_TASKS.md](../MANUAL_TASKS.md).
 
+**Update, 2026-10-17: nationwide delivery.** City and Barangay are now
+cascading PSGC dropdowns covering the whole Philippines. See
+[§4 below](#4-nationwide-address-psgc-dropdowns). That section
+supersedes §3's City/Barangay rows and its address-card line.
+
 Migrates `/checkout` (`src/app/checkout/CheckoutForm.tsx`) from the
 original "before" look to the "Quiet & Confident" system already used on
 `/cart`, `/account`, and the rest of the storefront. See
@@ -119,8 +124,8 @@ more structure than one free-text line.
 | Phone | yes | unchanged |
 | Address 1 | yes | house/unit no. + street name — same role `street` plays today |
 | Apartment, suite, building | **no** | new, e.g. "Unit 4B", "12th Floor" |
-| City | yes | unchanged — stays the existing Metro-Manila-only `<select>`/list. Comes *before* Barangay in field order (narrows the context Barangay's free text is entered in), even though `city` is the parent of `barangay` in the data model |
-| Barangay | yes | new, free text — Metro Manila has hundreds of barangays across its cities, too many to enumerate as a `<select>` the way City is |
+| City | yes | *Superseded by §4 (PSGC dropdowns).* unchanged — stays the existing Metro-Manila-only `<select>`/list. Comes *before* Barangay in field order (narrows the context Barangay's free text is entered in), even though `city` is the parent of `barangay` in the data model |
+| Barangay | yes | *Superseded by §4 (a `<select>` now).* new, free text — Metro Manila has hundreds of barangays across its cities, too many to enumerate as a `<select>` the way City is |
 | Postal code | yes | new, free text, numeric input mode, 4-digit PH postal codes — paired with Barangay in a two-column row |
 
 **Data model impact** (not yet built — flagging here, actual migration
@@ -153,6 +158,73 @@ address in their detail line: `{recipientName} · {phone}` then
 `{address1}, {address2}` (address2 omitted if empty) then
 `Brgy. {barangay}, {city} {postalCode}`.
 
+### 4. Nationwide address: PSGC dropdowns
+
+Added 2026-10-17 (docs/IMPROVEMENTS.md, "Deliver nationwide"). Delivery is
+now open to the whole Philippines at one flat fee, so the single Metro
+Manila City `<select>` and the free-text Barangay become four cascading
+native `<select>`s fed by the PSA's PSGC data. No new layout: these are
+the same bare native selects, field classes, labels and two-column
+Barangay | Postal code row that §3 already set up. The one shared
+component (`src/components/AddressLocationFields.tsx`) is used by both
+checkout and the `/account/addresses` modal, so the two forms stay in
+sync, as §3 required.
+
+**Field order** (manual entry, top to bottom):
+
+| Field | Required | Notes |
+|---|---|---|
+| Full name, Phone, Address 1, Apartment/suite/building | as §3 | unchanged |
+| Region | yes | `<select>`, PSA order (NCR first, since most orders are Metro Manila). Loaded with the page |
+| Province | yes, except Metro Manila | `<select>` filtered to the region, alphabetical. For NCR, which has no provinces, it stays visible but disabled, showing "Metro Manila", so the form doesn't jump around when the region changes |
+| City / municipality | yes | `<select>`, fetched when the province is picked (`/api/locations/cities`). Alphabetical, ignoring the "City of" prefix. Highly urbanized cities (Cebu City, Davao City) appear under their geographic province |
+| Barangay | yes | `<select>`, fetched when the city is picked (`/api/locations/barangays`). Manila's numbered barangays show their district, e.g. "Barangay 1 (Tondo I/II)". Shares a row with Postal code |
+| Postal code | yes | unchanged: free text, 4 digits (PSGC has no ZIP codes) |
+
+**States.** Before its parent is chosen, a select is disabled with its
+field name as the placeholder option ("Province", "City /
+municipality", "Barangay"). While loading, the placeholder reads
+"Loading…". Changing a parent clears everything below it. If a list fails
+to load, an inline red line under the field reads "Couldn't load the city
+list. Try again", with "Try again" as an underlined button. The
+`/account/addresses` modal has no visible labels (placeholders only, like
+its text inputs), so its selects use `aria-label`s and the first disabled
+option as the placeholder.
+
+**Copy changes.** The "Delivery is available in Metro Manila only…
+Contact us" note under City is removed. The summary line becomes
+"Shipping (flat rate)". The order-placed message says "Delivery is a
+flat ₱X anywhere in the Philippines."
+
+**Address display**, everywhere an address appears (checkout cards,
+`/account/addresses`, `/admin/orders`, every order email), via
+`src/lib/address-format.ts`:
+
+```
+{recipientName} · {phone}        ← cards / account list only
+{address1}, {address2}
+Brgy. {barangay}, {city}
+{province}, {region} {postalCode}   ← province omitted for Metro Manila
+```
+
+Addresses and orders from before this change keep the older two-line
+shape (`Brgy. {barangay}, {city} {postalCode}`), since they have no
+province/region snapshot. "Brgy." isn't added when the PSGC name already
+starts with "Barangay" (Manila's "Barangay 12").
+
+**Saved addresses without PSGC codes** (only dev has any; production
+started clean) aren't offered as cards at checkout, since an order needs
+a valid code chain. They still show in `/account/addresses`, unmarked,
+and editing one means picking its region, city and barangay. There's no
+extra tag, note or fix-up flow (owner's call after the first testing
+pass, 2026-10-17).
+
+**Feedback.** Saving in the `/account/addresses` modal now goes through
+`ActionForm`/`SubmitButton`. It shows a success or error toast, shows
+"Saving…" while pending, and closes only on success, so a rejected
+address (such as an inconsistent region/city/barangay) keeps what was
+typed.
+
 ## Sections, top to bottom (mobile order)
 
 1. Breadcrumbs (unchanged: Home / Cart / Checkout)
@@ -161,8 +233,8 @@ address in their detail line: `{recipientName} · {phone}` then
    `/cart`), subtotal, promo line, shipping line, total
 4. Email field
 5. Saved-address cards (or manual fields directly, if none saved) — Full
-   name, Phone, Address 1, Apartment/suite/building (optional), City,
-   Barangay, Postal code
+   name, Phone, Address 1, Apartment/suite/building (optional), Region,
+   Province, City / municipality, Barangay, Postal code (§4)
 6. Promo code field (shared component, token-restyled)
 7. Inline error (if any)
 8. "Place order" button

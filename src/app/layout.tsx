@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Leather Shop",
+  title: "Hiraya Leather",
   description: "Handcrafted leather goods, made in small batches.",
 };
 
@@ -36,7 +36,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-md focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:text-background"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-btn focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:text-background"
         >
           Skip to content
         </a>

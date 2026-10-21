@@ -1,6 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getProductBySlug } from "@/lib/products";
-import { redeemPromoCode } from "@/lib/promo-codes";
+import { PromoCodeRedemptionError } from "@/lib/promo-codes";
+import { normalizeEmail } from "@/lib/email-address";
 
 export type OrderItemOption = {
   optionTypeName: string;
@@ -49,12 +50,21 @@ export type Order = {
     email: string;
     phone: string;
   };
+  // Names are snapshotted at order time (migration 0025), so a later PSGC
+  // refresh never rewrites a past order's address. province/region and the
+  // codes are empty/null on orders placed before nationwide delivery.
   shippingAddress: {
     street: string;
     address2: string;
     barangay: string;
     city: string;
+    province: string;
+    region: string;
     postalCode: string;
+    regionCode: string | null;
+    provinceCode: string | null;
+    cityCode: string | null;
+    barangayCode: string | null;
   };
   items: OrderItem[];
   subtotalCentavos: number;
@@ -92,129 +102,80 @@ export class InsufficientStockError extends Error {
   }
 }
 
-// Creates the order + order_items, then decrements stock for each item via
-// an atomic Postgres function (see supabase/migrations/0002_stock_functions.sql)
-// — stock is decremented at order placement, not at payment confirmation,
-// to prevent overselling the last unit during the manual-payment window
-// (PRD §5). If any item's stock decrement fails (lost a race, or the item
-// went unavailable between validation and this call), previously-decremented
-// items in this same order are restored and the order row is deleted, so a
-// failed order never leaves partial state behind.
+// SQLSTATEs raised by create_order() — see
+// supabase/migrations/0026_atomic_orders.sql.
+const INSUFFICIENT_STOCK = "LSSTK";
+const PROMO_UNAVAILABLE = "LSPRM";
+
+// Places the order through the create_order() Postgres function, which
+// does everything in one transaction: the order row, its items and item
+// options, the stock decrement (re-checked under a row lock, so two orders
+// can't both take the last unit) and the promo redemption (re-checked
+// under a lock against the caps). Any failure rolls all of it back, so a
+// failed order never leaves a half-made order or taken stock behind.
+//
+// Stock is decremented at order placement, not at payment confirmation, to
+// prevent overselling the last unit during the manual-payment window
+// (PRD §5). Prices, options and the address must already be validated by
+// the caller (POST /api/orders re-prices from the database).
+//
+// Throws InsufficientStockError or PromoCodeRedemptionError for the two
+// failures a shopper can act on; anything else is rethrown as is.
 export async function createOrder(input: NewOrder): Promise<Order> {
   const supabase = getSupabaseServerClient();
+  const customer = { ...input.customer, email: normalizeEmail(input.customer.email) };
 
-  const { data: orderRow, error: orderErr } = await supabase
-    .from("orders")
-    .insert({
-      customer_name: input.customer.name,
-      customer_email: input.customer.email,
-      customer_phone: input.customer.phone,
+  const { data, error } = await supabase.rpc("create_order", {
+    p_order: {
+      customer_name: customer.name,
+      customer_email: customer.email,
+      customer_phone: customer.phone,
       shipping_street: input.shippingAddress.street,
-      shipping_address2: input.shippingAddress.address2 || null,
+      shipping_address2: input.shippingAddress.address2,
       shipping_barangay: input.shippingAddress.barangay,
       shipping_city: input.shippingAddress.city,
+      shipping_province: input.shippingAddress.province,
+      shipping_region: input.shippingAddress.region,
       shipping_postal_code: input.shippingAddress.postalCode,
+      shipping_region_code: input.shippingAddress.regionCode,
+      shipping_province_code: input.shippingAddress.provinceCode,
+      shipping_city_code: input.shippingAddress.cityCode,
+      shipping_barangay_code: input.shippingAddress.barangayCode,
       subtotal_centavos: input.subtotalCentavos,
       shipping_centavos: input.shippingCentavos,
       promo_code_id: input.promoCodeId,
       discount_centavos: input.discountCentavos,
       total_centavos: input.totalCentavos,
-    })
-    .select()
-    .single();
+    },
+    p_items: input.items.map((item) => ({
+      product_id: item.productId,
+      quantity: item.quantity,
+      unit_price_centavos: item.priceCentavos,
+      options: item.options.map((option) => ({
+        option_type_name: option.optionTypeName,
+        option_value: option.optionValue,
+      })),
+    })),
+  });
 
-  if (orderErr) throw orderErr;
-
-  // Inserted one at a time (not a single bulk insert) so each row's id is
-  // deterministically tied to its source item — needed to attach the right
-  // order_item_options rows to the right order_item afterward.
-  const insertedItems: { id: string; item: NewOrderItem }[] = [];
-  for (const item of input.items) {
-    const { data: itemRow, error: itemErr } = await supabase
-      .from("order_items")
-      .insert({
-        order_id: orderRow.id,
-        product_id: item.productId,
-        quantity: item.quantity,
-        unit_price_centavos: item.priceCentavos,
-      })
-      .select("id")
-      .single();
-
-    if (itemErr) {
-      await supabase.from("orders").delete().eq("id", orderRow.id);
-      throw itemErr;
+  if (error) {
+    if (error.code === INSUFFICIENT_STOCK) {
+      // DETAIL carries the product id that ran short.
+      const item = input.items.find((i) => i.productId === error.details);
+      throw new InsufficientStockError(item?.name ?? "An item in your cart");
     }
-
-    insertedItems.push({ id: itemRow.id, item });
+    if (error.code === PROMO_UNAVAILABLE) {
+      throw new PromoCodeRedemptionError();
+    }
+    throw error;
   }
 
-  const optionRows = insertedItems.flatMap(({ id, item }) =>
-    item.options.map((option, index) => ({
-      order_item_id: id,
-      option_type_name: option.optionTypeName,
-      option_value: option.optionValue,
-      position: index,
-    }))
-  );
-
-  if (optionRows.length > 0) {
-    const { error: optionsErr } = await supabase
-      .from("order_item_options")
-      .insert(optionRows);
-
-    if (optionsErr) {
-      await supabase.from("orders").delete().eq("id", orderRow.id);
-      throw optionsErr;
-    }
-  }
-
-  const decremented: { productId: string; quantity: number }[] = [];
-  for (const item of input.items) {
-    const { error } = await supabase.rpc("decrement_product_stock", {
-      p_product_id: item.productId,
-      p_quantity: item.quantity,
-    });
-
-    if (error) {
-      for (const done of decremented) {
-        await supabase.rpc("restore_product_stock", {
-          p_product_id: done.productId,
-          p_quantity: done.quantity,
-        });
-      }
-      await supabase.from("orders").delete().eq("id", orderRow.id);
-      throw new InsufficientStockError(item.name);
-    }
-
-    decremented.push({ productId: item.productId, quantity: item.quantity });
-  }
-
-  // Redemption is the last thing that can fail — if it does (lost the race
-  // on the total usage cap, or a double-submit redeemed the same code
-  // twice for this customer), unwind everything already done above so a
-  // failed order never leaves partial state (same compensating-rollback
-  // shape as the stock decrement loop just above).
-  if (input.promoCodeId) {
-    try {
-      await redeemPromoCode(input.promoCodeId, input.customer.email, orderRow.id);
-    } catch (err) {
-      for (const done of decremented) {
-        await supabase.rpc("restore_product_stock", {
-          p_product_id: done.productId,
-          p_quantity: done.quantity,
-        });
-      }
-      await supabase.from("orders").delete().eq("id", orderRow.id);
-      throw err;
-    }
-  }
-
+  const created = data as { id: string; created_at: string; status: OrderStatus };
   return {
-    id: orderRow.id,
-    createdAt: orderRow.created_at,
-    status: orderRow.status,
-    customer: input.customer,
+    id: created.id,
+    createdAt: created.created_at,
+    status: created.status,
+    customer,
     shippingAddress: input.shippingAddress,
     items: input.items,
     subtotalCentavos: input.subtotalCentavos,
@@ -229,43 +190,20 @@ export async function createOrder(input: NewOrder): Promise<Order> {
 // Manual cancel (admin, before the hold expires) and automatic expiry
 // (scheduled job) both funnel through this. Returns false if the order
 // wasn't still awaiting payment (pending_payment or payment_details_sent —
-// already paid/shipped/cancelled) — guards against double-restoring stock.
+// already paid/shipped/cancelled), which also means a second cancel never
+// restores stock twice. The status flip and the stock restore happen in
+// one transaction in cancel_order_and_restore_stock() (migration 0026), so
+// a failure part-way can't cancel the order without giving its stock back.
 export async function cancelOrderAndRestoreStock(
   orderId: string
 ): Promise<boolean> {
   const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("cancel_order_and_restore_stock", {
+    p_order_id: orderId,
+  });
 
-  // Guarded status update happens FIRST — only restore stock if this order
-  // was actually still awaiting payment. Restoring unconditionally would
-  // add stock back for an order that's already paid/shipped/cancelled.
-  const { data: updated, error: statusErr } = await supabase
-    .from("orders")
-    .update({ status: "cancelled", status_updated_at: new Date().toISOString() })
-    .eq("id", orderId)
-    .in("status", ["pending_payment", "payment_details_sent"])
-    .select("id");
-
-  if (statusErr) throw statusErr;
-  if ((updated?.length ?? 0) === 0) {
-    return false;
-  }
-
-  const { data: items, error: itemsErr } = await supabase
-    .from("order_items")
-    .select("product_id, quantity")
-    .eq("order_id", orderId);
-
-  if (itemsErr) throw itemsErr;
-
-  for (const item of items) {
-    const { error } = await supabase.rpc("restore_product_stock", {
-      p_product_id: item.product_id,
-      p_quantity: item.quantity,
-    });
-    if (error) throw error;
-  }
-
-  return true;
+  if (error) throw error;
+  return data === true;
 }
 
 // Used by the order-expiry scheduled job (POST /api/orders/expire).
@@ -299,7 +237,13 @@ type OrderRow = {
   shipping_address2: string | null;
   shipping_barangay: string | null;
   shipping_city: string;
+  shipping_province: string | null;
+  shipping_region: string | null;
   shipping_postal_code: string | null;
+  shipping_region_code: string | null;
+  shipping_province_code: string | null;
+  shipping_city_code: string | null;
+  shipping_barangay_code: string | null;
   subtotal_centavos: number;
   shipping_centavos: number;
   discount_centavos: number;
@@ -333,7 +277,13 @@ function mapOrderRow(row: OrderRow): Order {
       address2: row.shipping_address2 ?? "",
       barangay: row.shipping_barangay ?? "",
       city: row.shipping_city,
+      province: row.shipping_province ?? "",
+      region: row.shipping_region ?? "",
       postalCode: row.shipping_postal_code ?? "",
+      regionCode: row.shipping_region_code,
+      provinceCode: row.shipping_province_code,
+      cityCode: row.shipping_city_code,
+      barangayCode: row.shipping_barangay_code,
     },
     items: row.order_items.map((item) => ({
       slug: item.products?.slug ?? "",
@@ -357,7 +307,7 @@ function mapOrderRow(row: OrderRow): Order {
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_postal_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, status_updated_at, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_province, shipping_region, shipping_postal_code, shipping_region_code, shipping_province_code, shipping_city_code, shipping_barangay_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, status_updated_at, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
 // Single-order lookup — needed by markOrderShippedAction to build the
 // shipped email, which needs the full order (items, address), not just the
@@ -388,12 +338,14 @@ export async function listOrdersForAdmin(): Promise<Order[]> {
 // Order history (Phase 8, US-17) — scoped to the logged-in customer's own
 // orders by matching their verified Google account email against
 // orders.customer_email (the email typed at checkout, guest or not).
+// Case-insensitive: stored emails are lowercased (migration 0026), so the
+// lookup lowercases too.
 export async function listOrdersForCustomer(email: string): Promise<Order[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("orders")
     .select(ORDER_SELECT)
-    .eq("customer_email", email)
+    .eq("customer_email", normalizeEmail(email))
     .order("created_at", { ascending: false });
 
   if (error) throw error;

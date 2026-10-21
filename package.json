@@ -1,13 +1,13 @@
 {
   "name": "leather-shop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "node tests/run-lanes.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

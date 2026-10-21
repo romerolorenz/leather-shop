@@ -6,8 +6,8 @@ import { createClient } from "@supabase/supabase-js";
 // so anything it can reach through PostgREST is reachable by anyone. This
 // file pins down what it must NOT reach:
 //   1. Database functions (RPCs) — only the server's service-role key may
-//      execute them. See supabase/migrations/0023_set_setting_fn.sql and
-//      0024_lock_down_function_grants.sql.
+//      execute them. See supabase/migrations/0023_set_setting_fn.sql,
+//      0024_lock_down_function_grants.sql and 0026_atomic_orders.sql.
 //   2. Tables — every app table is RLS default-deny (no policies), so anon
 //      reads come back empty. See supabase/migrations/0001_init.sql.
 //
@@ -49,6 +49,10 @@ describe("database functions are not executable with the anon key", () => {
         p_order_id: randomUUID(),
       },
     ],
+    // 0026. create_order raises "no items" before writing anything, and
+    // the cancel matches no order, so both are no-ops even if permitted.
+    ["create_order", { p_order: {}, p_items: [] }],
+    ["cancel_order_and_restore_stock", { p_order_id: randomUUID() }],
     [
       "set_setting",
       { p_key: "__anon_permission_test_nonexistent__", p_value: null },
@@ -95,11 +99,18 @@ describe("app tables return nothing to the anon key (RLS default-deny)", () => {
     "promo_code_categories",
     "promo_code_redemptions",
     "promo_codes",
+    "psgc_barangays",
+    "psgc_cities",
+    "psgc_provinces",
+    "psgc_regions",
     "settings",
   ])("%s", async (table) => {
     const { data, error } = await anon.from(table).select("*").limit(1);
     // Either RLS hides every row (empty result) or the role has no table
-    // privilege at all (error) — both mean nothing leaks.
-    if (!error) expect(data).toEqual([]);
+    // privilege at all (42501, insufficient_privilege) — both mean nothing
+    // leaks. Any other error (network, missing table) proves nothing, so
+    // it fails.
+    if (error) expect(error.code).toBe("42501");
+    else expect(data).toEqual([]);
   });
 });

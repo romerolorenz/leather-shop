@@ -1,7 +1,8 @@
 import { Archivo } from "next/font/google";
-import { getSettings } from "@/lib/settings";
 import { assertCustomer } from "@/lib/customer/auth";
 import { listAddresses } from "@/lib/customer/addresses";
+import { listProvinces, listRegions } from "@/lib/psgc";
+import { formatAddressLines } from "@/lib/address-format";
 import {
   createAddressAction,
   updateAddressAction,
@@ -18,11 +19,11 @@ const archivo = Archivo({
 
 export default async function AddressesPage() {
   const email = await assertCustomer();
-  const [addresses, settings] = await Promise.all([
+  const [addresses, regions, provinces] = await Promise.all([
     listAddresses(email),
-    getSettings(),
+    listRegions(),
+    listProvinces(),
   ]);
-  const cities = settings.deliveryCities;
 
   return (
     <main
@@ -59,7 +60,8 @@ export default async function AddressesPage() {
                   <div className="flex items-center gap-1">
                     <AddressFormModal
                       action={updateThis}
-                      cities={cities}
+                      regions={regions}
+                      provinces={provinces}
                       title="Edit address"
                       submitLabel="Save changes"
                       variant="edit"
@@ -69,9 +71,11 @@ export default async function AddressesPage() {
                         phone: address.phone,
                         street: address.street,
                         address2: address.address2,
-                        barangay: address.barangay,
-                        city: address.city,
                         postalCode: address.postalCode,
+                        regionCode: address.regionCode,
+                        provinceCode: address.provinceCode,
+                        cityCode: address.cityCode,
+                        barangayCode: address.barangayCode,
                         isDefault: address.isDefault,
                       }}
                     />
@@ -104,10 +108,11 @@ export default async function AddressesPage() {
                   {address.recipientName} · {address.phone}
                 </p>
                 <p className="text-sm text-[#6E6A64] dark:text-[#A39C90]">
-                  {address.street}
-                  {address.address2 && `, ${address.address2}`}
-                  <br />
-                  Brgy. {address.barangay}, {address.city} {address.postalCode}
+                  {formatAddressLines(address).map((line, i) => (
+                    <span key={i} className="block">
+                      {line}
+                    </span>
+                  ))}
                 </p>
               </li>
             );
@@ -121,7 +126,8 @@ export default async function AddressesPage() {
 
         <AddressFormModal
           action={createAddressAction}
-          cities={cities}
+          regions={regions}
+          provinces={provinces}
           title="Add address"
           submitLabel="Add address"
           variant="add"

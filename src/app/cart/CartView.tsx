@@ -7,6 +7,7 @@ import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PromoCodeField } from "@/components/PromoCodeField";
+import { BTN, BTN_DEFAULT, BTN_PRIMARY } from "@/components/button-styles";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -97,7 +98,7 @@ export default function CartView({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center rounded-full border border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]">
+                  <div className="flex items-center rounded-btn border border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
@@ -180,7 +181,7 @@ export default function CartView({
           </>
         )}
         <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
-          Shipping ({formatPrice(shippingFeeCentavos)} flat, Metro Manila)
+          Shipping ({formatPrice(shippingFeeCentavos)} flat rate)
           calculated at checkout.
         </p>
 
@@ -188,7 +189,7 @@ export default function CartView({
 
         <Link
           href="/checkout"
-          className="mt-6 block w-full rounded-full bg-foreground px-6 py-3 text-center text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+          className={`${BTN} ${BTN_DEFAULT} ${BTN_PRIMARY} mt-6 w-full`}
         >
           Checkout
         </Link>

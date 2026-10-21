@@ -7,18 +7,12 @@ explicitly requested — see items below.
 
 ## Outstanding
 
-- [ ] **Make Barangay a dropdown, scoped to the selected City**, instead
-  of free text (`CheckoutForm.tsx` and `AddressFormModal.tsx`'s manual
-  address fields). Needs a real per-city barangay dataset first — Metro
-  Manila has ~1,700+ barangays total (Manila City alone ~896), too many
-  to hand-type reliably. Agreed approach: seed a dedicated `barangays`
-  table (city, name, PSGC code) from the official PSA PSGC publication
-  (https://psa.gov.ph/classification/psgc/regions), scoped to just the
-  17 cities already in `deliveryCities` — not a live API call (PSA
-  doesn't offer one) and not stuffed into the `settings` table (too
-  large/hierarchical a dataset for that). Deferred: needs either the
-  user to supply the relevant PSGC rows, or a websearch pass to find a
-  structured (CSV/JSON) mirror of the official data to seed from.
+- [x] **Shop grid: 3 items per row** (manual testing finding,
+  2026-10-21). `/products` currently shows 4 per row on wide screens
+  (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`); make it 3 at desktop
+  widths, matching the homepage featured grid. Phones stay at 2. Update
+  `docs/design/shop-page.md` / `shop-order.md` to match. Fixed in release
+  0.2.0 (2026-10-21).
 
 - [ ] **"Notify me when it's back" for sold-out products** (idea, out of
   scope for `docs/design/featured-out-of-stock.md`). Let a shopper leave
@@ -36,6 +30,14 @@ explicitly requested — see items below.
   brief first, and real photos and copy from the owner.
 
 ## Done
+
+- [x] **Make Barangay a dropdown, scoped to the selected City** (built
+  2026-10-17 as part of nationwide delivery, see docs/IMPROVEMENTS.md).
+  It went beyond the original Metro-Manila-only idea. Checkout and the
+  account address modal now use cascading region → province →
+  city/municipality → barangay dropdowns covering the whole Philippines,
+  seeded from a bundled PSA PSGC snapshot (`supabase/psgc/`). Spec:
+  `docs/design/checkout.md` §4.
 
 - [x] **Homepage Studio photo + maker profile** (2026-10-04,
   `docs/design/studio-profile.md`, Variant 3 flexible). The Studio

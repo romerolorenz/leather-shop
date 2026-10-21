@@ -63,10 +63,14 @@ const uploaded: string[] = [];
 beforeAll(assertSetSettingInstalled);
 
 afterAll(async () => {
-  if (uploaded.length) {
-    await getSupabaseServerClient()
-      .storage.from("site-images")
-      .remove(uploaded);
+  if (!uploaded.length) return;
+  const { error } = await getSupabaseServerClient()
+    .storage.from("site-images")
+    .remove(uploaded);
+  if (error) {
+    throw new Error(
+      `Cleanup failed, so check dev for leftover test data: remove ${uploaded.join(", ")}: ${error.message}`
+    );
   }
 });
 

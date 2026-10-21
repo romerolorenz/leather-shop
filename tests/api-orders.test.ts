@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { POST } from "@/app/api/orders/route";
 import { getProductBySlug, type Product } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { CleanupErrors, deleteOrdersRestoringStock } from "./helpers/cleanup";
+import { placeOrder } from "./helpers/place-order";
+import { MAKATI_BEL_AIR } from "./helpers/psgc-fixtures";
 
 const createdOrderIds: string[] = [];
 
@@ -22,35 +24,19 @@ beforeAll(async () => {
   tote = t;
 });
 
-function makeRequest(body: unknown) {
-  return new Request("http://localhost/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
-
 afterAll(async () => {
-  const supabase = getSupabaseServerClient();
-  for (const orderId of createdOrderIds) {
-    const { data: items } = await supabase
-      .from("order_items")
-      .select("product_id, quantity")
-      .eq("order_id", orderId);
-    for (const item of items ?? []) {
-      await supabase.rpc("restore_product_stock", {
-        p_product_id: item.product_id,
-        p_quantity: item.quantity,
-      });
-    }
-    await supabase.from("orders").delete().eq("id", orderId);
-  }
+  const errors = new CleanupErrors();
+  await deleteOrdersRestoringStock(errors, createdOrderIds);
+  errors.throwIfAny();
 });
 
 describe("POST /api/orders", () => {
-  it("rejects a non-Metro-Manila city", async () => {
-    const res = await POST(
-      makeRequest({
+  // Nationwide acceptance and chain mismatches are covered in
+  // tests/api-orders-nationwide.test.ts; this just checks that an address
+  // without PSGC codes (the old free-text shape) is refused.
+  it("rejects an address without PSGC codes", async () => {
+    const { res } = await placeOrder(
+      {
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: {
           street: "1 St",
@@ -65,36 +51,36 @@ describe("POST /api/orders", () => {
             quantity: 1,
           },
         ],
-      })
+      },
+      createdOrderIds
     );
     expect(res.status).toBe(400);
   });
 
   it("rejects an empty cart", async () => {
-    const res = await POST(
-      makeRequest({
+    const { res } = await placeOrder(
+      {
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: {
           street: "1 St",
-          barangay: "Test Barangay",
-          city: "Pasig",
-          postalCode: "1600",
+          ...MAKATI_BEL_AIR,
+          postalCode: "1209",
         },
         items: [],
-      })
+      },
+      createdOrderIds
     );
     expect(res.status).toBe(400);
   });
 
   it("rejects an option selection that isn't one of the product's values", async () => {
-    const res = await POST(
-      makeRequest({
+    const { res } = await placeOrder(
+      {
         customer: { name: "Test", email: "t@example.com", phone: "123" },
         shippingAddress: {
           street: "1 St",
-          barangay: "Test Barangay",
-          city: "Pasig",
-          postalCode: "1600",
+          ...MAKATI_BEL_AIR,
+          postalCode: "1209",
         },
         items: [
           {
@@ -103,7 +89,8 @@ describe("POST /api/orders", () => {
             quantity: 1,
           },
         ],
-      })
+      },
+      createdOrderIds
     );
     expect(res.status).toBe(400);
   });
@@ -111,26 +98,29 @@ describe("POST /api/orders", () => {
   it("rejects an order when the product is sold out (capacity is product-level, not per option combination)", async () => {
     const supabase = getSupabaseServerClient();
 
-    const { data: before } = await supabase
+    const before = await supabase
       .from("products")
       .select("stock_quantity")
       .eq("id", tote.id)
       .single();
+    if (before.error) throw before.error;
 
-    await supabase
+    const zeroed = await supabase
       .from("products")
       .update({ stock_quantity: 0 })
       .eq("id", tote.id);
-
+    const orderIds: string[] = [];
+    // The finally restores stock even if this update reported an error,
+    // since a failed request may still have applied.
     try {
-      const res = await POST(
-        makeRequest({
+      if (zeroed.error) throw zeroed.error;
+      const { res } = await placeOrder(
+        {
           customer: { name: "Test", email: "t@example.com", phone: "123" },
           shippingAddress: {
             street: "1 St",
-            barangay: "Test Barangay",
-            city: "Pasig",
-            postalCode: "1600",
+            ...MAKATI_BEL_AIR,
+            postalCode: "1209",
           },
           items: [
             {
@@ -139,26 +129,34 @@ describe("POST /api/orders", () => {
               quantity: 1,
             },
           ],
-        })
+        },
+        orderIds
       );
       expect(res.status).toBe(400);
     } finally {
-      await supabase
-        .from("products")
-        .update({ stock_quantity: before!.stock_quantity })
-        .eq("id", tote.id);
+      // An order that wrongly went through is removed first, so the stock
+      // reset below is the last word on tote's stock.
+      const errors = new CleanupErrors();
+      await deleteOrdersRestoringStock(errors, orderIds);
+      errors.check(
+        "restore tote stock",
+        await supabase
+          .from("products")
+          .update({ stock_quantity: before.data.stock_quantity })
+          .eq("id", tote.id)
+      );
+      errors.throwIfAny();
     }
   });
 
   it("creates a valid order and prices it server-side", async () => {
-    const res = await POST(
-      makeRequest({
+    const { res, body } = await placeOrder(
+      {
         customer: { name: "Test", email: "vitest-api@example.com", phone: "123" },
         shippingAddress: {
           street: "1 St",
-          barangay: "Test Barangay",
-          city: "Pasig",
-          postalCode: "1600",
+          ...MAKATI_BEL_AIR,
+          postalCode: "1209",
         },
         items: [
           {
@@ -167,12 +165,10 @@ describe("POST /api/orders", () => {
             quantity: 1,
           },
         ],
-      })
+      },
+      createdOrderIds
     );
     expect(res.status).toBe(201);
-
-    const body = await res.json();
-    createdOrderIds.push(body.order.id);
     expect(body.order.totalCentavos).toBeGreaterThan(0);
     expect(body.order.status).toBe("pending_payment");
     expect(body.order.items[0].options).toEqual([

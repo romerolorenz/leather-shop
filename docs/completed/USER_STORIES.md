@@ -1,5 +1,11 @@
 # User Stories — Leather Shop
 
+> **Archived 2026-10-18.** Every story here is built or retired, except
+> US-1's price/availability filters and per-category pages, which moved
+> to [IMPROVEMENTS.md](../IMPROVEMENTS.md). New feature requirements now
+> live in each feature's brief under `docs/design/` and in IMPROVEMENTS.md.
+> Relative links below point to `docs/`, so read them as `../`.
+
 Derived from [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) (PRD
 section references in brackets). Two roles: **Shopper** (customer) and
 **Admin** (shop owner).
@@ -51,13 +57,21 @@ remove" being a normal cart expectation.)*
 ## Checkout & Orders
 
 **US-9**: As a Shopper, I want to check out with my name, email, phone,
-and a Metro Manila address, so that I can place an order. [§6]
-- Rejects any city outside the fixed Metro Manila list. [§6]
-- Shows a single flat shipping fee of ₱150, no method choice. [§6]
+and a Philippine address anywhere in the country, so that I can place an
+order. [§6]
+- Region, province, city/municipality and barangay are picked from
+  dropdowns (PSA PSGC data). An address whose parts don't match each other
+  is rejected. [§6]
+- Shows a single flat shipping fee (₱150 by default, the same everywhere),
+  no method choice. [§6]
+- *(Was "Metro Manila address only" until nationwide delivery,
+  2026-10-15.)*
 
-**US-10**: As a Shopper outside Metro Manila, I want to be pointed to a
-Contact Us channel (Instagram/email) instead of a broken checkout, so that
-I still have a path to inquire about an order. [§6]
+**US-10**: *Retired 2026-10-15 by nationwide delivery.* As a Shopper
+outside Metro Manila, I want to be pointed to a Contact Us channel
+(Instagram/email) instead of a broken checkout, so that I still have a
+path to inquire about an order. [§6] Every Philippine address can now
+check out directly. International delivery stays out of scope.
 
 **US-11**: As a Shopper, I want to check out without creating an account,
 so that a mandatory signup doesn't block my purchase. [§6]

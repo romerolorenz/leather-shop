@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Archivo } from "next/font/google";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/products";
@@ -10,8 +11,13 @@ import { trackEvent } from "@/lib/track-event";
 import { PromoCodeField } from "@/components/PromoCodeField";
 import { useToast } from "@/components/ToastProvider";
 import { formatOrderRef } from "@/lib/order-ref";
+import type { Order } from "@/lib/orders";
 import { createAddressAction } from "@/app/account/actions";
 import type { CustomerAddress } from "@/lib/customer/addresses";
+import { BTN, BTN_DEFAULT, BTN_PRIMARY } from "@/components/button-styles";
+import type { PsgcProvince, PsgcRegion } from "@/lib/psgc";
+import { formatAddressLines } from "@/lib/address-format";
+import { AddressLocationFields } from "@/components/AddressLocationFields";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -23,7 +29,7 @@ const DIVIDE_HAIRLINE = "divide-[rgba(28,26,24,.12)] dark:divide-[rgba(243,241,2
 const INK_SOFT = "text-[#6E6A64] dark:text-[#A39C90]";
 const ACCENT_LINK =
   "text-[#7A3B22] underline underline-offset-4 hover:no-underline dark:text-[#C97A4E]";
-const FIELD_CLASS = `w-full rounded-md border ${HAIRLINE} bg-transparent px-3 py-2 text-sm`;
+const FIELD_CLASS = `w-full rounded-btn border ${HAIRLINE} bg-transparent px-3 py-2 text-sm`;
 const LABEL_CLASS = "text-sm font-medium";
 
 const checkoutCrumbs = [
@@ -33,12 +39,14 @@ const checkoutCrumbs = [
 ];
 
 export default function CheckoutForm({
-  cities,
+  regions,
+  provinces,
   shippingFeeCentavos,
   customerEmail,
   savedAddresses = [],
 }: {
-  cities: string[];
+  regions: PsgcRegion[];
+  provinces: PsgcProvince[];
   shippingFeeCentavos: number;
   customerEmail?: string;
   savedAddresses?: CustomerAddress[];
@@ -50,7 +58,9 @@ export default function CheckoutForm({
     totalCentavos - discountCentavos + shippingFeeCentavos;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [orderId, setOrderId] = useState<string | null>(null);
+  // The placed order as POST /api/orders returned it (server-priced), plus
+  // each item's photo taken from the cart just before it was cleared.
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
   const hasTrackedCheckoutStart = useRef(false);
 
   const defaultAddress =
@@ -91,6 +101,7 @@ export default function CheckoutForm({
     // path too.
     const shouldSaveAddress =
       !selectedAddress && !!customerEmail && form.get("saveAddress") === "on";
+    const field = (name: string) => String(form.get(name) ?? "");
 
     try {
       const res = await fetch("/api/orders", {
@@ -105,8 +116,10 @@ export default function CheckoutForm({
           shippingAddress: {
             street: form.get("street"),
             address2: form.get("address2"),
-            barangay: form.get("barangay"),
-            city: form.get("city"),
+            regionCode: form.get("regionCode"),
+            provinceCode: form.get("provinceCode"),
+            cityCode: form.get("cityCode"),
+            barangayCode: form.get("barangayCode"),
             postalCode: form.get("postalCode"),
           },
           items: items.map((item) => ({
@@ -125,7 +138,13 @@ export default function CheckoutForm({
         return;
       }
 
-      setOrderId(data.order.id);
+      // The order itself carries no photos; the cart has them, so grab
+      // them by slug before clear() empties it.
+      const photoBySlug: Record<string, string> = {};
+      for (const item of items) {
+        if (item.photoUrl) photoBySlug[item.slug] = item.photoUrl;
+      }
+      setPlaced({ order: data.order, photoBySlug });
       clear();
 
       if (shouldSaveAddress) {
@@ -134,18 +153,27 @@ export default function CheckoutForm({
           "label",
           savedAddresses.length === 0 ? "Home" : "New address"
         );
-        addressForm.set("recipientName", String(form.get("name") ?? ""));
-        addressForm.set("phone", String(form.get("phone") ?? ""));
-        addressForm.set("street", String(form.get("street") ?? ""));
-        addressForm.set("address2", String(form.get("address2") ?? ""));
-        addressForm.set("barangay", String(form.get("barangay") ?? ""));
-        addressForm.set("city", String(form.get("city") ?? ""));
-        addressForm.set("postalCode", String(form.get("postalCode") ?? ""));
+        for (const name of [
+          "phone",
+          "street",
+          "address2",
+          "regionCode",
+          "provinceCode",
+          "cityCode",
+          "barangayCode",
+          "postalCode",
+        ]) {
+          addressForm.set(name, field(name));
+        }
+        addressForm.set("recipientName", field("name"));
         if (savedAddresses.length === 0) addressForm.set("isDefault", "on");
 
-        try {
-          await createAddressAction(addressForm);
-        } catch {
+        // The order is already placed, so a failure here (including a
+        // network error) only gets a toast, never the order-failed error.
+        const result = await createAddressAction(null, addressForm).catch(
+          () => ({ success: false as const, error: "" })
+        );
+        if (!result.success) {
           showToast({
             type: "error",
             message: "Order placed, but couldn't save this address for next time.",
@@ -159,26 +187,13 @@ export default function CheckoutForm({
     }
   }
 
-  if (orderId) {
+  if (placed) {
     return (
-      <main
-        className={`${archivo.className} flex-1 bg-white text-[#1C1A18] dark:bg-[#121110] dark:text-[#F3F1EC]`}
-      >
-        <div className="mx-auto w-full max-w-3xl px-6 py-16 sm:px-10">
-          <Breadcrumbs items={checkoutCrumbs} />
-          <h1 className="mb-4 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Order placed — {formatOrderRef(orderId)}
-          </h1>
-          <p className={INK_SOFT}>
-            Thanks for your order! We&apos;ll reach out shortly with payment
-            instructions (bank transfer / GCash / Maya). Delivery is Metro
-            Manila only, flat rate {formatPrice(shippingFeeCentavos)}.
-          </p>
-          <Link href="/products" className={`mt-6 inline-block ${ACCENT_LINK}`}>
-            Continue shopping
-          </Link>
-        </div>
-      </main>
+      <OrderPlaced
+        order={placed.order}
+        photoBySlug={placed.photoBySlug}
+        loggedIn={!!customerEmail}
+      />
     );
   }
 
@@ -273,7 +288,7 @@ export default function CheckoutForm({
               </div>
             )}
             <div className="mt-1 flex justify-between text-sm">
-              <span>Shipping (Metro Manila flat rate)</span>
+              <span>Shipping (flat rate)</span>
               <span>{formatPrice(shippingFeeCentavos)}</span>
             </div>
             <div className={`mt-2 flex justify-between border-t ${HAIRLINE} pt-2 font-medium`}>
@@ -321,7 +336,7 @@ export default function CheckoutForm({
                     type="button"
                     onClick={() => setSelectedAddressId("new")}
                     aria-pressed={selectedAddressId === "new"}
-                    className={`flex w-full items-center rounded-lg border border-dashed px-4 py-3 text-left text-sm transition-colors ${
+                    className={`flex w-full items-center rounded-btn border border-dashed px-4 py-3 text-left text-sm transition-colors ${
                       selectedAddressId === "new"
                         ? "border-[#7A3B22] bg-[rgba(122,59,34,.07)] dark:border-[#C97A4E] dark:bg-[rgba(201,122,78,.10)]"
                         : `${HAIRLINE} ${INK_SOFT} hover:border-[rgba(28,26,24,.22)] dark:hover:border-[rgba(243,241,236,.26)]`
@@ -338,8 +353,10 @@ export default function CheckoutForm({
                   <input type="hidden" name="phone" value={selectedAddress.phone} readOnly />
                   <input type="hidden" name="street" value={selectedAddress.street} readOnly />
                   <input type="hidden" name="address2" value={selectedAddress.address2} readOnly />
-                  <input type="hidden" name="barangay" value={selectedAddress.barangay} readOnly />
-                  <input type="hidden" name="city" value={selectedAddress.city} readOnly />
+                  <input type="hidden" name="regionCode" value={selectedAddress.regionCode ?? ""} readOnly />
+                  <input type="hidden" name="provinceCode" value={selectedAddress.provinceCode ?? ""} readOnly />
+                  <input type="hidden" name="cityCode" value={selectedAddress.cityCode ?? ""} readOnly />
+                  <input type="hidden" name="barangayCode" value={selectedAddress.barangayCode ?? ""} readOnly />
                   <input type="hidden" name="postalCode" value={selectedAddress.postalCode} readOnly />
                 </>
               ) : (
@@ -390,62 +407,31 @@ export default function CheckoutForm({
                       className={`mt-1 ${FIELD_CLASS}`}
                     />
                   </div>
-                  <div>
-                    <label className={LABEL_CLASS} htmlFor="city">
-                      City
-                    </label>
-                    <select
-                      id="city"
-                      name="city"
-                      required
-                      defaultValue=""
-                      className={`mt-1 ${FIELD_CLASS}`}
-                    >
-                      <option value="" disabled>
-                        Select a Metro Manila city
-                      </option>
-                      {cities.map((city) => (
-                        <option key={city} value={city}>
-                          {city}
-                        </option>
-                      ))}
-                    </select>
-                    <p className={`mt-1 text-sm ${INK_SOFT}`}>
-                      Delivery is available in Metro Manila only. Outside Metro
-                      Manila?{" "}
-                      <Link href="/contact" className={ACCENT_LINK}>
-                        Contact us
-                      </Link>{" "}
-                      instead.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={LABEL_CLASS} htmlFor="barangay">
-                        Barangay
-                      </label>
-                      <input
-                        id="barangay"
-                        name="barangay"
-                        required
-                        className={`mt-1 ${FIELD_CLASS}`}
-                      />
-                    </div>
-                    <div>
-                      <label className={LABEL_CLASS} htmlFor="postalCode">
-                        Postal code
-                      </label>
-                      <input
-                        id="postalCode"
-                        name="postalCode"
-                        inputMode="numeric"
-                        maxLength={4}
-                        required
-                        placeholder="1100"
-                        className={`mt-1 ${FIELD_CLASS}`}
-                      />
-                    </div>
-                  </div>
+                  <AddressLocationFields
+                    regions={regions}
+                    provinces={provinces}
+                    fieldClass={FIELD_CLASS}
+                    labelClass={LABEL_CLASS}
+                    showLabels
+                    rowGapClass="gap-4"
+                    postalCodeField={
+                      <>
+                        <label className={LABEL_CLASS} htmlFor="postalCode">
+                          Postal code
+                        </label>
+                        <input
+                          id="postalCode"
+                          name="postalCode"
+                          inputMode="numeric"
+                          pattern="[0-9]{4}"
+                          maxLength={4}
+                          required
+                          placeholder="1100"
+                          className={`mt-1 ${FIELD_CLASS}`}
+                        />
+                      </>
+                    }
+                  />
                   {customerEmail && (
                     <label className={`flex items-center gap-2 text-sm ${INK_SOFT}`}>
                       <input type="checkbox" name="saveAddress" />
@@ -463,9 +449,10 @@ export default function CheckoutForm({
             <button
               type="submit"
               disabled={submitting}
-              className="mt-2 w-full rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-[#ccc]"
+              aria-busy={submitting || undefined}
+              className={`${BTN} ${BTN_DEFAULT} ${BTN_PRIMARY} mt-2 w-full`}
             >
-              {submitting ? "Placing order..." : "Place order"}
+              {submitting ? "Placing order…" : "Place order"}
             </button>
           </form>
         </div>
@@ -488,7 +475,7 @@ function AddressCard({
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${
+      className={`flex w-full items-start gap-3 rounded-btn border px-4 py-3 text-left transition-colors ${
         selected
           ? "border-[#7A3B22] bg-[rgba(122,59,34,.07)] dark:border-[#C97A4E] dark:bg-[rgba(201,122,78,.10)]"
           : `${HAIRLINE} hover:border-[rgba(28,26,24,.22)] dark:hover:border-[rgba(243,241,236,.26)]`
@@ -505,13 +492,183 @@ function AddressCard({
         <span className="block text-sm font-semibold">{address.label}</span>
         <span className={`mt-0.5 block text-sm ${INK_SOFT}`}>
           {address.recipientName} · {address.phone}
-          <br />
-          {address.street}
-          {address.address2 && `, ${address.address2}`}
-          <br />
-          Brgy. {address.barangay}, {address.city} {address.postalCode}
+          {formatAddressLines(address).map((line, i) => (
+            <span key={i} className="block">
+              {line}
+            </span>
+          ))}
         </span>
+
       </span>
     </button>
+  );
+}
+
+type PlacedOrder = {
+  order: Order;
+  photoBySlug: Record<string, string>;
+};
+
+// "Order placed" state (docs/design/order-success.md). Rendered from the
+// order the server returned, never the cart: the cart is already cleared,
+// and the server re-priced everything, so this always matches the
+// confirmation email.
+function OrderPlaced({
+  order,
+  photoBySlug,
+  loggedIn,
+}: {
+  order: Order;
+  photoBySlug: Record<string, string>;
+  loggedIn: boolean;
+}) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // The success state replaces the form in place, so on mobile the
+  // shopper would otherwise be left mid-page. Focus moves to the heading
+  // so screen readers announce "Order placed".
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    headingRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const firstName = order.customer.name.trim().split(/\s+/)[0];
+  const address = order.shippingAddress;
+
+  return (
+    <main
+      className={`${archivo.className} flex-1 bg-white text-[#1C1A18] dark:bg-[#121110] dark:text-[#F3F1EC]`}
+    >
+      <div className="mx-auto w-full max-w-3xl px-6 py-16 sm:px-10">
+        <Breadcrumbs items={checkoutCrumbs} />
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="mb-4 text-2xl font-semibold tracking-tight outline-none sm:text-3xl"
+        >
+          Order placed — {formatOrderRef(order.id)}
+        </h1>
+        <p className={`max-w-[60ch] ${INK_SOFT}`}>
+          {firstName ? `Thanks, ${firstName}.` : "Thanks for your order!"}{" "}
+          {/* "On its way", not "we've emailed": POST /api/orders still
+              returns 201 if the confirmation email fails to send. */}
+          A confirmation is on its way to{" "}
+          <strong className="font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
+            {order.customer.email}
+          </strong>
+          . We&apos;ll reach out shortly with payment instructions (bank
+          transfer / GCash / Maya).
+        </p>
+
+        <section aria-labelledby="order-items-heading" className="mt-10">
+          <h2 id="order-items-heading" className="text-sm font-medium">
+            What you ordered
+          </h2>
+          <ul className={`mt-2 divide-y border-y ${DIVIDE_HAIRLINE} ${HAIRLINE}`}>
+            {order.items.map((item) => {
+              const photoUrl = photoBySlug[item.slug];
+              return (
+                <li
+                  key={`${item.slug}-${JSON.stringify(item.options)}`}
+                  className="flex items-start gap-4 py-4 text-sm"
+                >
+                  {photoUrl ? (
+                    <Image
+                      src={photoUrl}
+                      alt={item.name}
+                      width={64}
+                      height={64}
+                      className="aspect-square h-16 w-16 flex-none object-cover"
+                    />
+                  ) : (
+                    <div className="aspect-square h-16 w-16 flex-none bg-[#f3f1ec] dark:bg-[#1c1a18]" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">
+                      {item.name}{" "}
+                      <span className={`font-normal ${INK_SOFT}`}>
+                        × {item.quantity}
+                      </span>
+                    </p>
+                    {item.options.length > 0 && (
+                      <div className={`mt-0.5 flex flex-col gap-0.5 text-xs ${INK_SOFT}`}>
+                        {item.options.map((option) => (
+                          <p key={option.optionTypeName}>
+                            {option.optionTypeName}: {option.optionValue}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span className="flex-none tabular-nums">
+                    {formatPrice(item.priceCentavos * item.quantity)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="mt-4 flex justify-between text-sm">
+            <span>Subtotal</span>
+            <span className="tabular-nums">{formatPrice(order.subtotalCentavos)}</span>
+          </div>
+          {order.promoCode && (
+            <div className="mt-1 flex justify-between text-sm">
+              <span>Promo ({order.promoCode})</span>
+              <span className="tabular-nums">-{formatPrice(order.discountCentavos)}</span>
+            </div>
+          )}
+          <div className="mt-1 flex justify-between text-sm">
+            <span>Shipping (flat rate)</span>
+            <span className="tabular-nums">{formatPrice(order.shippingCentavos)}</span>
+          </div>
+          <div className={`mt-2 flex justify-between border-t ${HAIRLINE} pt-2 font-medium`}>
+            <span>Total</span>
+            <span className="tabular-nums">{formatPrice(order.totalCentavos)}</span>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-10">
+          <section aria-labelledby="order-address-heading" className="mt-10">
+            <h2 id="order-address-heading" className="text-sm font-medium">
+              Delivering to
+            </h2>
+            <p className="mt-2 text-sm">
+              <span className="block">{order.customer.name}</span>
+              <span className={`block ${INK_SOFT}`}>{order.customer.phone}</span>
+              {formatAddressLines(address).map((line, i) => (
+                <span key={i} className="block">
+                  {line}
+                </span>
+              ))}
+            </p>
+          </section>
+          <section aria-labelledby="order-next-heading" className="mt-10">
+            <h2 id="order-next-heading" className="text-sm font-medium">
+              What happens next
+            </h2>
+            <p className={`mt-2 max-w-[60ch] text-sm ${INK_SOFT}`}>
+              Please give us a little time to process your order. We&apos;ll
+              send your payment instructions as soon as we can. Once your
+              payment is in, we make or pack your order and email you when
+              it&apos;s on the way.
+              {loggedIn && (
+                <>
+                  {" "}
+                  You can track it in{" "}
+                  <Link href="/account" className={ACCENT_LINK}>
+                    My Account
+                  </Link>
+                  .
+                </>
+              )}
+            </p>
+          </section>
+        </div>
+
+        <Link href="/products" className={`mt-10 inline-block ${ACCENT_LINK}`}>
+          Continue shopping
+        </Link>
+      </div>
+    </main>
   );
 }

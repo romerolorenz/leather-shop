@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { sendContactMessageEmail } from "@/lib/email";
+import { EMAIL_PATTERN } from "@/lib/email-address";
 
 type ContactRequestBody = {
   name?: string;
   email?: string;
   message?: string;
 };
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   const body: ContactRequestBody = await request.json().catch(() => ({}));
