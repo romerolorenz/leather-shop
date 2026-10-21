@@ -25,11 +25,17 @@ dev-only or optional items, then items that don't block anything
      accept its terms, and wait until it says it's running.
      `supabase db dump` needs Docker running; `db push` doesn't.
   1. [x] **Terminal**: take a backup first:
-     `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
-  2. [x] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
+     `supabase db dump --db-url "$DBURL" --data-only -f prod-backup.sql`.
+  2. [x] **Terminal**: `supabase db push --db-url "$DBURL" --dry-run`.
      It should list exactly `0025_nationwide_delivery_psgc.sql`,
      `0026_atomic_orders.sql` and `0027_shop_order_positions.sql`. Then
      run it for real without `--dry-run`.
+     *Done 2026-10-21.* Prod had no migration history (`0001`–`0024` were
+     applied but never recorded), so it was repaired first with
+     `supabase migration repair --db-url "$DBURL" --status applied 0001 … 0024`.
+     `supabase migration list` now matches, so future dry runs are
+     accurate. Check `DBURL` points at `blwttockcyyxjdlejoav` (prod), not
+     `yahrzlvemyzjcbveqzfb` (dev), before any prod command.
   3. [x] *Optional:* swap in a PSGC file you downloaded from PSA yourself
      before seeding (see `supabase/psgc/README.md` → "Refreshing to a
      newer PSA release"). The bundled 2Q 2026 copy is fine.
@@ -40,11 +46,12 @@ dev-only or optional items, then items that don't block anything
      `Upserted 42010 psgc_barangays`. If you re-seed prod later (a PSGC
      refresh), redeploy prod afterwards (Vercel → Deployments → latest
      Production → Redeploy) to clear the cached location lists.
-  5. [ ] **GitHub**: merge `release/0.2.0` → `main` (git flow: the
+  5. [x] **GitHub**: merge `release/0.2.0` → `main` (git flow: the
      release branch holds the version bump and these docs; no new features
      go on it). Wait for **Vercel** to finish the Production deploy. Then,
      in **Terminal**: `git checkout main && git pull && git tag v0.2.0 &&
-     git push origin v0.2.0`.
+     git push origin v0.2.0`. *Done 2026-10-21: PR #30 merged, tag
+     `v0.2.0` pushed.*
   6. [ ] **Live site** → `/checkout`: place one order to an address
      outside Metro Manila (e.g. Cebu → City of Cebu → Lahug), typing your
      email with a capital letter (e.g. `You@gmail.com`). Check the success
@@ -65,7 +72,7 @@ dev-only or optional items, then items that don't block anything
        still works now that provincial orders cost more to ship.
      - [ ] *Optional:* mention the longer provincial delivery in product
        descriptions or lead-time copy where it matters.
-  9. [ ] **GitHub**: merge `release/0.2.0` back into `develop`, so the
+  9. [x] **GitHub**: merge `release/0.2.0` back into `develop`, so the
      version bump and docs land there too. Then delete the release
      branch.
   (found 2026-10-21). The prod connection string, password included, was
