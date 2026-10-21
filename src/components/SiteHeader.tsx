@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Noto_Sans_Tagalog } from "next/font/google";
 import { Tooltip } from "@/components/Tooltip";
 import CartLink from "@/components/CartLink";
+import CartWordLink from "@/components/CartWordLink";
 
 // Baybayin transliteration of "Hiraya" (Hi-ra-ya), set under the
 // wordmark — see docs/design/homepage.md "Branding test" for the
@@ -14,6 +15,17 @@ const notoTagalog = Noto_Sans_Tagalog({
   subsets: ["tagalog"],
   weight: "400",
 });
+
+// Desktop (sm+) word links; see docs/design/header-nav.md. Source text is
+// normal case, `uppercase` sets the capitals so screen readers read words.
+const NAV_WORD =
+  "inline-flex items-center py-2 text-xs font-medium uppercase tracking-[0.1em] text-[#1C1A18] dark:text-[#F3F1EC] underline-offset-[6px] decoration-1 hover:underline hover:decoration-[rgba(28,26,24,.35)] dark:hover:decoration-[rgba(243,241,236,.4)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7A3B22] dark:focus-visible:outline-[#C97A4E]";
+const NAV_WORD_CURRENT =
+  " underline decoration-[#1C1A18] dark:decoration-[#F3F1EC]";
+
+function isUnder(pathname: string, base: string) {
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
 
 // Same icon for both the logged-in (My Account) and logged-out (Log In)
 // header nav states — the destination differs, the glyph doesn't.
@@ -45,7 +57,15 @@ export default function SiteHeader({
   // mobile browser bar shows/hides) — the header floats over
   // it instead of taking up document-flow space, so it doesn't push the
   // hero image/copy down. Same solid color as every other page either way.
-  const isHome = usePathname() === "/";
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const wordClass = (current: boolean) =>
+    current ? NAV_WORD + NAV_WORD_CURRENT : NAV_WORD;
+  const shopCurrent = isUnder(pathname, "/products");
+  const accountCurrent = customerEmail
+    ? isUnder(pathname, "/account")
+    : pathname === "/login";
+  const cartCurrent = pathname === "/cart";
 
   return (
     <header
@@ -69,7 +89,7 @@ export default function SiteHeader({
             ᜑᜒᜇᜌ
           </span>
         </Link>
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-6 text-sm sm:hidden">
           <Tooltip label="Shop">
             <Link href="/products" aria-label="Shop" className="inline-flex">
               <svg
@@ -112,6 +132,26 @@ export default function SiteHeader({
           <Tooltip label="Cart">
             <CartLink />
           </Tooltip>
+        </div>
+        <div className="hidden items-center gap-8 sm:flex">
+          <Link
+            href="/products"
+            aria-current={shopCurrent ? "page" : undefined}
+            className={wordClass(shopCurrent)}
+          >
+            Shop
+          </Link>
+          <Link
+            href={customerEmail ? "/account" : "/login?next=/account"}
+            aria-current={accountCurrent ? "page" : undefined}
+            className={wordClass(accountCurrent)}
+          >
+            {customerEmail ? "Account" : "Log In"}
+          </Link>
+          <CartWordLink
+            className={wordClass(cartCurrent)}
+            current={cartCurrent}
+          />
         </div>
       </nav>
     </header>
