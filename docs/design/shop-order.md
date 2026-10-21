@@ -48,8 +48,7 @@ flowchart TD
 - **Spacing**: 64px (`mt-16`) between sections; 24px between the heading
   and its grid. No hairline or band between sections, just whitespace,
   per the "no cards / no chrome" rule.
-- **Grid** inside each section: unchanged (`grid-cols-2 sm:grid-cols-3
-  lg:grid-cols-3`, same cards).
+- **Grid** inside each section: unchanged (`grid-cols-2 sm:grid-cols-3`, same cards).
 - **Order**: sections follow the admin's category order; cards inside a
   section follow the admin's product order.
 - **Empty categories** (no visible products) don't render.
