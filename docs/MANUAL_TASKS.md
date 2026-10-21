@@ -7,79 +7,11 @@ project rule in [CLAUDE.md](../CLAUDE.md).
 
 ## Outstanding
 
-Ordered by what it blocks. All DEVELOPMENT_PLAN.md phases are complete, so
-the order is: the next production release, then the rest of go-live, then
-dev-only or optional items, then items that don't block anything
-(content, brand, photos).
+Ordered by what it blocks. All DEVELOPMENT_PLAN.md phases are complete and
+release 0.2.0 is live, so the order is: the rest of go-live, then dev-only
+or optional items, then items that don't block anything (content, brand,
+photos).
 
-- [ ] **Release 0.2.0: ship `release/0.2.0` to production** (everything merged
-  since the go-live split: nationwide delivery #22, Buy now #23, test
-  safety #24, order safety #25, shop order + order success #26, Hiraya
-  titles #27, brown option buttons #28). Needs migrations `0025`, `0026`
-  and `0027` on prod. **Order matters:** run the migrations *before*
-  merging to `main`. The new code and the Vercel build fail without them,
-  while the live code keeps working with them in place.
-  0. [x] **Terminal** (one-time setup): `brew install supabase/tap/supabase`
-     and `brew install --cask docker` (asks for your Mac password, so run
-     it in your own terminal). Then open **Docker** from Applications,
-     accept its terms, and wait until it says it's running.
-     `supabase db dump` needs Docker running; `db push` doesn't.
-  1. [x] **Terminal**: take a backup first:
-     `supabase db dump --db-url "$DBURL" --data-only -f prod-backup.sql`.
-  2. [x] **Terminal**: `supabase db push --db-url "$DBURL" --dry-run`.
-     It should list exactly `0025_nationwide_delivery_psgc.sql`,
-     `0026_atomic_orders.sql` and `0027_shop_order_positions.sql`. Then
-     run it for real without `--dry-run`.
-     *Done 2026-10-21.* Prod had no migration history (`0001`–`0024` were
-     applied but never recorded), so it was repaired first with
-     `supabase migration repair --db-url "$DBURL" --status applied 0001 … 0024`.
-     `supabase migration list` now matches, so future dry runs are
-     accurate. Check `DBURL` points at `blwttockcyyxjdlejoav` (prod), not
-     `yahrzlvemyzjcbveqzfb` (dev), before any prod command.
-  3. [x] *Optional:* swap in a PSGC file you downloaded from PSA yourself
-     before seeding (see `supabase/psgc/README.md` → "Refreshing to a
-     newer PSA release"). The bundled 2Q 2026 copy is fine.
-  4. [x] **Supabase · prod** → Project Settings → Data API (Project URL)
-     and API Keys (`service_role`). Then, in **Terminal**:
-     `SUPABASE_URL="https://<prod-ref>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<prod service_role key>" node supabase/psgc/seed.mjs`.
-     Check that it prints `Target: <prod-ref>.supabase.co` and
-     `Upserted 42010 psgc_barangays`. If you re-seed prod later (a PSGC
-     refresh), redeploy prod afterwards (Vercel → Deployments → latest
-     Production → Redeploy) to clear the cached location lists.
-  5. [x] **GitHub**: merge `release/0.2.0` → `main` (git flow: the
-     release branch holds the version bump and these docs; no new features
-     go on it). Wait for **Vercel** to finish the Production deploy. Then,
-     in **Terminal**: `git checkout main && git pull && git tag v0.2.0 &&
-     git push origin v0.2.0`. *Done 2026-10-21: PR #30 merged, tag
-     `v0.2.0` pushed.*
-  6. [ ] **Live site** → `/checkout`: place one order to an address
-     outside Metro Manila (e.g. Cebu → City of Cebu → Lahug), typing your
-     email with a capital letter (e.g. `You@gmail.com`). Check the success
-     screen lists the items, totals and address, and the email shows the
-     full address. Logged in, check it shows in **My Account**. Then
-     cancel it in `/admin/orders` and check the stock goes back in
-     `/admin/products`.
-  7. [ ] **Live site** → `/products`: categories show alphabetically,
-     products oldest first within each. Set the order you want in
-     `/admin/categories` and check `/products` follows it.
-  8. **Update shop text that still says "Metro Manila only"** (admin
-     content, not code), right after the release is live:
-     - [ ] `/admin/faq`: rewrite the shipping answer (anywhere in the
-       Philippines at one flat fee; provincial deliveries take longer).
-     - [ ] `/admin/settings` → Payment instructions text: update it if it
-       mentions Metro Manila.
-     - [ ] `/admin/settings` → Shipping fee: decide whether the flat fee
-       still works now that provincial orders cost more to ship.
-     - [ ] *Optional:* mention the longer provincial delivery in product
-       descriptions or lead-time copy where it matters.
-  9. [x] **GitHub**: merge `release/0.2.0` back into `develop`, so the
-     version bump and docs land there too. Then delete the release
-     branch.
-  (found 2026-10-21). The prod connection string, password included, was
-  pasted into a Claude session while running the release. **Supabase ·
-  prod** → Project Settings → Database → **Reset database password**. The
-  app uses the API keys, not this password, so nothing in Vercel needs
-  changing. Use the new password in the connection string next time.
 - [ ] **Go-live blocker: split production from dev**
   (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)). A **new** Supabase
   project is **production** and started clean; the old project stays as
@@ -106,10 +38,8 @@ dev-only or optional items, then items that don't block anything
      phone check. Still to do:
      - [ ] **Live site** → `/admin/settings`: go through **every** field.
        That includes contact email, Instagram handle, admin notification
-       email, shipping fee, delivery cities, order hold duration and
-       payment instructions text. These are all defaults until you change
-       them. (The nationwide-delivery release removes the delivery cities
-       field, so skip it if that release is already live.)
+       email, shipping fee, order hold duration and payment instructions
+       text. These are all defaults until you change them.
      - [ ] **Live site** → `/admin/promo-codes`: recreate any real promo
        codes. Dev's codes don't carry over.
   7. **Place one real order end to end.**
@@ -204,8 +134,7 @@ dev-only or optional items, then items that don't block anything
   follow `supabase/psgc/README.md` → "Refreshing to a newer PSA release":
   build, `npm test`, seed dev, seed prod. No migration is needed. Once or
   twice a year is plenty, or sooner if a customer can't find their
-  barangay. This also covers using a PSA-downloaded file for the first
-  prod seed (optional step 2 of the nationwide release above).
+  barangay.
 - [ ] **Doesn't block anything: provide real brand assets** (logo, color
   palette, final copy) — PRD §1 notes v1 is intentionally using
   placeholders.

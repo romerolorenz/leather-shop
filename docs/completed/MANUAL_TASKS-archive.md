@@ -4,6 +4,17 @@ Archived from [MANUAL_TASKS.md](../MANUAL_TASKS.md) on 2026-10-18. Finished item
 
 ## Done
 
+- [x] **Release 0.2.0 shipped to production** (2026-10-21, PR #30, tag
+  `v0.2.0`, back-merged in PR #31). Nationwide delivery, Buy now, order
+  safety, order success screen + shop order, Hiraya titles and brown
+  option buttons. Prod backup taken; prod's empty migration history
+  repaired (`0001`–`0024` marked applied), then `0025`–`0027` pushed and
+  the PSGC data seeded (42,010 barangays). Live test order outside Metro
+  Manila placed and cancelled, category order set, and the "Metro Manila
+  only" shop text (FAQ, payment instructions, shipping fee) updated.
+  Before any prod command, check `DBURL` points at `blwttockcyyxjdlejoav`
+  (prod), not `yahrzlvemyzjcbveqzfb` (dev).
+
 - [x] Create the Supabase project.
 - [x] Run `supabase/migrations/0001_init.sql` against it.
 - [x] Rotate the Supabase database password.
