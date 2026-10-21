@@ -359,3 +359,11 @@ sliver of the next section peeks in (accepted). `lvh` was ruled out because
 the bottom-aligned eyebrow/headline/"Shop the Collection" button would sit
 behind the browser bars on first load. Desktop is unaffected (all three
 units are equal there).
+
+## Revision (2026-10-21): section alignment (hotfix 0.2.1)
+
+The featured ("Our Work") and photo Studio sections now use the shared
+`HERO_CONTAINER` (`mx-auto max-w-6xl px-6 sm:px-10`), so their left edge
+aligns with the header logo and hero copy at 640px and up. They previously
+lacked `sm:px-10` and sat 16px further left. The centred no-photo Studio
+section (`max-w-3xl`) is unchanged.
