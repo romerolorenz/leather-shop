@@ -133,6 +133,11 @@ categories
   and product order are dragged at `/admin/categories`
   (docs/design/shop-order.md). getProducts() returns products in this
   shop order (category position, then product position).
+  description (migration `0028_category_descriptions.sql`, nullable,
+  at most 200 characters by check constraint) — optional line shown
+  under the category's heading on /products, edited with the name in the
+  /admin/categories pop-up; saved trimmed, whitespace collapsed, blank as
+  null (docs/design/category-descriptions.md).
 
 option_types
   id, name (e.g. "Color", "Thread Color", "Size" — unique, shop-wide),
