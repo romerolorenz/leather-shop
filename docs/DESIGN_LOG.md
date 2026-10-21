@@ -1,5 +1,21 @@
 # Design Log — Leather Shop
 
+- **2026-10-22 — Header navigation: icons or words**
+  [artifact](https://claude.ai/artifact/HKfKv1Ucndrzc9p29XJEek) —
+  brief: [docs/design/header-nav.md](design/header-nav.md).
+  HTML mockup of the real storefront header (Hiraya wordmark + Baybayin,
+  same container and icons) comparing Option 1, icons everywhere (today,
+  tooltips on hover), with Option 2, words on desktop: `SHOP  ACCOUNT
+  CART (2)` (`LOG IN` signed out), 12px medium uppercase, 0.1em tracking,
+  ink, 32px gaps, thin underline on hover and on the current page; phones
+  (< 640px) keep the icons and badge in both options. Toggles: Option 1 /
+  Option 2 / both stacked, desktop / phone, homepage (header floating over
+  the hero) / Shop page (solid header), signed in / signed out. Same cart
+  (2 items) in every view. Option 2 marked recommended. Placeholder hero
+  photo and products. Open: which option; "ACCOUNT" or "MY ACCOUNT";
+  "CART (2)" or "BAG (2)". Made by the designer agent.
+  **Agreed 2026-10-22:** Option 2, ACCOUNT, CART (n). Not yet built.
+
 - **2026-10-21 — Category descriptions on the Shop page**
   [artifact](https://claude.ai/artifact/1c4mnb3gXu4Ligfjbxy6W7) —
   brief: [docs/design/category-descriptions.md](design/category-descriptions.md).
