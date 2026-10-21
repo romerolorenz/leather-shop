@@ -139,7 +139,7 @@ export default async function Home() {
       </section>
 
       {/* 2. Top 3 products */}
-      <section className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+      <section className={`${HERO_CONTAINER} py-16 sm:py-24`}>
         <div className="mb-12 sm:mb-16">
           <p className="text-xs font-medium uppercase tracking-[0.08em] text-[#6E6A64] dark:text-[#A39C90]">
             {settings.homepageFeaturedEyebrow}
@@ -210,7 +210,7 @@ export default async function Home() {
           divider. With nothing new set it renders the text-only column. */}
       <div className="bg-[#F3F1EC]">
         {studioImage ? (
-          <section className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+          <section className={`${HERO_CONTAINER} py-16 sm:py-24`}>
             <Reveal>
               <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center md:gap-x-12 lg:gap-x-16">
                 <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#E7E2D9] dark:bg-[#1c1a18] md:col-span-5">
