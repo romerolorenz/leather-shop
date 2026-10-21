@@ -4,6 +4,24 @@ Archived from [MANUAL_TESTING.md](../MANUAL_TESTING.md) on 2026-10-18. Finished 
 
 ## Done
 
+- [x] **Release 0.3.0: category descriptions, header words, favicon**
+  (`release/0.3.0`; PRs #35, #36 plus release fixes). Passed 2026-10-22
+  on dev after migration 0028, 25 of 25 checks, no issues found.
+  *Category descriptions* (docs/design/category-descriptions.md): admin
+  pop-up with 200-character counter, save/cancel/empty/add/duplicate-name
+  toasts, drag and arrange intact, shop refreshes after save; desktop side
+  rail pinned and stopping at the top of the last product row (1–2 card
+  last rows, sold-out cards, single-row categories, resizing); jump links
+  with smooth scroll and reduced motion; tablet stack; phone bold type and
+  sticky jump bar marking the category in view; single-category intro;
+  cards unchanged. *Header navigation* (docs/design/header-nav.md): Archivo
+  12px semibold words on desktop (ACCOUNT / LOG IN, CART (n)), icons on
+  phones, current-page underline, focus outline, live cart count and its
+  screen-reader wording, homepage floating header, wordmark alignment.
+  *Favicon* (docs/design/favicon.md): ᜑᜒ on cream in Chrome light/dark and
+  Safari, iPhone home-screen icon with no black fill, default triangle
+  gone.
+
 - [x] **Order success screen + shop order** (PR #26,
   `docs/design/order-success.md`, `docs/design/shop-order.md`). Passed
   2026-10-21 on dev after migration 0027: success screen as guest and
