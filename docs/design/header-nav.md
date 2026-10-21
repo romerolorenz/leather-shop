@@ -21,7 +21,7 @@ Contact live in the footer (removed from the header earlier by the owner).
 
 Quiet and in keeping with [STYLE_GUIDE.md](STYLE_GUIDE.md). Words would
 use the same small-uppercase label style the site already uses for "VIEW"
-captions and the new category jump links: 12px, medium, letter-spacing
+captions and the new category jump links: 12px, Archivo semibold, letter-spacing
 0.08–0.1em, ink. No new colours.
 
 ## Options to compare
@@ -70,7 +70,7 @@ colours or settings.
 **Word link classes** (one shared constant, e.g. `NAV_WORD`):
 
 ```
-inline-flex items-center py-2 text-xs font-medium uppercase tracking-[0.1em]
+inline-flex items-center py-2 text-xs font-semibold uppercase tracking-[0.1em]
 text-[#1C1A18] dark:text-[#F3F1EC]
 underline-offset-[6px] decoration-1
 hover:underline hover:decoration-[rgba(28,26,24,.35)] dark:hover:decoration-[rgba(243,241,236,.4)]
@@ -118,7 +118,7 @@ desktop.
 **Acceptance checks:**
 
 - [ ] At 640px and wider: `SHOP  ACCOUNT  CART (2)` signed in, `SHOP  LOG
-      IN  CART (2)` signed out, 12px medium capitals, 32px apart, ink. No
+      IN  CART (2)` signed out, Archivo, 12px semibold capitals, 32px apart, ink. No
       icons and no tooltips.
 - [ ] Below 640px: exactly today's icons, badge and tooltips. No words.
 - [ ] The link for the current page is underlined (Shop on `/products`

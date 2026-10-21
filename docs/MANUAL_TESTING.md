@@ -20,7 +20,7 @@ Brief: [design/header-nav.md](./design/header-nav.md). Use `npm run dev`
 and a real browser; resize for the widths. Test signed in and signed out.
 
 - [ ] **Desktop words.** At 640px and wider: `SHOP  ACCOUNT  CART (2)`
-  signed in, `SHOP  LOG IN  CART (2)` signed out. 12px medium capitals,
+  signed in, `SHOP  LOG IN  CART (2)` signed out. Archivo, 12px semibold capitals,
   32px apart, ink. No icons, no tooltips.
   Findings:
 - [ ] **Phones.** Below 640px: exactly today's icons, badge and tooltips.
