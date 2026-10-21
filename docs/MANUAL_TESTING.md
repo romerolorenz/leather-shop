@@ -14,6 +14,22 @@ collapsed to a short summary and moved to
 
 ## Outstanding
 
+### Favicon (`release/0.3.0`)
+
+Brief: [design/favicon.md](./design/favicon.md). Browsers cache favicons
+hard: test in a private window (or hard-refresh / clear site data).
+
+- [ ] **Tab icon.** Cream tile with brown wave and dot (not the Next.js
+  triangle) in Chrome with light and dark browser themes, and in Safari.
+  No edge or outline.
+  Findings:
+- [ ] **iPhone.** Add to Home Screen: cream icon with brown mark, no black
+  corners or fill.
+  Findings:
+- [ ] **Old triangle gone.** Bookmarks, history and `/favicon.ico` show
+  the new icon only.
+  Findings:
+
 ### Header navigation (words) (`feat/header-words`)
 
 Brief: [design/header-nav.md](./design/header-nav.md). Use `npm run dev`
