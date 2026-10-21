@@ -19,16 +19,21 @@ dev-only or optional items, then items that don't block anything
   and `0027` on prod. **Order matters:** run the migrations *before*
   merging to `main`. The new code and the Vercel build fail without them,
   while the live code keeps working with them in place.
-  1. [ ] **Terminal**: take a backup first:
+  0. [x] **Terminal** (one-time setup): `brew install supabase/tap/supabase`
+     and `brew install --cask docker` (asks for your Mac password, so run
+     it in your own terminal). Then open **Docker** from Applications,
+     accept its terms, and wait until it says it's running.
+     `supabase db dump` needs Docker running; `db push` doesn't.
+  1. [x] **Terminal**: take a backup first:
      `supabase db dump --db-url "<prod URI>" --data-only -f prod-backup.sql`.
-  2. [ ] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
+  2. [x] **Terminal**: `supabase db push --db-url "<prod URI>" --dry-run`.
      It should list exactly `0025_nationwide_delivery_psgc.sql`,
      `0026_atomic_orders.sql` and `0027_shop_order_positions.sql`. Then
      run it for real without `--dry-run`.
-  3. [ ] *Optional:* swap in a PSGC file you downloaded from PSA yourself
+  3. [x] *Optional:* swap in a PSGC file you downloaded from PSA yourself
      before seeding (see `supabase/psgc/README.md` → "Refreshing to a
      newer PSA release"). The bundled 2Q 2026 copy is fine.
-  4. [ ] **Supabase · prod** → Project Settings → Data API (Project URL)
+  4. [x] **Supabase · prod** → Project Settings → Data API (Project URL)
      and API Keys (`service_role`). Then, in **Terminal**:
      `SUPABASE_URL="https://<prod-ref>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<prod service_role key>" node supabase/psgc/seed.mjs`.
      Check that it prints `Target: <prod-ref>.supabase.co` and
@@ -63,6 +68,11 @@ dev-only or optional items, then items that don't block anything
   9. [ ] **GitHub**: merge `release/0.2.0` back into `develop`, so the
      version bump and docs land there too. Then delete the release
      branch.
+  (found 2026-10-21). The prod connection string, password included, was
+  pasted into a Claude session while running the release. **Supabase ·
+  prod** → Project Settings → Database → **Reset database password**. The
+  app uses the API keys, not this password, so nothing in Vercel needs
+  changing. Use the new password in the connection string next time.
 - [ ] **Go-live blocker: split production from dev**
   (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)). A **new** Supabase
   project is **production** and started clean; the old project stays as

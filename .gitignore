@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prod database backups (customer data) and Supabase CLI temp files
+*-backup.sql
+supabase/.temp/
