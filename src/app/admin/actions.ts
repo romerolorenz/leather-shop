@@ -62,7 +62,7 @@ import {
 } from "@/lib/admin/faq";
 import {
   createCategory,
-  renameCategory,
+  updateCategory,
   deleteCategory,
   reorderCategories,
   reorderCategoryProducts,
@@ -784,20 +784,27 @@ export async function removeStudioPortraitAction(): Promise<ActionResult> {
 
 // ─── Categories (0014; shop order 0027, docs/design/shop-order.md) ──────
 
+// Add/Edit category pop-ups on /admin/categories: name + optional
+// description (docs/design/category-descriptions.md). Both refresh the
+// shop too, since /products shows category names and descriptions.
+function readCategoryForm(formData: FormData) {
+  return {
+    name: String(formData.get("name") ?? ""),
+    description: String(formData.get("description") ?? ""),
+  };
+}
+
 export async function createCategoryAction(
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const name = String(formData.get("name") ?? "").trim();
-    if (!name) {
-      throw new Error("Category name is required.");
-    }
-
-    await createCategory(name);
+    const { name, description } = readCategoryForm(formData);
+    await createCategory(name, description);
     revalidatePath("/admin/categories");
     revalidatePath("/admin/products");
+    revalidateStorefront();
   }, "Category added.");
 }
 
@@ -808,14 +815,10 @@ export async function updateCategoryAction(
 ): Promise<ActionResult> {
   return runAction(async () => {
     await assertAdmin();
-    const name = String(formData.get("name") ?? "").trim();
-    if (!name) {
-      throw new Error("Category name is required.");
-    }
-
-    await renameCategory(id, name);
+    await updateCategory(id, readCategoryForm(formData));
     revalidatePath("/admin/categories");
     revalidatePath("/admin/products");
+    revalidateStorefront();
   }, "Category saved.");
 }
 

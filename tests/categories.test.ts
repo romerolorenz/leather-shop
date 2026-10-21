@@ -23,13 +23,12 @@ afterAll(async () => {
   errors.throwIfAny();
 });
 
+// The id comes back from the insert itself and is queued for cleanup
+// before anything else (a later read) can throw.
 async function makeCategory(name: string): Promise<string> {
-  await createCategory(name);
-  const categories = await listCategories();
-  const created = categories.find((c) => c.name === name);
-  if (!created) throw new Error(`Category "${name}" wasn't created`);
-  scratchCategoryIds.push(created.id);
-  return created.id;
+  const { id } = await createCategory(name);
+  scratchCategoryIds.push(id);
+  return id;
 }
 
 describe("categories", () => {
