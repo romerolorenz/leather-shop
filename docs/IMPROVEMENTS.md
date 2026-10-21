@@ -7,6 +7,14 @@ later work. Not started until explicitly requested — see items below.
 
 Ordered by what it blocks.
 
+- [x] *Blocks: nothing.* **"What happens next" copy on the order success
+  screen** (manual testing finding, 2026-10-21). Add a line asking the
+  shopper to give the shop time to process the order, and saying the
+  payment instructions will follow, e.g. "Please give us a little time to
+  process your order. We'll send your payment instructions as soon as we
+  can." In `OrderPlaced` (`src/app/checkout/CheckoutForm.tsx`); update
+  `docs/design/order-success.md` §7 to match. Fixed in release 0.2.0
+  (2026-10-21).
 - [ ] *Blocks: nothing technically, but it affects real customers now
   that prod takes orders. Its migration will need dev + prod items in
   MANUAL_TASKS when built.*

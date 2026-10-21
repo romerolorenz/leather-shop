@@ -7,6 +7,13 @@ explicitly requested — see items below.
 
 ## Outstanding
 
+- [x] **Shop grid: 3 items per row** (manual testing finding,
+  2026-10-21). `/products` currently shows 4 per row on wide screens
+  (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`); make it 3 at desktop
+  widths, matching the homepage featured grid. Phones stay at 2. Update
+  `docs/design/shop-page.md` / `shop-order.md` to match. Fixed in release
+  0.2.0 (2026-10-21).
+
 - [ ] **"Notify me when it's back" for sold-out products** (idea, out of
   scope for `docs/design/featured-out-of-stock.md`). Let a shopper leave
   an email on a sold-out product page and get one email when stock goes
