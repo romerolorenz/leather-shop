@@ -63,11 +63,6 @@ dev-only or optional items, then items that don't block anything
   9. [ ] **GitHub**: merge `release/0.2.0` back into `develop`, so the
      version bump and docs land there too. Then delete the release
      branch.
-- [ ] **Alongside the release: browser checks for #26 and #28.** Merged
-  before these were run; work through "Order success screen + shop
-  order" and "Brown option buttons" in
-  [MANUAL_TESTING.md](./MANUAL_TESTING.md), on dev or on the live site
-  once the release is out.
 - [ ] **Go-live blocker: split production from dev**
   (see [PRODUCTION_SETUP.md](./PRODUCTION_SETUP.md)). A **new** Supabase
   project is **production** and started clean; the old project stays as
