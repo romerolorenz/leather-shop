@@ -13,6 +13,7 @@ import { Reveal } from "@/components/Reveal";
 import { UnavailableTag } from "@/components/UnavailableTag";
 import { productAvailability } from "@/lib/availability";
 import { ShopJumpNav } from "./ShopJumpNav";
+import { CategoryRail } from "./CategoryRail";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -80,7 +81,9 @@ export default async function ProductsPage() {
 //                      category but the first (the sticky jump bar has one)
 //   tablet (640–899px) stacked as on phones, desktop type, 3 per row
 //   desktop (≥ 900px)  side rail: heading + description pinned in a 1/4
-//                      column while the 3/4 grid scrolls past
+//                      column while the 3/4 grid scrolls past, until
+//                      its top reaches the top of the last row's photos
+//                      (CategoryRail measures that stop)
 // The sticky rail and the scroll-margins read the offsets ShopJumpNav
 // measures (--shop-header-offset, --shop-jump-height), so they clear the
 // site header if it's sticky.
@@ -101,7 +104,7 @@ function CategorySection({
         first ? "sm:border-t sm:pt-8" : "mt-16 border-t pt-8 sm:mt-20"
       }`}
     >
-      <div className="mb-6 min-[900px]:sticky min-[900px]:top-[calc(var(--shop-header-offset,0px)+24px)] min-[900px]:mb-0">
+      <CategoryRail>
         <h2
           id={`${id}-heading`}
           className="text-[28px] font-medium leading-tight tracking-[-0.025em] sm:text-[22px] sm:leading-snug sm:tracking-[-0.02em]"
@@ -116,7 +119,7 @@ function CategorySection({
             {section.description}
           </p>
         )}
-      </div>
+      </CategoryRail>
       <ProductGrid products={section.products} rail />
     </section>
   );
@@ -133,6 +136,7 @@ function ProductGrid({
 }) {
   return (
     <ul
+      data-rail-grid={rail || undefined}
       className={`grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8 ${
         rail ? "min-[900px]:gap-6" : ""
       }`}

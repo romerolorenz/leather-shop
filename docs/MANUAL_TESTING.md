@@ -93,6 +93,16 @@ three widths.
   should never sit under or behind the site header (today the header
   scrolls away, so the rail pins 24px from the top).
   Findings:
+- [ ] **Side rail stops at the last row (≥ 900px).** In a category with
+  two or more rows of products, scroll down slowly: the heading and
+  description stop moving when their top lines up with the top edge of
+  the last row's photos, then scroll up with the products. They never
+  slide down beside the last row's names and prices. Check a category
+  whose last row has only 1 or 2 cards, one with a sold-out card, and a
+  category with a single row (the rail barely moves or doesn't move at
+  all). Resize the window wider/narrower and check again: the stop line
+  follows the last row. Nothing on the page jumps when it loads.
+  Findings:
 - [ ] **Jump links, desktop.** A row of category names (small uppercase,
   no counts) under "Shop the Collection". Clicking one scrolls smoothly to
   that category, which lands with a little space above it (not under the
