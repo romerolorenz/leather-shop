@@ -54,12 +54,17 @@ export type AdminProduct = {
   // docs/IMPROVEMENTS.md's "Product Details" section.
   dimensions: string | null;
   details: string | null;
+  // Special requests (docs/design/custom-requests.md §4). Label null =
+  // the default "Special request"; helper null = no helper line.
+  customRequestEnabled: boolean;
+  customRequestLabel: string | null;
+  customRequestHelp: string | null;
   photos: AdminProductPhoto[];
   options: AdminProductOption[];
 };
 
 const ADMIN_PRODUCT_SELECT =
-  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, featured, featured_position, dimensions, details, " +
+  "id, slug, name, description, category_id, categories(name), price_centavos, lead_time_days, ordering_enabled, visible, stock_quantity, featured, featured_position, dimensions, details, custom_request_enabled, custom_request_label, custom_request_help, " +
   "product_photos(id, url, position), " +
   "product_options(id, position, option_types(id, name, display_style, option_values(id, value, position)), product_option_selections(option_value_id))";
 
@@ -79,6 +84,9 @@ type AdminProductRow = {
   featured_position: number | null;
   dimensions: string | null;
   details: string | null;
+  custom_request_enabled: boolean;
+  custom_request_label: string | null;
+  custom_request_help: string | null;
   product_photos: { id: string; url: string; position: number }[];
   product_options: {
     id: string;
@@ -126,6 +134,9 @@ function mapAdminRow(row: AdminProductRow): AdminProduct {
     featuredPosition: row.featured_position,
     dimensions: row.dimensions,
     details: row.details,
+    customRequestEnabled: row.custom_request_enabled,
+    customRequestLabel: row.custom_request_label,
+    customRequestHelp: row.custom_request_help,
     photos: [...row.product_photos].sort((a, b) => a.position - b.position),
     options,
   };
@@ -178,7 +189,27 @@ export type ProductInput = {
   // doesn't collect these) leaves the column null rather than clearing it.
   dimensions?: string | null;
   details?: string | null;
+  // Undefined (the quick-create modal) leaves the columns alone: a new
+  // product gets the database defaults, an update keeps what's saved.
+  customRequestEnabled?: boolean;
+  customRequestLabel?: string | null;
+  customRequestHelp?: string | null;
 };
+
+// Only the special-request fields the caller actually set, as columns.
+function customRequestColumns(input: ProductInput) {
+  return {
+    ...(input.customRequestEnabled !== undefined && {
+      custom_request_enabled: input.customRequestEnabled,
+    }),
+    ...(input.customRequestLabel !== undefined && {
+      custom_request_label: input.customRequestLabel,
+    }),
+    ...(input.customRequestHelp !== undefined && {
+      custom_request_help: input.customRequestHelp,
+    }),
+  };
+}
 
 export async function createProduct(
   input: ProductInput
@@ -198,6 +229,7 @@ export async function createProduct(
       stock_quantity: input.stockQuantity,
       dimensions: input.dimensions ?? null,
       details: input.details ?? null,
+      ...customRequestColumns(input),
     })
     .select("id")
     .single();
@@ -224,6 +256,7 @@ export async function updateProduct(
       stock_quantity: input.stockQuantity,
       dimensions: input.dimensions ?? null,
       details: input.details ?? null,
+      ...customRequestColumns(input),
     })
     .eq("id", id);
 

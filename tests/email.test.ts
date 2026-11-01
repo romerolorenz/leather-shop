@@ -38,6 +38,8 @@ const order: Order = {
       options: [{ optionTypeName: "Color", optionValue: "Chestnut Brown" }],
       quantity: 2,
       priceCentavos: 189900,
+      customRequestLabel: null,
+      customRequestNote: null,
     },
   ],
   subtotalCentavos: 379800,

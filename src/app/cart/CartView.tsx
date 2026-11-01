@@ -8,6 +8,9 @@ import { formatPrice } from "@/lib/products";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PromoCodeField } from "@/components/PromoCodeField";
 import { BTN, BTN_DEFAULT, BTN_PRIMARY } from "@/components/button-styles";
+import { CustomRequestNote } from "@/components/CustomRequestNote";
+import { cartLineKey } from "@/lib/cart";
+import { resolveCustomRequestLabel } from "@/lib/custom-request";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -63,10 +66,10 @@ export default function CartView({
             const optionEntries = Object.entries(item.selectedOptions);
             return (
               <li
-                key={`${item.slug}-${JSON.stringify(item.selectedOptions)}`}
+                key={cartLineKey(item)}
                 className="flex items-start justify-between gap-4 py-5"
               >
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   {item.photoUrl ? (
                     <Image
                       src={item.photoUrl}
@@ -78,7 +81,7 @@ export default function CartView({
                   ) : (
                     <div className="h-14 w-14 flex-none bg-[#f3f1ec] dark:bg-[#1c1a18]" />
                   )}
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium">{item.name}</p>
                     {optionEntries.length > 0 && (
                       <div className="mt-1 flex flex-col gap-0.5">
@@ -92,22 +95,24 @@ export default function CartView({
                         ))}
                       </div>
                     )}
+                    {item.customRequest && (
+                      <CustomRequestNote
+                        label={resolveCustomRequestLabel(item.customRequestLabel)}
+                        note={item.customRequest}
+                      />
+                    )}
                     <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
                       {formatPrice(item.priceCentavos)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-none items-center gap-3">
                   <div className="flex items-center rounded-btn border border-[rgba(28,26,24,.12)] dark:border-[rgba(243,241,236,.14)]">
                     <button
                       type="button"
                       aria-label="Decrease quantity"
                       onClick={() =>
-                        setQuantity(
-                          item.slug,
-                          item.selectedOptions,
-                          item.quantity - 1
-                        )
+                        setQuantity(item, item.quantity - 1)
                       }
                       className="px-3 py-1"
                     >
@@ -120,11 +125,7 @@ export default function CartView({
                       type="button"
                       aria-label="Increase quantity"
                       onClick={() =>
-                        setQuantity(
-                          item.slug,
-                          item.selectedOptions,
-                          item.quantity + 1
-                        )
+                        setQuantity(item, item.quantity + 1)
                       }
                       className="px-3 py-1"
                     >
@@ -133,7 +134,7 @@ export default function CartView({
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeItem(item.slug, item.selectedOptions)}
+                    onClick={() => removeItem(item)}
                     aria-label="Remove item"
                     className="rounded-md p-1.5 text-[#6E6A64] transition-transform hover:bg-red-600/10 hover:text-red-600 active:scale-95 dark:text-[#A39C90]"
                   >

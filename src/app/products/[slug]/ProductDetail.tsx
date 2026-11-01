@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { formatPrice, type Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
 import { isInCart } from "@/lib/cart";
+import { normalizeCustomRequest } from "@/lib/custom-request";
+import { CustomRequestField } from "./CustomRequestField";
 import {
   BTN,
   BTN_DEFAULT,
@@ -15,7 +17,14 @@ import {
 import { trackEvent } from "@/lib/track-event";
 import { useToast } from "@/components/ToastProvider";
 
-export default function ProductDetail({ product }: { product: Product }) {
+export default function ProductDetail({
+  product,
+  requestNote,
+}: {
+  product: Product;
+  // Shop-wide line under the special-request box (settings).
+  requestNote: string;
+}) {
   const { items, addItem } = useCart();
   const { showToast } = useToast();
   const router = useRouter();
@@ -45,6 +54,9 @@ export default function ProductDetail({ product }: { product: Product }) {
     return initial;
   });
   const [justAdded, setJustAdded] = useState(false);
+  // Special request (docs/design/custom-requests.md §1). Kept after Add to
+  // cart, so adding the same note again bumps that line's quantity.
+  const [requestText, setRequestText] = useState("");
 
   // Option types with zero values are ignored: there is nothing to choose
   // (buy-now.md section 4, "Missing option").
@@ -52,6 +64,7 @@ export default function ProductDetail({ product }: { product: Product }) {
     (type) => type.values.length > 0
   );
   const canOrder = product.orderingEnabled && product.inStock;
+  const showRequestField = product.customRequestEnabled && canOrder;
   const canAddToCart =
     canOrder && choosableTypes.every((type) => !!selectedOptions[type.name]);
 
@@ -66,25 +79,38 @@ export default function ProductDetail({ product }: { product: Product }) {
     );
   }
 
-  function addToCart(options: Record<string, string>) {
+  // The normalised note, or undefined for none (also when the field isn't
+  // shown, so a stale value can never ride along).
+  function currentRequest(): string | undefined {
+    if (!showRequestField) return undefined;
+    return normalizeCustomRequest(requestText) ?? undefined;
+  }
+
+  function addToCart(options: Record<string, string>, request?: string) {
     addItem({
       slug: product.slug,
       name: product.name,
       priceCentavos: product.priceCentavos,
       selectedOptions: options,
       photoUrl: product.photos[0] ?? null,
+      ...(request
+        ? { customRequest: request, customRequestLabel: product.customRequestLabel }
+        : {}),
     });
   }
 
   function handleAddToCart() {
     if (!canAddToCart || goingToCheckout) return;
     const options = orderedOptions();
-    addToCart(options);
+    const request = currentRequest();
+    addToCart(options, request);
     trackEvent("add_to_cart", {
       slug: product.slug,
       options,
       priceCentavos: product.priceCentavos,
       via: "add_to_cart",
+      // Never the text itself.
+      hasRequest: !!request,
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
@@ -100,13 +126,21 @@ export default function ProductDetail({ product }: { product: Product }) {
     buyingRef.current = true;
     try {
       const options = orderedOptions();
-      if (!isInCart(items, { slug: product.slug, selectedOptions: options })) {
-        addToCart(options);
+      const request = currentRequest();
+      if (
+        !isInCart(items, {
+          slug: product.slug,
+          selectedOptions: options,
+          customRequest: request,
+        })
+      ) {
+        addToCart(options, request);
         trackEvent("add_to_cart", {
           slug: product.slug,
           options,
           priceCentavos: product.priceCentavos,
           via: "buy_now",
+          hasRequest: !!request,
         });
       }
       startCheckoutTransition(() => {
@@ -201,6 +235,16 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
         )
+      )}
+
+      {showRequestField && (
+        <CustomRequestField
+          label={product.customRequestLabel}
+          help={product.customRequestHelp}
+          expectation={requestNote}
+          value={requestText}
+          onChange={setRequestText}
+        />
       )}
 
       <p className="mt-4 text-sm text-[#6E6A64] dark:text-[#A39C90]">

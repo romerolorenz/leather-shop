@@ -23,6 +23,12 @@ import {
   AddressValidationError,
   type ResolvedLocation,
 } from "@/lib/psgc";
+import {
+  CUSTOM_REQUEST_MAX,
+  customRequestLength,
+  customRequestTooLongMessage,
+  normalizeCustomRequest,
+} from "@/lib/custom-request";
 
 type OrderRequestBody = {
   customer?: { name?: string; email?: string; phone?: string };
@@ -41,6 +47,9 @@ type OrderRequestBody = {
     slug?: string;
     selectedOptions?: Record<string, string>;
     quantity?: number;
+    // Optional special request (docs/design/custom-requests.md). The label
+    // is never taken from the client.
+    customRequest?: unknown;
   }[];
   promoCode?: string;
 };
@@ -183,6 +192,33 @@ export async function POST(request: Request) {
       );
     }
 
+    // Special request: normalised the same way the cart keys it, then
+    // limited (the DB check is the backstop). A non-string is a tampered
+    // cart, treated like any other invalid item. Accepted even if the
+    // product has since turned requests off (decision F in the brief): the
+    // owner still sees the note on the order, it's never dropped silently.
+    // The label is the product's current one, snapshotted on the item.
+    if (
+      requested.customRequest !== undefined &&
+      requested.customRequest !== null &&
+      typeof requested.customRequest !== "string"
+    ) {
+      return NextResponse.json(
+        { error: "One or more cart items are invalid." },
+        { status: 400 }
+      );
+    }
+    const customRequestNote = normalizeCustomRequest(requested.customRequest);
+    if (
+      customRequestNote &&
+      customRequestLength(customRequestNote) > CUSTOM_REQUEST_MAX
+    ) {
+      return NextResponse.json(
+        { error: customRequestTooLongMessage(product.name) },
+        { status: 400 }
+      );
+    }
+
     orderItems.push({
       slug: product.slug,
       name: product.name,
@@ -193,6 +229,8 @@ export async function POST(request: Request) {
       quantity,
       priceCentavos: product.priceCentavos,
       productId: product.id,
+      customRequestLabel: customRequestNote ? product.customRequestLabel : null,
+      customRequestNote,
     });
     promoCartItems.push({
       productId: product.id,

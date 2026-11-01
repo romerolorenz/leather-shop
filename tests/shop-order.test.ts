@@ -273,6 +273,9 @@ describe("groupProductsByCategory", () => {
       dimensions: null,
       details: null,
       photos: [],
+      customRequestEnabled: false,
+      customRequestLabel: "Special request",
+      customRequestHelp: null,
     };
   }
 

@@ -89,6 +89,31 @@ export default async function AdminSettingsPage() {
         </div>
 
         <div className={`border-t ${HAIRLINE} py-6`}>
+          <p className={`mb-4 ${SECTION_HEADING}`}>Special requests</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 flex flex-col gap-1">
+              <label className={LABEL_CLASS} htmlFor="customRequestNote">
+                Line under the request box
+              </label>
+              <textarea
+                id="customRequestNote"
+                name="customRequestNote"
+                rows={2}
+                defaultValue={settings.customRequestNote}
+                aria-describedby="customRequestNote-hint"
+                className={FIELD_CLASS}
+              />
+              <p id="customRequestNote-hint" className={HINT_CLASS}>
+                Shown under the special-request box on every product that
+                takes requests: how you&apos;ll follow up. Leave blank to
+                show nothing. Turn requests on per product, on its Details
+                tab.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`border-t ${HAIRLINE} py-6`}>
           <p className={`mb-4 ${SECTION_HEADING}`}>Contact</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 flex flex-col gap-1">
