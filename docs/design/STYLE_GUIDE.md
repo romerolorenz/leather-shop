@@ -122,8 +122,9 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
 - **Eyebrow + heading pairing**: a small uppercase tracked label
   (ink-soft color) directly above a semibold heading — used for every
   section intro ("Chosen by the Studio" / "The Selection").
-- **No-chrome product card**: image, then name+price on one line
-  (`flex items-baseline justify-between`), description below, "View" in
+- **No-chrome product card**: image, then the name, the price on its own
+  line directly below it (ink-soft, small gap; changed 2026-11-01 from
+  name and price on one line), then the description, then "View" in
   accent color. No card background, no border, no shadow — whitespace and
   type do the separating, not containment.
 - **Section band** (homepage Studio section, 2026-10-05): `bg-[#F3F1EC]`

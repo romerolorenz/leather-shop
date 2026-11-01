@@ -169,13 +169,13 @@ function ProductGrid({
                     <UnavailableTag label={availability.label} />
                   )}
                 </div>
-                <div className="mt-4 flex items-baseline justify-between gap-4">
+                <div className="mt-4">
                   <h3 className="font-semibold tracking-tight">
                     {product.name}
                   </h3>
-                  <span className="shrink-0 text-[#6E6A64] dark:text-[#A39C90]">
+                  <p className="mt-0.5 text-[#6E6A64] dark:text-[#A39C90]">
                     {formatPrice(product.priceCentavos)}
-                  </span>
+                  </p>
                 </div>
                 <p className="mt-1 text-sm text-[#6E6A64] dark:text-[#A39C90]">
                   {product.description}
