@@ -14,6 +14,26 @@ collapsed to a short summary and moved to
 
 ## Outstanding
 
+### Card price below name (`style/card-price-below-name`)
+
+Spec: STYLE_GUIDE.md "No-chrome product card". Check the home page
+featured cards and `/products`, on desktop and a phone-width window.
+
+- [ ] Home page, desktop: each card shows the name, then the price on its
+  own line directly beneath it (ink-soft grey), then description and "View".
+  Findings:
+- [ ] `/products`, desktop: same stacked layout, matching the home page.
+  Findings:
+- [ ] Phone width (both pages): price sits under the name; nothing
+  overlaps or squeezes.
+  Findings:
+- [ ] A product with a long name wraps cleanly onto two lines with the
+  price still below it.
+  Findings:
+- [ ] Across a row, spacing between image, name, price and description
+  looks even; cards with one-line vs two-line names don't look broken.
+  Findings:
+
 ### Custom requests (`feat/custom-requests`)
 
 Brief: [design/custom-requests.md](./design/custom-requests.md). Needs
