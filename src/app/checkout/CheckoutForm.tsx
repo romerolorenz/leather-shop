@@ -18,6 +18,9 @@ import { BTN, BTN_DEFAULT, BTN_PRIMARY } from "@/components/button-styles";
 import type { PsgcProvince, PsgcRegion } from "@/lib/psgc";
 import { formatAddressLines } from "@/lib/address-format";
 import { AddressLocationFields } from "@/components/AddressLocationFields";
+import { CustomRequestNote } from "@/components/CustomRequestNote";
+import { cartLineKey } from "@/lib/cart";
+import { resolveCustomRequestLabel } from "@/lib/custom-request";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -126,6 +129,8 @@ export default function CheckoutForm({
             slug: item.slug,
             selectedOptions: item.selectedOptions,
             quantity: item.quantity,
+            // The label isn't sent: the server takes it from the product.
+            ...(item.customRequest ? { customRequest: item.customRequest } : {}),
           })),
           promoCode: appliedPromoCode?.code,
         }),
@@ -242,10 +247,10 @@ export default function CheckoutForm({
                 const optionEntries = Object.entries(item.selectedOptions);
                 return (
                   <li
-                    key={`${item.slug}-${JSON.stringify(item.selectedOptions)}`}
+                    key={cartLineKey(item)}
                     className="flex justify-between gap-4 py-2 text-sm"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p>
                         {item.quantity}x {item.name}
                       </p>
@@ -257,6 +262,13 @@ export default function CheckoutForm({
                             </p>
                           ))}
                         </div>
+                      )}
+                      {item.customRequest && (
+                        <CustomRequestNote
+                          size="xs"
+                          label={resolveCustomRequestLabel(item.customRequestLabel)}
+                          note={item.customRequest}
+                        />
                       )}
                     </div>
                     <span className="flex-none">
@@ -565,11 +577,13 @@ function OrderPlaced({
             What you ordered
           </h2>
           <ul className={`mt-2 divide-y border-y ${DIVIDE_HAIRLINE} ${HAIRLINE}`}>
-            {order.items.map((item) => {
+            {order.items.map((item, index) => {
               const photoUrl = photoBySlug[item.slug];
               return (
                 <li
-                  key={`${item.slug}-${JSON.stringify(item.options)}`}
+                  // Index: two lines can share slug + options and differ
+                  // only by their request note. The list never reorders.
+                  key={index}
                   className="flex items-start gap-4 py-4 text-sm"
                 >
                   {photoUrl ? (
@@ -598,6 +612,13 @@ function OrderPlaced({
                           </p>
                         ))}
                       </div>
+                    )}
+                    {item.customRequestNote && (
+                      // The receipt: full text, never clamped.
+                      <p className={`mt-0.5 whitespace-pre-line [overflow-wrap:anywhere] text-xs ${INK_SOFT}`}>
+                        {resolveCustomRequestLabel(item.customRequestLabel)}:{" "}
+                        {item.customRequestNote}
+                      </p>
                     )}
                   </div>
                   <span className="flex-none tabular-nums">

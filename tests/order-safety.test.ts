@@ -172,6 +172,8 @@ function newOrder(
         options: [],
         quantity,
         priceCentavos: PRICE_CENTAVOS,
+        customRequestLabel: null,
+        customRequestNote: null,
       },
     ],
     subtotalCentavos: subtotal,

@@ -7,7 +7,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { addCartLine, sanitizeCart, serializeOptions } from "@/lib/cart";
+import {
+  addCartLine,
+  isSameCartLine,
+  sanitizeCart,
+  type CartLineIdentity,
+} from "@/lib/cart";
 
 export type CartItem = {
   slug: string;
@@ -19,6 +24,13 @@ export type CartItem = {
   selectedOptions: Record<string, string>;
   quantity: number;
   photoUrl?: string | null;
+  // Special request (docs/design/custom-requests.md): the normalised note,
+  // part of the line's identity (src/lib/cart.ts), and the product's label
+  // when it was added, for display. Read-only in the cart: to change a
+  // note, remove the line and add it again. The order takes the label from
+  // the product on the server, never from here.
+  customRequest?: string;
+  customRequestLabel?: string;
 };
 
 // Result of a successful POST /api/promo-codes/apply — see
@@ -40,12 +52,10 @@ export type AppliedPromoCode = {
 type CartContextValue = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (slug: string, selectedOptions: Record<string, string>) => void;
-  setQuantity: (
-    slug: string,
-    selectedOptions: Record<string, string>,
-    quantity: number
-  ) => void;
+  // Both find the line by slug + options + note (isSameCartLine), so two
+  // lines of the same product that differ only by note never collide.
+  removeItem: (line: CartLineIdentity) => void;
+  setQuantity: (line: CartLineIdentity, quantity: number) => void;
   clear: () => void;
   totalItems: number;
   totalCentavos: number;
@@ -121,31 +131,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => addCartLine(prev, item, quantity));
   }
 
-  function removeItem(slug: string, selectedOptions: Record<string, string>) {
-    const key = serializeOptions(selectedOptions);
-    setItems((prev) =>
-      prev.filter(
-        (i) => !(i.slug === slug && serializeOptions(i.selectedOptions) === key)
-      )
-    );
+  function removeItem(line: CartLineIdentity) {
+    setItems((prev) => prev.filter((i) => !isSameCartLine(i, line)));
   }
 
-  function setQuantity(
-    slug: string,
-    selectedOptions: Record<string, string>,
-    quantity: number
-  ) {
+  function setQuantity(line: CartLineIdentity, quantity: number) {
     if (quantity < 1) {
-      removeItem(slug, selectedOptions);
+      removeItem(line);
       return;
     }
-    const key = serializeOptions(selectedOptions);
     setItems((prev) =>
-      prev.map((i) =>
-        i.slug === slug && serializeOptions(i.selectedOptions) === key
-          ? { ...i, quantity }
-          : i
-      )
+      prev.map((i) => (isSameCartLine(i, line) ? { ...i, quantity } : i))
     );
   }
 

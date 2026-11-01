@@ -7,12 +7,15 @@ import { useState } from "react";
 // quote, docs/design/studio-profile.md §6). Controlled, so what the admin
 // typed survives a rejected save: ActionForm only remounts its children
 // on success, while React resets uncontrolled fields either way.
+// `hardLimit` instead makes the limit a hard stop (maxLength), e.g. a
+// product's special-request helper text (custom-requests.md §4).
 export function CharCountTextarea({
   id,
   name,
   rows,
   defaultValue,
   softLimit,
+  hardLimit,
   className,
   describedBy,
 }: {
@@ -20,12 +23,14 @@ export function CharCountTextarea({
   name: string;
   rows: number;
   defaultValue: string;
-  softLimit: number;
+  softLimit?: number;
+  hardLimit?: number;
   className?: string;
   describedBy?: string;
 }) {
   const [value, setValue] = useState(defaultValue);
-  const over = value.length > softLimit;
+  const limit = hardLimit ?? softLimit ?? 0;
+  const over = hardLimit === undefined && value.length > limit;
   const counterId = `${id}-count`;
 
   return (
@@ -34,6 +39,7 @@ export function CharCountTextarea({
         id={id}
         name={name}
         rows={rows}
+        maxLength={hardLimit}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         aria-describedby={[describedBy, counterId].filter(Boolean).join(" ")}
@@ -45,7 +51,7 @@ export function CharCountTextarea({
           over ? "text-[#8A6415]" : "text-[#6E6A64] dark:text-[#A39C90]"
         }`}
       >
-        {value.length} / {softLimit}
+        {value.length} / {limit}
       </p>
     </>
   );

@@ -1,5 +1,30 @@
 # Design Log — Leather Shop
 
+- **2026-10-22 — Special requests on the product page**
+  [artifact](https://claude.ai/artifact/5TJQZP9sRZsfttvWbmnydc) —
+  brief: [docs/design/custom-requests.md](design/custom-requests.md).
+  An optional free-form note per item ("navy thread, strap 2 cm longer"),
+  turned on per product, with no extra charge. On the product page it sits
+  under the options and above the lead time and buttons: the product's
+  own label ("Special request", plus "Optional") and helper text, a 3-row
+  16px textarea, a shop-wide expectation line ("We'll confirm the details
+  by email before we start…") and a hard 300-character counter that turns
+  ink at 270 and says "Limit reached" at 300. In the cart the note is part
+  of the line, so the same tote with two different notes makes two lines.
+  Notes are read-only and clamp to 2 lines with "Show all". On
+  `/admin/orders` the order gets a brass "Request" chip by the ref and a
+  brass-ruled "Customer request" block with the full note in ink (search
+  matches note text). The admin product Details tab gets a "Special
+  requests" group (toggle off by default, label max 40, helper max 160 with
+  counter, "Product saved." toast). Toggles: Product page / Cart / Admin
+  Orders / Admin Product, desktop / phone, field empty / filled near the
+  limit. Example catalog (Saddle Tote, Card Wallet). Status: **agreed
+  2026-11-01**. The owner took every recommendation: "Special request"
+  label, a shop-wide expectation line in Settings, read-only notes in the
+  cart, a fixed 300 limit, the "· has a request" subject flag, and orders
+  go through with the note if requests are switched off mid-cart. Made by
+  the designer agent.
+
 - **2026-10-22 — Favicon & home-screen icon options**
   [artifact](https://claude.ai/artifact/NEMb1mag4j8cBtob1o48C3) —
   brief: [docs/design/favicon.md](design/favicon.md).

@@ -122,7 +122,12 @@ products
   checkout route check product.visible themselves),
   position (migration `0027_shop_order_positions.sql` — order within its
   category on /products; a trigger puts a new product, or one moved to
-  another category, at the end of that category)
+  another category, at the end of that category),
+  custom_request_enabled (default false), custom_request_label (nullable,
+  ≤ 40; null shows "Special request"), custom_request_help (nullable,
+  ≤ 160; defaults to the suggested helper copy, null = no helper line) —
+  migration `0029_custom_requests.sql`: the optional special-request
+  note field on the product page (docs/design/custom-requests.md)
 
 categories
   id, name (unique) — normalizes what was a free-text products.category
@@ -242,7 +247,12 @@ orders
 
 order_items
   id, order_id (fk), product_id (fk), quantity,
-  unit_price_centavos (snapshot at order time)
+  unit_price_centavos (snapshot at order time),
+  custom_request_label, custom_request_note (migration `0029`, both
+  nullable; the note is 1–300 characters by check constraint) — the
+  shopper's special request and the product's label at order time,
+  snapshotted like the options and written by create_order() in the same
+  transaction
 
 order_item_options
   id, order_item_id (fk), option_type_name (text, snapshot), option_value
@@ -301,7 +311,8 @@ settings
   admin_notification_email,
   order_payment_hold_hours (default 48), payment_instructions_text
   (free-form text shown in the payment details email, alongside the
-  payment_methods list above). Read by /api/orders, /api/orders/expire,
+  payment_methods list above), custom_request_note (0029: the shop-wide
+  line under every special-request box). Read by /api/orders, /api/orders/expire,
   and the checkout UI; written only via /api/admin/*.
 ```
 
