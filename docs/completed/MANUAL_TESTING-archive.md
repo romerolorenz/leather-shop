@@ -4,6 +4,22 @@ Archived from [MANUAL_TESTING.md](../MANUAL_TESTING.md) on 2026-10-18. Finished 
 
 ## Done
 
+- [x] **Release 0.4.0: custom requests, card price below the name**
+  (`release/0.4.0`; PRs #39, #40). Passed 2026-11-09 on dev after
+  migration 0029, 23 of 23 checks, no issues found. *Custom requests*
+  (docs/design/custom-requests.md): admin product "Special requests" group
+  (off by default, label/helper with 160 counter, blank label falls back,
+  blank helper hides the line, new products get the defaults), the
+  Settings line under the box; product page field placement, counter at
+  270/300, no zoom on phones, screen-reader announcements; cart lines
+  split/merge by note with per-line −/+ and remove, "Show all"/"Show
+  less", read-only notes, Buy now with same/new note; checkout summary,
+  success screen, both emails (subject "· has a request", ">> REQUEST"),
+  order goes through with requests switched off; admin orders chip and
+  "Customer request" block, note search, /account history. *Card price
+  below name* (STYLE_GUIDE.md): home and /products on desktop and phone,
+  long names wrap, even spacing across a row.
+
 - [x] **Release 0.3.0: category descriptions, header words, favicon**
   (`release/0.3.0`; PRs #35, #36 plus release fixes). Passed 2026-10-22
   on dev after migration 0028, 25 of 25 checks, no issues found.
