@@ -4,6 +4,20 @@ Archived from [MANUAL_TASKS.md](../MANUAL_TASKS.md) on 2026-10-18. Finished item
 
 ## Done
 
+- [x] **Migration `0028_category_descriptions.sql` on dev and prod**
+  (for release 0.3.0, merged 2026-10-21 as PR #37 after the PR's "do not
+  merge until 0028 is on prod" gate; the production build reads
+  `categories.description`, so it would have failed without it). The
+  checkbox was ticked late, on 2026-11-10.
+
+- [x] **Migration `0029_custom_requests.sql` on dev and prod**
+  (2026-11-10, for release 0.4.0). Dev run in the SQL Editor; prod backed
+  up with `supabase db dump` (schema + data, kept outside the repo in
+  `~/Backups/hiraya/`) and pushed with `supabase db push --db-url` over
+  the **Session pooler** URI (the direct `db.<ref>.supabase.co` host is
+  IPv6-only and times out on IPv4). The prod URI is kept in the macOS
+  Keychain as `hiraya-prod-db-url`.
+
 - [x] **Release 0.2.0 shipped to production** (2026-10-21, PR #30, tag
   `v0.2.0`, back-merged in PR #31). Nationwide delivery, Buy now, order
   safety, order success screen + shop order, Hiraya titles and brown
