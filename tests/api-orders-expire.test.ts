@@ -91,6 +91,8 @@ describe("GET /api/orders/expire cancels an expired order", () => {
           options: [],
           quantity: 2,
           priceCentavos: 100000,
+          customRequestLabel: null,
+          customRequestNote: null,
         },
       ],
       subtotalCentavos: 200000,

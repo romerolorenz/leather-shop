@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveCustomRequestLabel } from "@/lib/custom-request";
 
 export type OptionDisplayStyle = "buttons" | "dropdown";
 
@@ -49,10 +50,17 @@ export type Product = {
   dimensions: string | null;
   details: string | null;
   photos: string[];
+  // Special requests (docs/design/custom-requests.md, migration 0029):
+  // whether the product page shows the optional note field, its label
+  // (already defaulted to "Special request" when blank) and helper line
+  // (null = none).
+  customRequestEnabled: boolean;
+  customRequestLabel: string;
+  customRequestHelp: string | null;
 };
 
 const PRODUCT_SELECT =
-  "id, slug, name, description, category_id, categories(name, position, description), position, created_at, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, dimensions, details, " +
+  "id, slug, name, description, category_id, categories(name, position, description), position, created_at, price_centavos, lead_time_days, ordering_enabled, visible, in_stock, featured, featured_position, dimensions, details, custom_request_enabled, custom_request_label, custom_request_help, " +
   "product_photos(url, position), " +
   "product_options(position, option_types(id, name, display_style), product_option_selections(option_values(value, position)))";
 
@@ -74,6 +82,9 @@ type ProductRow = {
   featured_position: number | null;
   dimensions: string | null;
   details: string | null;
+  custom_request_enabled: boolean;
+  custom_request_label: string | null;
+  custom_request_help: string | null;
   product_photos: { url: string; position: number }[];
   product_options: {
     position: number;
@@ -130,6 +141,9 @@ function mapRow(row: ProductRow): Product {
       .sort((a, b) => a.position - b.position)
       .map((p) => p.url),
     optionTypes,
+    customRequestEnabled: row.custom_request_enabled,
+    customRequestLabel: resolveCustomRequestLabel(row.custom_request_label),
+    customRequestHelp: row.custom_request_help,
   };
 }
 

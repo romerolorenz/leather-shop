@@ -14,7 +14,18 @@ export type OrderItem = {
   options: OrderItemOption[];
   quantity: number;
   priceCentavos: number;
+  // Special request (docs/design/custom-requests.md), snapshotted at order
+  // time like the options: the product's label then, and the shopper's
+  // normalised note. Both null when the item has no request.
+  customRequestLabel: string | null;
+  customRequestNote: string | null;
 };
+
+// True when any item carries a special request: the admin "Request" chip
+// and the owner email's subject suffix.
+export function orderHasCustomRequest(order: Pick<Order, "items">): boolean {
+  return order.items.some((item) => !!item.customRequestNote);
+}
 
 export type NewOrderItem = OrderItem & {
   productId: string;
@@ -151,6 +162,8 @@ export async function createOrder(input: NewOrder): Promise<Order> {
       product_id: item.productId,
       quantity: item.quantity,
       unit_price_centavos: item.priceCentavos,
+      custom_request_label: item.customRequestNote ? item.customRequestLabel : null,
+      custom_request_note: item.customRequestNote,
       options: item.options.map((option) => ({
         option_type_name: option.optionTypeName,
         option_value: option.optionValue,
@@ -253,6 +266,8 @@ type OrderRow = {
   order_items: {
     quantity: number;
     unit_price_centavos: number;
+    custom_request_label: string | null;
+    custom_request_note: string | null;
     order_item_options: {
       option_type_name: string;
       option_value: string;
@@ -296,6 +311,8 @@ function mapOrderRow(row: OrderRow): Order {
         })),
       quantity: item.quantity,
       priceCentavos: item.unit_price_centavos,
+      customRequestLabel: item.custom_request_label,
+      customRequestNote: item.custom_request_note,
     })),
     subtotalCentavos: row.subtotal_centavos,
     shippingCentavos: row.shipping_centavos,
@@ -307,7 +324,7 @@ function mapOrderRow(row: OrderRow): Order {
 }
 
 const ORDER_SELECT =
-  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_province, shipping_region, shipping_postal_code, shipping_region_code, shipping_province_code, shipping_city_code, shipping_barangay_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, status_updated_at, order_items(quantity, unit_price_centavos, order_item_options(option_type_name, option_value, position), products(slug, name))";
+  "id, created_at, status, customer_name, customer_email, customer_phone, shipping_street, shipping_address2, shipping_barangay, shipping_city, shipping_province, shipping_region, shipping_postal_code, shipping_region_code, shipping_province_code, shipping_city_code, shipping_barangay_code, subtotal_centavos, shipping_centavos, discount_centavos, promo_codes(code), total_centavos, status_updated_at, order_items(quantity, unit_price_centavos, custom_request_label, custom_request_note, order_item_options(option_type_name, option_value, position), products(slug, name))";
 
 // Single-order lookup — needed by markOrderShippedAction to build the
 // shipped email, which needs the full order (items, address), not just the

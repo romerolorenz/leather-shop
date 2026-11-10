@@ -31,6 +31,9 @@ export type Settings = {
   // each bank/e-wallet entry can carry its own — this is only the
   // free-form text block, shop-wide.
   paymentInstructionsText: string;
+  // Shop-wide line under every product's special-request box
+  // (docs/design/custom-requests.md §6, decision B). Blank = no line.
+  customRequestNote: string;
 };
 
 // Admin-editable shop configuration (CLAUDE.md: settings are configurable,
@@ -67,6 +70,7 @@ export async function getSettings(): Promise<Settings> {
     homepage_studio_name: string;
     homepage_studio_role: string;
     payment_instructions_text: string;
+    custom_request_note: string;
   };
 
   return {
@@ -98,6 +102,10 @@ export async function getSettings(): Promise<Settings> {
     homepageStudioName: map.homepage_studio_name ?? "",
     homepageStudioRole: map.homepage_studio_role ?? "founder & leatherworker",
     paymentInstructionsText: map.payment_instructions_text,
+    // Fallback mirrors migration 0029's seed, same reasoning as above.
+    customRequestNote:
+      map.custom_request_note ??
+      "We'll confirm the details by email before we start, including any change to price or timing.",
   };
 }
 
@@ -126,6 +134,7 @@ const SETTINGS_KEYS: Record<keyof Settings, string> = {
   homepageStudioName: "homepage_studio_name",
   homepageStudioRole: "homepage_studio_role",
   paymentInstructionsText: "payment_instructions_text",
+  customRequestNote: "custom_request_note",
 };
 
 export async function updateSettings(input: Partial<Settings>): Promise<void> {

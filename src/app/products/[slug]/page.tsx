@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Archivo } from "next/font/google";
 import { getProductBySlug } from "@/lib/products";
+import { getSettings } from "@/lib/settings";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import ProductDetail from "./ProductDetail";
 import ProductGallery from "./ProductGallery";
@@ -33,6 +34,10 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
   if (!product || !product.visible) {
     notFound();
   }
+  // Only needed when the product shows the special-request field.
+  const requestNote = product.customRequestEnabled
+    ? (await getSettings()).customRequestNote
+    : "";
 
   return (
     <main
@@ -48,7 +53,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
         />
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2">
           <ProductGallery photos={product.photos} productName={product.name} />
-          <ProductDetail product={product} />
+          <ProductDetail product={product} requestNote={requestNote} />
         </div>
       </div>
     </main>

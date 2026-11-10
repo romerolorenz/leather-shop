@@ -1,6 +1,11 @@
 import { Resend } from "resend";
 import { formatPrice } from "@/lib/products";
-import { getOrderItemPhotos, type Order } from "@/lib/orders";
+import {
+  getOrderItemPhotos,
+  orderHasCustomRequest,
+  type Order,
+} from "@/lib/orders";
+import { resolveCustomRequestLabel } from "@/lib/custom-request";
 import { formatOrderRef } from "@/lib/order-ref";
 import { getSettings } from "@/lib/settings";
 import { formatAddressLines as formatDisplayAddressLines } from "@/lib/address-format";
@@ -20,7 +25,28 @@ type EmailContent = {
 // One option per indented line under the item, matching the one-per-line
 // convention used by the cart, checkout, and /admin/orders (rather than the
 // older comma-joined-in-parentheses style).
-function formatOrderItems(order: Order): string {
+//
+// A special request (docs/design/custom-requests.md §3) goes under the
+// options. The customer sees "  Special request: …" with the product's
+// label; the owner's email uses "  >> REQUEST: …" so it stands out in a
+// plain-text email. Continuation lines of a multi-line note are indented
+// to sit under the first.
+type RequestStyle = "customer" | "owner";
+
+function formatRequestLine(
+  item: Order["items"][number],
+  style: RequestStyle
+): string[] {
+  if (!item.customRequestNote) return [];
+  const prefix =
+    style === "owner"
+      ? "  >> REQUEST: "
+      : `  ${resolveCustomRequestLabel(item.customRequestLabel)}: `;
+  const indent = " ".repeat(style === "owner" ? prefix.length : 4);
+  return [prefix + item.customRequestNote.split("\n").join(`\n${indent}`)];
+}
+
+function formatOrderItems(order: Order, style: RequestStyle = "customer"): string {
   return order.items
     .map((item) => {
       const optionLines = item.options.map(
@@ -31,6 +57,7 @@ function formatOrderItems(order: Order): string {
           item.priceCentavos * item.quantity
         )}`,
         ...optionLines,
+        ...formatRequestLine(item, style),
       ].join("\n");
     })
     .join("\n");
@@ -54,14 +81,19 @@ function escapeHtml(value: string): string {
 }
 
 // One option per line in small gray text under the item name — HTML
-// counterpart to formatOrderItems' indented text lines.
-function formatOptionRowsHtml(options: Order["items"][number]["options"]): string {
-  return options
+// counterpart to formatOrderItems' indented text lines. A special request
+// is one more grey row, escaped, with its line breaks kept.
+function formatOptionRowsHtml(item: Order["items"][number]): string {
+  const optionRows = item.options
     .map(
       (o) =>
         `<div style="margin-top:2px;font-size:12px;color:#71717a;">${escapeHtml(o.optionTypeName)}: ${escapeHtml(o.optionValue)}</div>`
     )
     .join("");
+  const requestRow = item.customRequestNote
+    ? `<div style="margin-top:2px;font-size:12px;color:#71717a;white-space:pre-line;">${escapeHtml(resolveCustomRequestLabel(item.customRequestLabel))}: ${escapeHtml(item.customRequestNote)}</div>`
+    : "";
+  return optionRows + requestRow;
 }
 
 // Pure content builders — no network calls, so they're unit-testable
@@ -72,7 +104,10 @@ export function buildOrderNotificationEmail(
 ): EmailContent {
   return {
     to: adminNotificationEmail,
-    subject: `New order ${formatOrderRef(order.id)} — ${formatPrice(order.totalCentavos)}`,
+    // Fixed interface copy: the suffix flags a request in the inbox list.
+    subject: `New order ${formatOrderRef(order.id)} — ${formatPrice(order.totalCentavos)}${
+      orderHasCustomRequest(order) ? " · has a request" : ""
+    }`,
     text: [
       `New order placed: ${formatOrderRef(order.id)}`,
       "",
@@ -80,7 +115,7 @@ export function buildOrderNotificationEmail(
       `Deliver to: ${formatAddressLines(order.shippingAddress).join(", ")}`,
       "",
       "Items:",
-      formatOrderItems(order),
+      formatOrderItems(order, "owner"),
       "",
       `Subtotal: ${formatPrice(order.subtotalCentavos)}`,
       ...(order.discountCentavos > 0
@@ -106,7 +141,7 @@ export function buildOrderConfirmationEmail(
     .map((item) => {
       const photoUrl = itemPhotos[item.slug];
       const name = escapeHtml(item.name);
-      const optionRows = formatOptionRowsHtml(item.options);
+      const optionRows = formatOptionRowsHtml(item);
       const lineTotal = formatPrice(item.priceCentavos * item.quantity);
 
       const photoCell = photoUrl
@@ -201,7 +236,7 @@ export function buildOrderShippedEmail(
     .map((item) => {
       const photoUrl = itemPhotos[item.slug];
       const name = escapeHtml(item.name);
-      const optionRows = formatOptionRowsHtml(item.options);
+      const optionRows = formatOptionRowsHtml(item);
 
       const photoCell = photoUrl
         ? `<img src="${escapeHtml(photoUrl)}" alt="${name}" width="64" height="64" style="display:block;width:64px;height:64px;border-radius:8px;object-fit:cover;" />`

@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatItemOptions, type Order, type OrderStatus } from "@/lib/orders";
+import {
+  formatItemOptions,
+  orderHasCustomRequest,
+  type Order,
+  type OrderStatus,
+} from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
 import {
   markOrderPaidAction,
@@ -71,8 +76,28 @@ function OrderCard({ order }: { order: Order }) {
     <li className={`rounded-lg border ${HAIRLINE} p-4`}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
-            {formatOrderRef(order.id)} — {order.customer.name}
+          <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-medium text-[#1C1A18] dark:text-[#F3F1EC]">
+            <span>
+              {formatOrderRef(order.id)} — {order.customer.name}
+            </span>
+            {/* Special requests (docs/design/custom-requests.md §3): the
+                Warning colour, so the owner spots it while scrolling. */}
+            {orderHasCustomRequest(order) && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-[rgba(138,100,21,.10)] px-2 py-px text-xs font-medium text-[#8A6415]">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinejoin="round"
+                  className="h-3 w-3"
+                >
+                  <path d="M4 5h16v11H8l-4 4V5Z" />
+                </svg>
+                Request
+              </span>
+            )}
           </p>
           <p className={`text-sm ${INK_SOFT}`}>{statusDateLabel(order)}</p>
           <p className={`text-sm ${INK_SOFT}`}>
@@ -85,18 +110,29 @@ function OrderCard({ order }: { order: Order }) {
               </span>
             ))}
           </p>
-          <div className="mt-2 flex flex-col gap-0.5">
+          <div className="mt-2 flex flex-col gap-1.5">
             {order.items.map((item, index) => {
               const options = formatItemOptions(item.options);
               return (
-                <p
-                  key={`${item.slug}-${index}`}
-                  className="text-sm text-[#1C1A18] dark:text-[#F3F1EC]"
-                >
-                  <span className="tabular-nums">{item.quantity}×</span>{" "}
-                  {item.name}
-                  {options && <span className={INK_SOFT}> — {options}</span>}
-                </p>
+                <div key={`${item.slug}-${index}`}>
+                  <p className="text-sm text-[#1C1A18] dark:text-[#F3F1EC]">
+                    <span className="tabular-nums">{item.quantity}×</span>{" "}
+                    {item.name}
+                    {options && <span className={INK_SOFT}> — {options}</span>}
+                  </p>
+                  {item.customRequestNote && (
+                    // Full text, never clamped, in ink: the owner acts on
+                    // it. Fixed eyebrow, not the product's label.
+                    <div className="mt-1 border-l-2 border-[#8A6415] pl-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.08em] text-[#8A6415]">
+                        Customer request
+                      </p>
+                      <p className="max-w-[70ch] whitespace-pre-wrap [overflow-wrap:anywhere] text-sm text-[#1C1A18] dark:text-[#F3F1EC]">
+                        {item.customRequestNote}
+                      </p>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -161,7 +197,10 @@ export function OrdersView({ orders }: { orders: Order[] }) {
       (order) =>
         order.customer.name.toLowerCase().includes(query) ||
         order.customer.email.toLowerCase().includes(query) ||
-        (idQuery !== "" && order.id.toLowerCase().includes(idQuery))
+        (idQuery !== "" && order.id.toLowerCase().includes(idQuery)) ||
+        order.items.some((item) =>
+          item.customRequestNote?.toLowerCase().includes(query)
+        )
     );
   }, [orders, search]);
 
@@ -179,7 +218,7 @@ export function OrdersView({ orders }: { orders: Order[] }) {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by customer or order ID"
+          placeholder="Search by customer, order ID or request"
           aria-label="Search orders"
           className={`w-full rounded-md border ${HAIRLINE} bg-transparent py-2 pl-8 pr-3 text-sm`}
         />

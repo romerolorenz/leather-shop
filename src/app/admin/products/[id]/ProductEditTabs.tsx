@@ -81,6 +81,9 @@ export function ProductEditTabs({
                   stockQuantity: product.stockQuantity,
                   dimensions: product.dimensions,
                   details: product.details,
+                  customRequestEnabled: product.customRequestEnabled,
+                  customRequestLabel: product.customRequestLabel,
+                  customRequestHelp: product.customRequestHelp,
                 }}
               />
               <div className={`mt-2 flex justify-end border-t ${HAIRLINE} pt-4`}>

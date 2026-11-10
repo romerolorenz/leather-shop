@@ -14,8 +14,6 @@ collapsed to a short summary and moved to
 
 ## Outstanding
 
-_Nothing outstanding._
-
 ## Done
 
 Finished items are archived in [completed/MANUAL_TESTING-archive.md](./completed/MANUAL_TESTING-archive.md). Move items there once they're done.

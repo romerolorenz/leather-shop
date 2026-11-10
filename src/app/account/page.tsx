@@ -11,6 +11,7 @@ import {
 import { formatPrice } from "@/lib/products";
 import { formatOrderRef } from "@/lib/order-ref";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { resolveCustomRequestLabel } from "@/lib/custom-request";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -83,6 +84,12 @@ function OrderCard({
                       </p>
                     ))}
                   </div>
+                )}
+                {item.customRequestNote && (
+                  <p className="mt-0.5 whitespace-pre-line [overflow-wrap:anywhere] text-sm text-[#6E6A64] dark:text-[#A39C90]">
+                    {resolveCustomRequestLabel(item.customRequestLabel)}:{" "}
+                    {item.customRequestNote}
+                  </p>
                 )}
               </div>
             </li>

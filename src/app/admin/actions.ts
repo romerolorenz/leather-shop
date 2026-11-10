@@ -75,11 +75,32 @@ import {
 } from "@/lib/promo-codes";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runAction, type ActionResult } from "@/lib/action-result";
+import {
+  normalizeCustomRequestHelp,
+  normalizeCustomRequestLabel,
+} from "@/lib/custom-request";
 
+// The special-request fields (docs/design/custom-requests.md §4) are only
+// on the edit page's Details form. The quick-create modal doesn't send
+// them, so they're left undefined there and the new product gets the
+// database defaults (off, default label, default helper copy).
 function parseProductInput(formData: FormData): ProductInput {
   const dimensions = String(formData.get("dimensions") ?? "").trim();
   const details = String(formData.get("details") ?? "").trim();
+  const hasCustomRequestFields = formData.has("customRequestLabel");
   return {
+    ...(hasCustomRequestFields
+      ? {
+          customRequestEnabled: formData.get("customRequestEnabled") === "on",
+          // Throw the brief's toast messages when over the limit.
+          customRequestLabel: normalizeCustomRequestLabel(
+            formData.get("customRequestLabel")
+          ),
+          customRequestHelp: normalizeCustomRequestHelp(
+            formData.get("customRequestHelp")
+          ),
+        }
+      : {}),
     name: String(formData.get("name") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
     categoryId: String(formData.get("categoryId") ?? "").trim(),
@@ -505,9 +526,14 @@ export async function updateSettingsAction(
       contactInstagramHandle: String(
         formData.get("contactInstagramHandle") ?? ""
       ).trim(),
+      // One line of copy: newlines collapse to spaces.
+      customRequestNote: String(formData.get("customRequestNote") ?? "")
+        .replace(/\s+/g, " ")
+        .trim(),
     });
 
     revalidatePath("/admin/settings");
+    revalidateStorefront();
     revalidatePath("/cart");
     revalidatePath("/checkout");
     revalidatePath("/contact");

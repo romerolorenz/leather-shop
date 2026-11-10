@@ -58,6 +58,8 @@ function walletItem(
     quantity,
     priceCentavos: wallet.priceCentavos,
     productId: wallet.id,
+    customRequestLabel: null,
+    customRequestNote: null,
   };
 }
 
@@ -69,6 +71,8 @@ function toteItem(quantity: number, colorValue = "Chestnut Brown"): NewOrderItem
     quantity,
     priceCentavos: tote.priceCentavos,
     productId: tote.id,
+    customRequestLabel: null,
+    customRequestNote: null,
   };
 }
 
